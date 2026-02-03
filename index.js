@@ -4,12 +4,12 @@ import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser'
 import helmet from 'helmet';
 import mongoSanitize from 'express-mongo-sanitize';
-import xss from 'xss-clean';
 import hpp from 'hpp';
 import compression from 'compression';
 import morgan from 'morgan';
 import connectDB from './config/DB/connectDb.js';
-import authRoutes from './routes/auth.js';
+import customerRouter from './routes/Auth/CustomerAuth.js';
+import userRouter from './routes/Auth/UserAuth.js';
 dotenv.config();
 
 const app = express();
@@ -44,7 +44,6 @@ app.use(helmet({
 app.use(compression()); 
 app.use(morgan('combined'));
 app.use(mongoSanitize());
-app.use(xss()); 
 app.use(hpp()); 
 
 app.use(express.json({ limit: '10mb' })); 
@@ -60,7 +59,12 @@ try {
         })
     })
 
-    app.use('/api/auth', authRoutes);
+    // USER ROUTES (Admin/Staff)
+    app.use('api/user/auth',userRouter);
+    
+
+   // CUSTOMER ROUTES
+    app.use('/api/customer/auth', customerRouter);
     
 } catch (error) {
     console.error("Error occurred:", error);

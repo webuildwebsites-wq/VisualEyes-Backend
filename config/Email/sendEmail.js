@@ -15,5 +15,4 @@ const sendEmailFun=async({sendTo, subject, text, html})=>{
   }
 }
 
-
 export default sendEmailFun;
