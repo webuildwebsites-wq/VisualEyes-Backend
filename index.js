@@ -7,9 +7,9 @@ import mongoSanitize from 'express-mongo-sanitize';
 import hpp from 'hpp';
 import compression from 'compression';
 import morgan from 'morgan';
-import connectDB from './config/DB/connectDb.js';
-import customerRouter from './routes/Auth/CustomerAuth.js';
-import userRouter from './routes/Auth/UserAuth.js';
+import customerRouter from './src/routes/Auth/CustomerAuth.js';
+import userRouter from './src/routes/Auth/UserAuth.js';
+import connectDB from './src/core/config/DB/connectDb.js';
 dotenv.config();
 
 const app = express();
@@ -60,7 +60,7 @@ try {
     })
 
     // USER ROUTES (Admin/Staff)
-    app.use('api/user/auth',userRouter);
+    app.use('api/user/auth', userRouter);
     
 
    // CUSTOMER ROUTES

@@ -1,7 +1,7 @@
 import crypto from 'crypto';
-import User from '../../../models/Auth/User.js';
-import { sendSuccessResponse, sendErrorResponse, sendTokenResponse } from '../../../Utils/response/responseHandler.js';
-import { generateToken, generateRefreshToken } from '../../../Utils/Auth/tokenUtils.js';
+import { sendSuccessResponse, sendErrorResponse, sendTokenResponse } from '../../../../Utils/response/responseHandler.js';
+import { generateToken, generateRefreshToken } from '../../../../Utils/Auth/tokenUtils.js';
+import User from '../../../../models/Auth/User.js'
 
 export const userLogin = async (req, res) => {
   try {

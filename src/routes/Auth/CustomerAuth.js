@@ -1,8 +1,7 @@
 import express from 'express';
-import { customerLogin, customerRegister, customerForgotPassword, customerResetPassword, customerUpdatePassword, getCustomerProfile } from '../../controllers/Auth/Customers/CustomerAuth.js';
-import { logout, refreshToken } from '../../Utils/Auth/tokenUtils.js';
+import { customerForgotPassword, customerLogin, customerRegister, customerResetPassword, customerUpdatePassword, getCustomerProfile } from '../../core/controllers/Auth/Customers/CustomerAuth.js';
 import { protectCustomer } from '../../middlewares/Auth/CustomerMiddleware/customerMiddleware.js';
-
+import { logout, refreshToken } from '../../Utils/Auth/tokenUtils.js';
 const customerRouter = express.Router();
 
 customerRouter.post('/login',  customerLogin);
