@@ -1,7 +1,6 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-dotenv.config();
 import cookieParser from 'cookie-parser'
 import helmet from 'helmet';
 import mongoSanitize from 'express-mongo-sanitize';
@@ -11,6 +10,7 @@ import compression from 'compression';
 import morgan from 'morgan';
 import connectDB from './config/DB/connectDb.js';
 import authRoutes from './routes/auth.js';
+dotenv.config();
 
 const app = express();
 const allowedOrigins = [
