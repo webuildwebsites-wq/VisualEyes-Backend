@@ -1,4 +1,3 @@
-import bcrypt from 'bcryptjs';
 import { sendSuccessResponse, sendErrorResponse } from '../../../../Utils/response/responseHandler.js';
 import User from '../../../../models/Auth/User.js';
 
@@ -17,13 +16,10 @@ export const createSubAdmin = async (req, res) => {
       return sendErrorResponse(res, 409, 'USER_EXISTS', 'User with this email, username, or employee ID already exists');
     }
 
-    const salt = await bcrypt.genSalt(12);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
     const subAdmin = new User({
       username,
       email,
-      password: hashedPassword,
+      password, 
       firstName,
       lastName,
       phone,
@@ -89,13 +85,10 @@ export const createSupervisorOrUser = async (req, res) => {
       return sendErrorResponse(res, 409, 'USER_EXISTS', 'User with this email, username, or employee ID already exists');
     }
 
-    const salt = await bcrypt.genSalt(12);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
     const userData = {
       username,
       email,
-      password: hashedPassword,
+      password, 
       firstName,
       lastName,
       phone,

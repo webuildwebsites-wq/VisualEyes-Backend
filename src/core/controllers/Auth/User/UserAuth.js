@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import { sendSuccessResponse, sendErrorResponse, sendTokenResponse } from '../../../../Utils/response/responseHandler.js';
 import { generateToken, generateRefreshToken } from '../../../../Utils/Auth/tokenUtils.js';
-import User from '../../../../models/Auth/User.js'
+import User from '../../../../models/Auth/User.js';
 
 export const userLogin = async (req, res) => {
   try {
@@ -29,6 +29,9 @@ export const userLogin = async (req, res) => {
     if (!isMatch) {
       return sendErrorResponse(res, 401, 'INVALID_CREDENTIALS', 'Invalid credentials');
     }
+
+    user.lastLogin = new Date();
+    await user.save();
 
     return sendTokenResponse(user, 200, res, 'user', generateToken, generateRefreshToken);
 
@@ -96,9 +99,12 @@ export const userResetPassword = async (req, res) => {
       return sendErrorResponse(res, 400, 'INVALID_TOKEN', 'Invalid or expired reset token');
     }
 
+    // Password will be hashed by the pre-save middleware
     user.password = password;
     user.passwordResetToken = undefined;
     user.passwordResetExpires = undefined;
+    user.loginAttempts = undefined;
+    user.lockUntil = undefined;
 
     await user.save();
 
