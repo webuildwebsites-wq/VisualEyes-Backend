@@ -4,7 +4,6 @@ import { logout, refreshToken } from '../../Utils/Auth/tokenUtils.js';
 import { ProtectUser } from "../../middlewares/Auth/AdminMiddleware/adminMiddleware.js"
 const userRouter = express.Router();
 
-
 userRouter.post('/login', userLogin);
 userRouter.get('/profile', ProtectUser, getUserProfile);
 userRouter.put('/update-password', ProtectUser, userUpdatePassword);

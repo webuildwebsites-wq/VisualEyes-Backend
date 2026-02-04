@@ -3,12 +3,12 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser'
 import helmet from 'helmet';
-import mongoSanitize from 'express-mongo-sanitize';
 import hpp from 'hpp';
 import compression from 'compression';
 import morgan from 'morgan';
 import customerRouter from './src/routes/Auth/CustomerAuth.js';
 import userRouter from './src/routes/Auth/UserAuth.js';
+import userManagementRouter from './src/routes/Auth/UserManagement.js';
 import connectDB from './src/core/config/DB/connectDb.js';
 dotenv.config();
 
@@ -43,9 +43,7 @@ app.use(helmet({
 }));
 app.use(compression()); 
 app.use(morgan('combined'));
-app.use(mongoSanitize());
 app.use(hpp()); 
-
 app.use(express.json({ limit: '10mb' })); 
 app.use(cookieParser())
 app.set('trust proxy', 1);
@@ -60,7 +58,8 @@ try {
     })
 
     // USER ROUTES (Admin/Staff)
-    app.use('api/user/auth', userRouter);
+    app.use('/api/user/auth', userRouter);
+    app.use('/api/user/management', userManagementRouter);
     
 
    // CUSTOMER ROUTES
