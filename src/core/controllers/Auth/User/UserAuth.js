@@ -27,17 +27,7 @@ export const userLogin = async (req, res) => {
     const isMatch = await user.comparePassword(password);
 
     if (!isMatch) {
-      if (user.incLoginAttempts) {
-        await user.incLoginAttempts();
-      }
       return sendErrorResponse(res, 401, 'INVALID_CREDENTIALS', 'Invalid credentials');
-    }
-
-    if (user.resetLoginAttempts) {
-      await user.resetLoginAttempts();
-    }
-    if (user.updateLastLogin) {
-      await user.updateLastLogin();
     }
 
     return sendTokenResponse(user, 200, res, 'user', generateToken, generateRefreshToken);
