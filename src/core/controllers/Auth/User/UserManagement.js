@@ -3,9 +3,14 @@ import User from '../../../../models/Auth/User.js';
 
 export const createSubAdmin = async (req, res) => {
   try {
-    const { username, email, password, firstName, lastName, phone, employeeId, department, region } = req.body;
-    if (!username || !email || !password || !firstName || !lastName || !phone || !department || !region) {
+    const { username, email, password, firstName, lastName, phone, employeeId } = req.body;
+    
+    if (!username || !email || !password || !firstName || !lastName || !phone) {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'All required fields must be provided');
+    }
+
+    if (req.user.UserType !== 'SUPERADMIN') {
+      return sendErrorResponse(res, 403, 'FORBIDDEN', 'Only SuperAdmin can create SubAdmin');
     }
 
     const existingUser = await User.findOne({
@@ -25,8 +30,6 @@ export const createSubAdmin = async (req, res) => {
       phone,
       employeeId,
       UserType: 'SUBADMIN',
-      Department: department,
-      Region: region,
       createdBy: req.user.id,
       isActive: true
     });
@@ -50,35 +53,41 @@ export const createSubAdmin = async (req, res) => {
 
 export const createSupervisorOrUser = async (req, res) => {
   try {
-    const { username, email, password, firstName, lastName, phone, employeeId, userType, department, region, role, supervisor } = req.body;
+    const { username, email, password, firstName, lastName, phone, employeeId, userType, department, region, role } = req.body;
+   let assignedSupervisor = null;
 
-    if (!username || !email || !password || !firstName || !lastName || !phone || !userType) {
+    if (!username || !email || !password || !firstName || !lastName || !phone || !userType || !department || !region) {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'All required fields must be provided');
     }
 
     if (!['SUPERVISOR', 'USER'].includes(userType.toUpperCase())) {
-      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'User type must be either supervisor or user');
+      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'User type must be either SUPERVISOR or USER');
     }
 
-    if (userType.toUpperCase() === 'USER') {
-      if (!role || !supervisor) {
-        return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Role and supervisor are required for user type');
+    if (userType.toUpperCase()  === 'USER') {
+      if (!role) {
+        return sendErrorResponse(res,400,'VALIDATION_ERROR','Role is required for USER type');
       }
 
-      const supervisorUser = await User.findOne({
-        _id: supervisor,
+      assignedSupervisor = await User.findOne({
         UserType: 'SUPERVISOR',
-        Department: req.user.Department,
+        Department: department.toUpperCase(),
+        Region: region.toUpperCase(),
         isActive: true
       });
 
-      if (!supervisorUser) {
-        return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Invalid supervisor or supervisor not in the same department');
+      if (!assignedSupervisor) {
+        return sendErrorResponse(res,400,'NO_SUPERVISOR_FOUND','No active supervisor found for this department and region');
+      }
+
+      if (req.user.UserType === 'SUPERVISOR' && assignedSupervisor._id.toString() !== req.user.id.toString()) {
+        return sendErrorResponse(res,403,'FORBIDDEN','Supervisors can only assign themselves as supervisor');
       }
     }
 
     const existingUser = await User.findOne({
-      $or: [{ email }, { username }, { employeeId: employeeId || null }]
+      $or: [{ email }, { username }, 
+      { employeeId: employeeId || null }]
     });
 
     if (existingUser) {
@@ -94,15 +103,15 @@ export const createSupervisorOrUser = async (req, res) => {
       phone,
       employeeId,
       UserType: userType.toUpperCase(),
-      Department: department || req.user.Department,
-      Region: region || req.user.Region,
+      Department: department.toUpperCase(),
+      Region: region.toUpperCase(),
       createdBy: req.user.id,
       isActive: true
     };
 
     if (userType.toUpperCase() === 'USER') {
       userData.Role = role.toUpperCase();
-      userData.supervisor = supervisor;
+      userData.supervisor = assignedSupervisor._id;
     }
 
     const newUser = new User(userData);
@@ -135,21 +144,43 @@ export const getUsersByHierarchy = async (req, res) => {
       if (department) query.Department = department.toUpperCase();
       if (region) query.Region = region.toUpperCase();
     } else if (req.user.UserType === 'SUBADMIN') {
+      query.UserType = { $ne: 'SUPERADMIN' };
+      if (userType && userType.toUpperCase() !== 'SUPERADMIN') {
+        query.UserType = userType.toUpperCase();
+      }
+      if (department) query.Department = department.toUpperCase();
+      if (region) query.Region = region.toUpperCase();
+    } else if (req.user.UserType === 'SUPERVISOR') {
       query.Department = req.user.Department;
       query.Region = req.user.Region;
+      query.UserType = { $in: ['SUPERVISOR', 'USER'] }; 
+      
       if (userType && ['SUPERVISOR', 'USER'].includes(userType.toUpperCase())) {
         query.UserType = userType.toUpperCase();
       }
+    } else {
+      query.$or = [
+        { _id: req.user.id },
+        { 
+          Department: req.user.Department, 
+          Region: req.user.Region,
+          UserType: 'USER'
+        } 
+      ];
     }
 
     if (search) {
-      query.$or = [
-        { firstName: { $regex: search, $options: 'i' } },
-        { lastName: { $regex: search, $options: 'i' } },
-        { username: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
-        { employeeId: { $regex: search, $options: 'i' } }
-      ];
+      const searchQuery = {
+        $or: [
+          { firstName: { $regex: search, $options: 'i' } },
+          { lastName: { $regex: search, $options: 'i' } },
+          { username: { $regex: search, $options: 'i' } },
+          { email: { $regex: search, $options: 'i' } },
+          { employeeId: { $regex: search, $options: 'i' } }
+        ]
+      };
+      
+      query = { $and: [query, searchQuery] };
     }
 
     const users = await User.find(query)
@@ -189,9 +220,18 @@ export const updateUser = async (req, res) => {
 
     let query = { _id: userId, isActive: true };
 
-    if (req.user.UserType === 'SUBADMIN') {
+    if (req.user.UserType === 'SUPERADMIN') {
+    } else if (req.user.UserType === 'SUBADMIN') {
+      const targetUser = await User.findById(userId);
+      if (targetUser && targetUser.UserType === 'SUPERADMIN') {
+        return sendErrorResponse(res, 403, 'FORBIDDEN', 'SubAdmin cannot update SuperAdmin');
+      }
+    } else if (req.user.UserType === 'SUPERVISOR') {
       query.Department = req.user.Department;
       query.Region = req.user.Region;
+      query.UserType = { $in: ['USER'] }; 
+    } else {
+      query._id = req.user.id;
     }
 
     const user = await User.findOne(query);
@@ -221,22 +261,27 @@ export const updateUser = async (req, res) => {
 export const deactivateUser = async (req, res) => {
   try {
     const { userId } = req.params;
-
     let query = { _id: userId, isActive: true };
-
-    if (req.user.UserType === 'SUBADMIN') {
+    if (req.user.UserType === 'SUPERADMIN') {
+      const targetUser = await User.findById(userId);
+      if (targetUser && targetUser.UserType === 'SUPERADMIN') {
+        return sendErrorResponse(res, 403, 'FORBIDDEN', 'Cannot deactivate another SuperAdmin');
+      }
+    } else if (req.user.UserType === 'SUBADMIN') {
+      const targetUser = await User.findById(userId);
+      if (targetUser && targetUser.UserType === 'SUPERADMIN') {
+        return sendErrorResponse(res, 403, 'FORBIDDEN', 'SubAdmin cannot deactivate SuperAdmin');
+      }
+    } else if (req.user.UserType === 'SUPERVISOR') {
       query.Department = req.user.Department;
       query.Region = req.user.Region;
+      query.UserType = 'USER';
+    } else {
+      return sendErrorResponse(res, 403, 'FORBIDDEN', 'Insufficient privileges to deactivate users');
     }
-
     const user = await User.findOne(query);
-
     if (!user) {
       return sendErrorResponse(res, 404, 'USER_NOT_FOUND', 'User not found or not authorized to deactivate');
-    }
-
-    if (user.UserType === 'SUPERADMIN') {
-      return sendErrorResponse(res, 403, 'FORBIDDEN', 'Cannot deactivate SuperAdmin');
     }
 
     user.isActive = false;
@@ -255,10 +300,24 @@ export const getUserDetails = async (req, res) => {
     const { userId } = req.params;
 
     let query = { _id: userId, isActive: true };
-
-    if (req.user.UserType === 'SUBADMIN') {
+    if (req.user.UserType === 'SUPERADMIN') {
+    } else if (req.user.UserType === 'SUBADMIN') {
+      const targetUser = await User.findById(userId);
+      if (targetUser && targetUser.UserType === 'SUPERADMIN') {
+        return sendErrorResponse(res, 403, 'FORBIDDEN', 'SubAdmin cannot view SuperAdmin details');
+      }
+    } else if (req.user.UserType === 'SUPERVISOR') {
       query.Department = req.user.Department;
       query.Region = req.user.Region;
+    } else {
+      const targetUser = await User.findById(userId);
+      if (targetUser && 
+          (targetUser._id.toString() !== req.user.id && 
+           (targetUser.Department !== req.user.Department || 
+            targetUser.Region !== req.user.Region ||
+            targetUser.UserType !== 'USER'))) {
+        return sendErrorResponse(res, 403, 'FORBIDDEN', 'Access denied');
+      }
     }
 
     const user = await User.findOne(query)
@@ -274,5 +333,39 @@ export const getUserDetails = async (req, res) => {
   } catch (error) {
     console.error('Get user details error:', error);
     return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to retrieve user details');
+  }
+};
+
+export const getSupervisorsByDepartment = async (req, res) => {
+  try {
+    const { department, region } = req.query;
+
+    let query = { 
+      UserType: 'SUPERVISOR', 
+      isActive: true 
+    };
+    if (req.user.UserType === 'SUPERADMIN') {
+      if (department) query.Department = department.toUpperCase();
+      if (region) query.Region = region.toUpperCase();
+    } else if (req.user.UserType === 'SUBADMIN') {
+      if (department) query.Department = department.toUpperCase();
+      if (region) query.Region = region.toUpperCase();
+    } else if (req.user.UserType === 'SUPERVISOR') {
+      query.Department = req.user.Department;
+      query.Region = req.user.Region;
+    } else {
+      query.Department = req.user.Department;
+      query.Region = req.user.Region;
+    }
+
+    const supervisors = await User.find(query)
+      .select('firstName lastName username email Department Region')
+      .sort({ firstName: 1, lastName: 1 });
+
+    return sendSuccessResponse(res, 200, { supervisors }, 'Supervisors retrieved successfully');
+
+  } catch (error) {
+    console.error('Get supervisors by department error:', error);
+    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to retrieve supervisors');
   }
 };

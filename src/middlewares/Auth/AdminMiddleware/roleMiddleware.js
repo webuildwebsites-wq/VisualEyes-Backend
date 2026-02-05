@@ -42,20 +42,3 @@ export const canManageUsers = (req, res, next) => {
   }
   next();
 };
-
-export const validateDepartmentAccess = (req, res, next) => {
-  
-  if (req.user.UserType === 'SUBADMIN') {
-    const { department, region } = req.body;
-    
-    if (department && department.toUpperCase() !== req.user.Department) {
-      return sendErrorResponse(res, 403, 'FORBIDDEN', 'Access denied. Cannot manage users outside your department.');
-    }
-    
-    if (region && region.toUpperCase() !== req.user.Region) {
-      return sendErrorResponse(res, 403, 'FORBIDDEN', 'Access denied. Cannot manage users outside your region.');
-    }
-  }
-  
-  next();
-};

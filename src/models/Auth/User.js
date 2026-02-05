@@ -60,14 +60,14 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ['LAB', 'STORE', 'DISPATCH', 'SALES', 'FINANCE', 'CUSTOMER_SUPPORT'],
     required: function() {
-      return this.UserType !== 'SUPERADMIN';
+      return !['SUPERADMIN', 'SUBADMIN'].includes(this.UserType);
     }
   },
   Region: {
     type: String,
     enum: ['NORTH', 'SOUTH', 'EAST', 'WEST'],
     required: function() {
-      return this.UserType !== 'SUPERADMIN';
+      return !['SUPERADMIN', 'SUBADMIN'].includes(this.UserType);
     }
   },
   
@@ -83,7 +83,7 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: function() {
-      return this.UserType !== 'SUPERADMIN';
+      return !['SUPERADMIN'].includes(this.UserType);
     }
   },
   supervisor: {
@@ -91,6 +91,15 @@ const userSchema = new mongoose.Schema({
     ref: 'User',
     required: function() {
       return this.UserType === 'USER';
+    },
+    validate: {
+      validator: async function(supervisorId) {
+        if (!supervisorId || this.UserType !== 'USER') return true;
+        
+        const supervisor = await mongoose.model('User').findById(supervisorId);
+        return supervisor && supervisor.UserType === 'SUPERVISOR';
+      },
+      message: 'Supervisor must have SUPERVISOR user type'
     }
   },
   
@@ -124,6 +133,12 @@ const userSchema = new mongoose.Schema({
       type: Boolean,
       default: function() {
         return ['SUPERADMIN', 'SUBADMIN'].includes(this.UserType);
+      }
+    },
+    CanManageAllDepartments: {
+      type: Boolean,
+      default: function() {
+        return this.UserType === 'SUBADMIN';
       }
     },
     CanCreateOrders: {
