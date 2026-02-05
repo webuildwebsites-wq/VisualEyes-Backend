@@ -1,6 +1,6 @@
 import express from 'express';
 import { ProtectUser } from '../../middlewares/Auth/AdminMiddleware/adminMiddleware.js';
-import { createSubAdmin, createSupervisorOrUser, getUsersByHierarchy, updateUser, deactivateUser, getUserDetails,getDepartmentStatistics,getSupervisorsByDepartment } from '../../core/controllers/Auth/User/UserManagement.js';
+import { createSubAdmin, createSupervisorOrUser, getUsersByHierarchy, updateUser, deactivateUser, getUserDetails, getSupervisorsByDepartment } from '../../core/controllers/Auth/User/UserManagement.js';
 import { requireSuperAdmin, requireSubAdminOrHigher, canManageUsers } from '../../middlewares/Auth/AdminMiddleware/roleMiddleware.js';
 
 const userManagementRouter = express.Router();
