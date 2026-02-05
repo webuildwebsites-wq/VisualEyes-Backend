@@ -241,10 +241,6 @@ const userSchema = new mongoose.Schema({
   lastLogin: {
     type: Date
   },
-  loginAttempts: {
-    type: Number,
-    default: 0
-  },
   lockUntil: {
     type: Date
   },
@@ -265,6 +261,17 @@ const userSchema = new mongoose.Schema({
 userSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
+
+userSchema.pre('save', async function () {
+  if (!this.isModified('password') || !this.password) return;
+  try {
+    const salt = await bcrypt.genSalt(12);
+    this.password = await bcrypt.hash(this.password, salt);
+  } catch (error) {
+    console.log("Error : ", error);
+    return;
+  }
+});
 
 const User = mongoose.model('User', userSchema);
 

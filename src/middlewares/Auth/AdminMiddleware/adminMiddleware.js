@@ -1,5 +1,7 @@
 import jwt from 'jsonwebtoken';
 import User from '../../../models/Auth/User.js'
+import dotenv from 'dotenv';
+dotenv.config();
 
 export const ProtectUser = async (req, res, next) => {
   try {

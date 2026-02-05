@@ -263,10 +263,6 @@ const customerSchema = new mongoose.Schema({
   lastLogin: {
     type: Date
   },
-  loginAttempts: {
-    type: Number,
-    default: 0
-  },
   lockUntil: {
     type: Date
   },
@@ -287,6 +283,17 @@ const customerSchema = new mongoose.Schema({
 customerSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
+
+customerSchema.pre('save', async function () {
+  if (!this.isModified('password') || !this.password) return;
+  try {
+    const salt = await bcrypt.genSalt(12);
+    this.password = await bcrypt.hash(this.password, salt);
+  } catch (error) {
+    console.log("error : ",error);
+    return;
+  }
+});
 
 const Customer = mongoose.model('Customer', customerSchema);
 

@@ -7,24 +7,21 @@ dotenv.config();
 
 const setupProject = async () => {
   try {
-    console.log('🚀 Starting VisualEyes ERP Setup...\n');
+    console.log('Starting VisualEyes ERP Setup...\n');
 
-    // Connect to database
     await connectDB();
-    console.log('✅ Connected to database');
+    console.log('Connected to database');
 
-    // Check if any superadmin exists
     const existingSuperAdmin = await User.findOne({ userType: 'superadmin' });
 
     if (existingSuperAdmin) {
-      console.log('⚠️  SuperAdmin already exists in the system');
-      console.log('📧 Email:', existingSuperAdmin.email);
-      console.log('👤 Username:', existingSuperAdmin.username);
-      console.log('\n✅ Setup completed - System is ready to use!');
+      console.log('SuperAdmin already exists in the system');
+      console.log('Email:', existingSuperAdmin.email);
+      console.log('Username:', existingSuperAdmin.username);
       return;
     }
 
-    // Create default superadmin
+    // Create default superadmin details
     const superAdminData = {
       username: 'anish',
       email: 'anishsinghrawat5@gmail.com',
@@ -43,42 +40,53 @@ const setupProject = async () => {
           state: 'Admin State',
           pincode: '123456'
         }
+      },
+      permissions: {
+        canCreateUsers: true,
+        canManageUsers: true,
+        canManageDepartments: true,
+        canCreateOrders: true,
+        canUpdateOrders: true,
+        canViewOrders: true,
+        canDeleteOrders: true,
+        canProcessWorkflow: true,
+        canApproveWorkflow: true,
+        canCreateCustomers: true,
+        canManageCustomers: true,
+        canManageProducts: true,
+        canViewFinancials: true,
+        canManageFinancials: true,
+        canManageSettings: true,
+        canViewReports: true,
+        canExportReports: true
       }
     };
 
     const superAdmin = new User(superAdminData);
     await superAdmin.save();
 
-    console.log('\n🎉 Project setup completed successfully!');
-    console.log('\n👤 SuperAdmin Account Created:');
-    console.log('📧 Email:', superAdmin.email);
-    console.log('👤 Username:', superAdmin.username);
-    console.log('🆔 Employee ID:', superAdmin.employeeId);
-    console.log('📱 Phone:', superAdmin.phone);
-    console.log('🔐 Password: anish@2026');
-    
-    console.log('\n🚀 Next Steps:');
-    console.log('1. Start the server: npm run dev');
-    console.log('2. Login with the SuperAdmin credentials');
-    console.log('3. Create SubAdmins and other users as needed');
-    console.log('\n✅ VisualEyes ERP is ready to use!');
+    console.log('Project setup completed successfully!');
+    console.log('SuperAdmin Account Created:');
+    console.log('mail:', superAdmin.email);
+    console.log('sername:', superAdmin.username);
+    console.log('mployee ID:', superAdmin.employeeId);
+    console.log('hone:', superAdmin.phone);
+    console.log('assword: anish@2026');
 
   } catch (error) {
-    console.error('❌ Setup failed:', error);
-    
+    console.error('Setup failed:', error);
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(err => err.message);
       console.error('Validation errors:', messages.join(', '));
     }
-    
+
     if (error.code === 11000) {
       console.error('Duplicate key error: User with this email, username, or employee ID already exists');
     }
-    
     process.exit(1);
   } finally {
     await mongoose.connection.close();
-    console.log('\n🔌 Database connection closed');
+    console.log('Database connection closed');
   }
 };
 

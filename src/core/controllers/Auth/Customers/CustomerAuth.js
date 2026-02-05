@@ -2,6 +2,8 @@ import crypto from 'crypto';
 import Customer from '../../../../models/Auth/Customer.js';
 import User from '../../../../models/Auth/User.js'
 import { sendErrorResponse, sendTokenResponse } from '../../../../Utils/response/responseHandler.js';
+import dotenv from 'dotenv';
+dotenv.config();
 
 export const customerLogin = async (req, res) => {
   try {
@@ -34,19 +36,10 @@ export const customerLogin = async (req, res) => {
     const isMatch = await customer.comparePassword(password);
 
     if (!isMatch) {
-      if (customer.incLoginAttempts) {
-        await customer.incLoginAttempts();
-      }
       return sendErrorResponse(res, 401, 'INVALID_CREDENTIALS', 'Invalid credentials');
     }
-
-    if (customer.resetLoginAttempts) {
-      await customer.resetLoginAttempts();
-    }
-    if (customer.updateLastLogin) {
-      await customer.updateLastLogin();
-    }
-
+    customer.lastLogin = new Date();
+    await customer.save();
     return sendTokenResponse(customer, 200, res, 'customer', generateToken, generateRefreshToken);
 
   } catch (error) {

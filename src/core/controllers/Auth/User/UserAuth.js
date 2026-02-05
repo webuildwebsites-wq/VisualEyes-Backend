@@ -2,6 +2,8 @@ import crypto from 'crypto';
 import { sendSuccessResponse, sendErrorResponse, sendTokenResponse } from '../../../../Utils/response/responseHandler.js';
 import { generateToken, generateRefreshToken } from '../../../../Utils/Auth/tokenUtils.js';
 import User from '../../../../models/Auth/User.js';
+import dotenv from 'dotenv';
+dotenv.config();
 
 export const userLogin = async (req, res) => {
   try {
@@ -16,15 +18,19 @@ export const userLogin = async (req, res) => {
       isActive: true 
     }).select('+password').populate('createdBy supervisor', 'firstName lastName userType');
 
+    
     if (!user) {
       return sendErrorResponse(res, 401, 'INVALID_CREDENTIALS', 'Invalid credentials');
     }
 
+    console.log("user : ",user);
+    
     if (user.isLocked) {
       return sendErrorResponse(res, 423, 'ACCOUNT_LOCKED', 'Account is temporarily locked due to too many failed login attempts');
     }
 
     const isMatch = await user.comparePassword(password);
+    console.log("isMatch : ",isMatch);
 
     if (!isMatch) {
       return sendErrorResponse(res, 401, 'INVALID_CREDENTIALS', 'Invalid credentials');
@@ -103,7 +109,6 @@ export const userResetPassword = async (req, res) => {
     user.password = password;
     user.passwordResetToken = undefined;
     user.passwordResetExpires = undefined;
-    user.loginAttempts = undefined;
     user.lockUntil = undefined;
 
     await user.save();

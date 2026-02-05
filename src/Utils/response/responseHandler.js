@@ -1,3 +1,6 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 export const sendSuccessResponse = (res, statusCode = 200, data = null, message = null) => {
   const response = {
     success: true,
