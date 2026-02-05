@@ -3,13 +3,13 @@ import { sendErrorResponse, sendLogoutResponse, sendSuccessResponse } from '../r
 import dotenv from 'dotenv';
 dotenv.config();
 
-export const generateToken = (id, userType, accountType = 'user') => {
-  return jwt.sign({ id, userType, accountType }, process.env.JWT_SECRET,{ expiresIn: process.env.JWT_EXPIRE || '24h' });
+export const generateToken = (id, UserType, AccountType = 'USER') => {
+  return jwt.sign({ id, UserType, AccountType }, process.env.JWT_SECRET,{ expiresIn: process.env.JWT_EXPIRE || '24h' });
 };
 
-export const generateRefreshToken = (id, userType, accountType = 'user') => {
+export const generateRefreshToken = (id, UserType, AccountType = 'USER') => {
   return jwt.sign(
-    { id, userType, accountType, type: 'refresh' },
+    { id, UserType, AccountType, type: 'refresh' },
     process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_REFRESH_EXPIRE || '7d' }
   );
@@ -29,7 +29,7 @@ export const refreshToken = async (req, res) => {
       return sendErrorResponse(res, 401, 'INVALID_TOKEN_TYPE', 'Invalid token type');
     }
 
-    const newAccessToken = generateToken(decoded.id, decoded.userType, decoded.accountType);
+    const newAccessToken = generateToken(decoded.id, decoded.UserType, decoded.AccountType);
 
     return sendSuccessResponse(res, 200, {
       accessToken: newAccessToken,

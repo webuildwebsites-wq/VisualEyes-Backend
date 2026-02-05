@@ -1,7 +1,8 @@
 import crypto from 'crypto';
 import Customer from '../../../../models/Auth/Customer.js';
 import User from '../../../../models/Auth/User.js'
-import { sendErrorResponse, sendTokenResponse } from '../../../../Utils/response/responseHandler.js';
+import { sendErrorResponse, sendTokenResponse, sendSuccessResponse } from '../../../../Utils/response/responseHandler.js';
+import { generateToken, generateRefreshToken } from '../../../../Utils/Auth/tokenUtils.js';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -40,7 +41,7 @@ export const customerLogin = async (req, res) => {
     }
     customer.lastLogin = new Date();
     await customer.save();
-    return sendTokenResponse(customer, 200, res, 'customer', generateToken, generateRefreshToken);
+    return sendTokenResponse(customer, 200, res, 'CUSTOMER', generateToken, generateRefreshToken);
 
   } catch (error) {
     console.error('Customer login error:', error);
@@ -71,9 +72,9 @@ export const customerRegister = async (req, res) => {
     }
 
     const salesHead = await User.findOne({ 
-      userType: { $in: ['supervisor', 'user'] },
-      department: 'Sales',
-      region: region,
+      UserType: { $in: ['SUPERVISOR', 'USER'] },
+      Department: 'SALES',
+      Region: region.toUpperCase(),
       isActive: true 
     });
 
@@ -89,8 +90,8 @@ export const customerRegister = async (req, res) => {
       phone,
       address,
       gstNumber,
-      region,
-      labMapping: 'Lab', 
+      Region: region.toUpperCase(),
+      labMapping: 'LAB', 
       assignedSalesHead: salesHead._id,
       createdBy: salesHead._id 
     }); 
@@ -170,7 +171,7 @@ export const customerResetPassword = async (req, res) => {
 
     await customer.save();
 
-    return sendTokenResponse(customer, 200, res, 'customer', generateToken, generateRefreshToken);
+    return sendTokenResponse(customer, 200, res, 'CUSTOMER', generateToken, generateRefreshToken);
 
   } catch (error) {
     console.error('Customer reset password error:', error);
@@ -195,7 +196,7 @@ export const customerUpdatePassword = async (req, res) => {
     customer.password = newPassword;
     await customer.save();
 
-    return sendTokenResponse(customer, 200, res, 'customer', generateToken, generateRefreshToken);
+    return sendTokenResponse(customer, 200, res, 'CUSTOMER', generateToken, generateRefreshToken);
 
   } catch (error) {
     console.error('Customer update password error:', error);
@@ -206,7 +207,7 @@ export const customerUpdatePassword = async (req, res) => {
 export const getCustomerProfile = async (req, res) => {
   try {
     const customer = await Customer.findById(req.user.id)
-      .populate('assignedSalesHead assignedAccountsHead', 'firstName lastName userType');
+      .populate('assignedSalesHead assignedAccountsHead', 'firstName lastName UserType');
 
     if (!customer) {
       return sendErrorResponse(res, 404, 'USER_NOT_FOUND', 'Customer not found');
@@ -215,8 +216,8 @@ export const getCustomerProfile = async (req, res) => {
     const customerData = {
       user: {
         ...customer.toObject(),
-        userType: req.user.userType,
-        accountType: req.user.accountType
+        UserType: req.user.UserType,
+        AccountType: req.user.AccountType
       }
     };
 

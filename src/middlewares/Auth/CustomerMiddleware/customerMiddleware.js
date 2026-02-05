@@ -50,7 +50,7 @@ export const protectCustomer = async (req, res, next) => {
 
       req.user = {
         id: customer._id,
-        accountType: 'customer',
+        AccountType: 'CUSTOMER',
         ...customer.toObject()
       };
 

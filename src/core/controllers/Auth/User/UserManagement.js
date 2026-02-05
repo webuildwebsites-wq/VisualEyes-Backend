@@ -3,7 +3,7 @@ import User from '../../../../models/Auth/User.js';
 
 export const createSubAdmin = async (req, res) => {
   try {
-    const { username,email,password,firstName,lastName,phone,employeeId,department,region } = req.body;
+    const { username, email, password, firstName, lastName, phone, employeeId, department, region } = req.body;
     if (!username || !email || !password || !firstName || !lastName || !phone || !department || !region) {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'All required fields must be provided');
     }
@@ -24,9 +24,9 @@ export const createSubAdmin = async (req, res) => {
       lastName,
       phone,
       employeeId,
-      userType: 'subadmin',
-      department,
-      region,
+      UserType: 'SUBADMIN',
+      Department: department,
+      Region: region,
       createdBy: req.user.id,
       isActive: true
     });
@@ -56,19 +56,19 @@ export const createSupervisorOrUser = async (req, res) => {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'All required fields must be provided');
     }
 
-    if (!['supervisor', 'user'].includes(userType)) {
+    if (!['SUPERVISOR', 'USER'].includes(userType.toUpperCase())) {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'User type must be either supervisor or user');
     }
 
-    if (userType === 'user') {
+    if (userType.toUpperCase() === 'USER') {
       if (!role || !supervisor) {
         return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Role and supervisor are required for user type');
       }
 
       const supervisorUser = await User.findOne({
         _id: supervisor,
-        userType: 'supervisor',
-        department: req.user.department,
+        UserType: 'SUPERVISOR',
+        Department: req.user.Department,
         isActive: true
       });
 
@@ -93,15 +93,15 @@ export const createSupervisorOrUser = async (req, res) => {
       lastName,
       phone,
       employeeId,
-      userType,
-      department: department || req.user.department,
-      region: region || req.user.region,
+      UserType: userType.toUpperCase(),
+      Department: department || req.user.Department,
+      Region: region || req.user.Region,
       createdBy: req.user.id,
       isActive: true
     };
 
-    if (userType === 'user') {
-      userData.role = role;
+    if (userType.toUpperCase() === 'USER') {
+      userData.Role = role.toUpperCase();
       userData.supervisor = supervisor;
     }
 
@@ -130,15 +130,15 @@ export const getUsersByHierarchy = async (req, res) => {
 
     let query = { isActive: true };
 
-    if (req.user.userType === 'superadmin') {
-      if (userType) query.userType = userType;
-      if (department) query.department = department;
-      if (region) query.region = region;
-    } else if (req.user.userType === 'subadmin') {
-      query.department = req.user.department;
-      query.region = req.user.region;
-      if (userType && ['supervisor', 'user'].includes(userType)) {
-        query.userType = userType;
+    if (req.user.UserType === 'SUPERADMIN') {
+      if (userType) query.UserType = userType.toUpperCase();
+      if (department) query.Department = department.toUpperCase();
+      if (region) query.Region = region.toUpperCase();
+    } else if (req.user.UserType === 'SUBADMIN') {
+      query.Department = req.user.Department;
+      query.Region = req.user.Region;
+      if (userType && ['SUPERVISOR', 'USER'].includes(userType.toUpperCase())) {
+        query.UserType = userType.toUpperCase();
       }
     }
 
@@ -154,7 +154,7 @@ export const getUsersByHierarchy = async (req, res) => {
 
     const users = await User.find(query)
       .select('-password -passwordResetToken -passwordResetExpires -twoFactorSecret')
-      .populate('createdBy supervisor', 'firstName lastName userType')
+      .populate('createdBy supervisor', 'firstName lastName UserType')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
@@ -183,15 +183,15 @@ export const updateUser = async (req, res) => {
     const updates = req.body;
 
     delete updates.password;
-    delete updates.userType;
+    delete updates.UserType;
     delete updates.createdBy;
     delete updates._id;
 
     let query = { _id: userId, isActive: true };
 
-    if (req.user.userType === 'subadmin') {
-      query.department = req.user.department;
-      query.region = req.user.region;
+    if (req.user.UserType === 'SUBADMIN') {
+      query.Department = req.user.Department;
+      query.Region = req.user.Region;
     }
 
     const user = await User.findOne(query);
@@ -224,9 +224,9 @@ export const deactivateUser = async (req, res) => {
 
     let query = { _id: userId, isActive: true };
 
-    if (req.user.userType === 'subadmin') {
-      query.department = req.user.department;
-      query.region = req.user.region;
+    if (req.user.UserType === 'SUBADMIN') {
+      query.Department = req.user.Department;
+      query.Region = req.user.Region;
     }
 
     const user = await User.findOne(query);
@@ -235,7 +235,7 @@ export const deactivateUser = async (req, res) => {
       return sendErrorResponse(res, 404, 'USER_NOT_FOUND', 'User not found or not authorized to deactivate');
     }
 
-    if (user.userType === 'superadmin') {
+    if (user.UserType === 'SUPERADMIN') {
       return sendErrorResponse(res, 403, 'FORBIDDEN', 'Cannot deactivate SuperAdmin');
     }
 
@@ -256,14 +256,14 @@ export const getUserDetails = async (req, res) => {
 
     let query = { _id: userId, isActive: true };
 
-    if (req.user.userType === 'subadmin') {
-      query.department = req.user.department;
-      query.region = req.user.region;
+    if (req.user.UserType === 'SUBADMIN') {
+      query.Department = req.user.Department;
+      query.Region = req.user.Region;
     }
 
     const user = await User.findOne(query)
       .select('-password -passwordResetToken -passwordResetExpires -twoFactorSecret')
-      .populate('createdBy supervisor', 'firstName lastName userType');
+      .populate('createdBy supervisor', 'firstName lastName UserType');
 
     if (!user) {
       return sendErrorResponse(res, 404, 'USER_NOT_FOUND', 'User not found');

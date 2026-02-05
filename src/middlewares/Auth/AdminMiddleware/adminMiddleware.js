@@ -51,8 +51,8 @@ export const ProtectUser = async (req, res, next) => {
 
       req.user = {
         id: user._id,
-        userType: decoded.userType,
-        accountType: decoded.accountType || 'user',
+        UserType: decoded.UserType,
+        AccountType: decoded.AccountType || 'USER',
         ...user.toObject()
       };
 

@@ -1,21 +1,21 @@
 import { sendErrorResponse } from '../../../Utils/response/responseHandler.js';
 
 export const requireSuperAdmin = (req, res, next) => {
-  if (req.user.userType !== 'superadmin') {
+  if (req.user.UserType !== 'SUPERADMIN') {
     return sendErrorResponse(res, 403, 'FORBIDDEN', 'Access denied. SuperAdmin privileges required.');
   }
   next();
 };
 
 export const requireSubAdminOrHigher = (req, res, next) => {
-  if (!['superadmin', 'subadmin'].includes(req.user.userType)) {
+  if (!['SUPERADMIN', 'SUBADMIN'].includes(req.user.UserType)) {
     return sendErrorResponse(res, 403, 'FORBIDDEN', 'Access denied. SubAdmin or higher privileges required.');
   }
   next();
 };
 
 export const requireSupervisorOrHigher = (req, res, next) => {
-  if (!['superadmin', 'subadmin', 'supervisor'].includes(req.user.userType)) {
+  if (!['SUPERADMIN', 'SUBADMIN', 'SUPERVISOR'].includes(req.user.UserType)) {
     return sendErrorResponse(res, 403, 'FORBIDDEN', 'Access denied. Supervisor or higher privileges required.');
   }
   next();
@@ -31,13 +31,13 @@ export const requirePermission = (permission) => {
 };
 
 export const canManageUsers = (req, res, next) => {
-  const userType = req.user.userType;
+  const UserType = req.user.UserType;
   
-  if (!['superadmin', 'subadmin', 'supervisor'].includes(userType)) {
+  if (!['SUPERADMIN', 'SUBADMIN', 'SUPERVISOR'].includes(UserType)) {
     return sendErrorResponse(res, 403, 'FORBIDDEN', 'Access denied. User management privileges required.');
   }
   
-  if (!req.user.permissions?.canManageUsers) {
+  if (!req.user.permissions?.CanManageUsers) {
     return sendErrorResponse(res, 403, 'FORBIDDEN', 'Access denied. User management permission not granted.');
   }
   next();
@@ -45,14 +45,14 @@ export const canManageUsers = (req, res, next) => {
 
 export const validateDepartmentAccess = (req, res, next) => {
   
-  if (req.user.userType === 'subadmin') {
+  if (req.user.UserType === 'SUBADMIN') {
     const { department, region } = req.body;
     
-    if (department && department !== req.user.department) {
+    if (department && department.toUpperCase() !== req.user.Department) {
       return sendErrorResponse(res, 403, 'FORBIDDEN', 'Access denied. Cannot manage users outside your department.');
     }
     
-    if (region && region !== req.user.region) {
+    if (region && region.toUpperCase() !== req.user.Region) {
       return sendErrorResponse(res, 403, 'FORBIDDEN', 'Access denied. Cannot manage users outside your region.');
     }
   }

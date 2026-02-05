@@ -11,9 +11,9 @@ userManagementRouter.post('/create-subadmin', requireSuperAdmin, createSubAdmin)
 userManagementRouter.post('/create-supervisor-user', requireSubAdminOrHigher, validateDepartmentAccess, createSupervisorOrUser);
 
 userManagementRouter.get('/get-users', canManageUsers, getUsersByHierarchy);
-userManagementRouter.get('/get-users/:userId', canManageUsers, getUserDetails);
-userManagementRouter.put('/update-users/:userId', canManageUsers, validateDepartmentAccess, updateUser);
-userManagementRouter.delete('/delete-users/:userId', canManageUsers, deactivateUser);
+userManagementRouter.get('/get-user/:userId', canManageUsers, getUserDetails);
+userManagementRouter.put('/update-user/:userId', canManageUsers, validateDepartmentAccess, updateUser);
+userManagementRouter.delete('/delete-user/:userId', canManageUsers, deactivateUser);
 
 
 export default userManagementRouter;

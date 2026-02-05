@@ -48,34 +48,34 @@ const userSchema = new mongoose.Schema({
     trim: true,
     uppercase: true
   },
-  userType: {
+  UserType: {
     type: String,
     required: [true, 'User type is required'],
     enum: {
-      values: ['superadmin', 'subadmin', 'supervisor', 'user'],
+      values: ['SUPERADMIN', 'SUBADMIN', 'SUPERVISOR', 'USER'],
       message: 'Invalid user type'
     }
   },
-  department: {
+  Department: {
     type: String,
-    enum: ['Lab', 'Store', 'Dispatch', 'Sales', 'Finance', 'Customer Support'],
+    enum: ['LAB', 'STORE', 'DISPATCH', 'SALES', 'FINANCE', 'CUSTOMER_SUPPORT'],
     required: function() {
-      return this.userType !== 'superadmin';
+      return this.UserType !== 'SUPERADMIN';
     }
   },
-  region: {
+  Region: {
     type: String,
-    enum: ['North', 'South', 'East', 'West'],
+    enum: ['NORTH', 'SOUTH', 'EAST', 'WEST'],
     required: function() {
-      return this.userType !== 'superadmin';
+      return this.UserType !== 'SUPERADMIN';
     }
   },
   
-  role: {
+  Role: {
     type: String,
-    enum: ['Production', 'QC', 'Dispatch', 'Sales', 'Finance', 'Support', 'Store'],
+    enum: ['PRODUCTION', 'QC', 'DISPATCH', 'SALES', 'FINANCE', 'SUPPORT', 'STORE'],
     required: function() {
-      return this.userType === 'user';
+      return this.UserType === 'USER';
     }
   },
   
@@ -83,14 +83,14 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: function() {
-      return this.userType !== 'superadmin';
+      return this.UserType !== 'SUPERADMIN';
     }
   },
   supervisor: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: function() {
-      return this.userType === 'user';
+      return this.UserType === 'USER';
     }
   },
   
@@ -108,104 +108,104 @@ const userSchema = new mongoose.Schema({
   },
   
   permissions: {
-    canCreateUsers: {
+    CanCreateUsers: {
       type: Boolean,
       default: function() {
-        return ['superadmin', 'subadmin', 'supervisor'].includes(this.userType);
+        return ['SUPERADMIN', 'SUBADMIN', 'SUPERVISOR'].includes(this.UserType);
       }
     },
-    canManageUsers: {
+    CanManageUsers: {
       type: Boolean,
       default: function() {
-        return ['superadmin', 'subadmin', 'supervisor'].includes(this.userType);
+        return ['SUPERADMIN', 'SUBADMIN', 'SUPERVISOR'].includes(this.UserType);
       }
     },
-    canManageDepartments: {
+    CanManageDepartments: {
       type: Boolean,
       default: function() {
-        return ['superadmin', 'subadmin'].includes(this.userType);
+        return ['SUPERADMIN', 'SUBADMIN'].includes(this.UserType);
       }
     },
-    canCreateOrders: {
+    CanCreateOrders: {
       type: Boolean,
       default: function() {
-        return this.userType !== 'user' || ['Sales', 'Support'].includes(this.role);
+        return this.UserType !== 'USER' || ['SALES', 'SUPPORT'].includes(this.Role);
       }
     },
-    canUpdateOrders: {
+    CanUpdateOrders: {
       type: Boolean,
       default: function() {
-        return this.userType !== 'user' || true; 
+        return this.UserType !== 'USER' || true; 
       }
     },
-    canViewOrders: {
+    CanViewOrders: {
       type: Boolean,
       default: true
     },
-    canDeleteOrders: {
+    CanDeleteOrders: {
       type: Boolean,
       default: function() {
-        return ['superadmin', 'subadmin', 'supervisor'].includes(this.userType);
+        return ['SUPERADMIN', 'SUBADMIN', 'SUPERVISOR'].includes(this.UserType);
       }
     },
-    canProcessWorkflow: {
+    CanProcessWorkflow: {
       type: Boolean,
       default: function() {
-        return this.userType === 'user' && ['Production', 'QC'].includes(this.role);
+        return this.UserType === 'USER' && ['PRODUCTION', 'QC'].includes(this.Role);
       }
     },
-    canApproveWorkflow: {
+    CanApproveWorkflow: {
       type: Boolean,
       default: function() {
-        return ['superadmin', 'subadmin', 'supervisor'].includes(this.userType);
+        return ['SUPERADMIN', 'SUBADMIN', 'SUPERVISOR'].includes(this.UserType);
       }
     },
-    canCreateCustomers: {
+    CanCreateCustomers: {
       type: Boolean,
       default: function() {
-        return this.userType !== 'user' || ['Sales', 'Finance'].includes(this.role);
+        return this.UserType !== 'USER' || ['SALES', 'FINANCE'].includes(this.Role);
       }
     },
-    canManageCustomers: {
+    CanManageCustomers: {
       type: Boolean,
       default: function() {
-        return this.userType !== 'user' || ['Sales', 'Finance', 'Support'].includes(this.role);
+        return this.UserType !== 'USER' || ['SALES', 'FINANCE', 'SUPPORT'].includes(this.Role);
       }
     },
-    canManageProducts: {
+    CanManageProducts: {
       type: Boolean,
       default: function() {
-        return this.userType !== 'user' || ['Store'].includes(this.role);
+        return this.UserType !== 'USER' || ['STORE'].includes(this.Role);
       }
     },
-    canViewFinancials: {
+    CanViewFinancials: {
       type: Boolean,
       default: function() {
-        return this.userType !== 'user' || ['Finance', 'Sales'].includes(this.role);
+        return this.UserType !== 'USER' || ['FINANCE', 'SALES'].includes(this.Role);
       }
     },
-    canManageFinancials: {
+    CanManageFinancials: {
       type: Boolean,
       default: function() {
-        return this.userType !== 'user' || ['Finance'].includes(this.role);
+        return this.UserType !== 'USER' || ['FINANCE'].includes(this.Role);
       }
     },    
-    canManageSettings: {
+    CanManageSettings: {
       type: Boolean,
       default: function() {
-        return ['superadmin', 'subadmin'].includes(this.userType);
+        return ['SUPERADMIN', 'SUBADMIN'].includes(this.UserType);
       }
     },
-    canViewReports: {
+    CanViewReports: {
       type: Boolean,
       default: function() {
-        return this.userType !== 'user';
+        return this.UserType !== 'USER';
       }
     },
-    canExportReports: {
+    CanExportReports: {
       type: Boolean,
       default: function() {
-        return ['superadmin', 'subadmin', 'supervisor'].includes(this.userType);
+        return ['SUPERADMIN', 'SUBADMIN', 'SUPERVISOR'].includes(this.UserType);
       }
     }
   },

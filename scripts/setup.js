@@ -12,7 +12,7 @@ const setupProject = async () => {
     await connectDB();
     console.log('Connected to database');
 
-    const existingSuperAdmin = await User.findOne({ userType: 'superadmin' });
+    const existingSuperAdmin = await User.findOne({ UserType: 'SUPERADMIN' });
 
     if (existingSuperAdmin) {
       console.log('SuperAdmin already exists in the system');
@@ -30,7 +30,7 @@ const setupProject = async () => {
       lastName: 'Singh Rawat',
       phone: '6395607666',
       employeeId: 'SA001',
-      userType: 'superadmin',
+      UserType: 'SUPERADMIN',
       isActive: true,
       profile: {
         dateOfJoining: new Date(),
@@ -42,23 +42,23 @@ const setupProject = async () => {
         }
       },
       permissions: {
-        canCreateUsers: true,
-        canManageUsers: true,
-        canManageDepartments: true,
-        canCreateOrders: true,
-        canUpdateOrders: true,
-        canViewOrders: true,
-        canDeleteOrders: true,
-        canProcessWorkflow: true,
-        canApproveWorkflow: true,
-        canCreateCustomers: true,
-        canManageCustomers: true,
-        canManageProducts: true,
-        canViewFinancials: true,
-        canManageFinancials: true,
-        canManageSettings: true,
-        canViewReports: true,
-        canExportReports: true
+        CanCreateUsers: true,
+        CanManageUsers: true,
+        CanManageDepartments: true,
+        CanCreateOrders: true,
+        CanUpdateOrders: true,
+        CanViewOrders: true,
+        CanDeleteOrders: true,
+        CanProcessWorkflow: true,
+        CanApproveWorkflow: true,
+        CanCreateCustomers: true,
+        CanManageCustomers: true,
+        CanManageProducts: true,
+        CanViewFinancials: true,
+        CanManageFinancials: true,
+        CanManageSettings: true,
+        CanViewReports: true,
+        CanExportReports: true
       }
     };
 
