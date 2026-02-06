@@ -1,6 +1,6 @@
 import { sendEmail } from "./emailService.js";
 
-const sendEmailFun=async({sendTo, subject, text, html})=>{
+const sendOTPEmail=async({sendTo, subject, text, html})=>{
   try {
     const result = await sendEmail(sendTo, subject, text, html);
     console.log("result  : ",result);
@@ -15,4 +15,4 @@ const sendEmailFun=async({sendTo, subject, text, html})=>{
   }
 }
 
-export default sendEmailFun;
+export default sendOTPEmail;

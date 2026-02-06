@@ -266,7 +266,20 @@ const userSchema = new mongoose.Schema({
   passwordResetExpires: {
     type: Date,
     select: false
-  }
+  },
+  emailOtp:{
+    type:String
+  },
+  emailOtpExpires:{
+    type:Date
+  },
+  mobileOtp:{
+    type:String
+  },
+  mobileOtpExpires:{
+    type:Date
+  },
+
 }, {
   timestamps: true,
   toJSON: { virtuals: true },

@@ -1,5 +1,7 @@
+import VerificationEmail from '../../../../Utils/Mail/verifyEmailTemplate.js';
 import { sendSuccessResponse, sendErrorResponse } from '../../../../Utils/response/responseHandler.js';
 import User from '../../../../models/Auth/User.js';
+import sendOTPEmail from '../../../config/Email/sendEmail.js';
 
 export const createSubAdmin = async (req, res) => {
   try {
@@ -20,7 +22,10 @@ export const createSubAdmin = async (req, res) => {
     if (existingUser) {
       return sendErrorResponse(res, 409, 'USER_EXISTS', 'User with this email, username, or employee ID already exists');
     }
-
+    
+    const EmailOtp = Math.floor(100000 + Math.random() * 800000).toString();
+    const MobileOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    
     const subAdmin = new User({
       username,
       email,
@@ -31,7 +36,11 @@ export const createSubAdmin = async (req, res) => {
       employeeId,
       UserType: 'SUBADMIN',
       createdBy: req.user.id,
-      isActive: true
+      isActive: false,
+      emailOtp : EmailOtp,
+      emailOtpExpires : Date.now() + 600000, // 10 minute 
+      mobileOtp : MobileOtp,
+      mobileOtpExpires : Date.now() + 600000, // 10 minute
     });
 
     await subAdmin.save();
@@ -39,7 +48,14 @@ export const createSubAdmin = async (req, res) => {
     const subAdminResponse = subAdmin.toObject();
     delete subAdminResponse.password;
 
-    return sendSuccessResponse(res, 201, { subAdmin: subAdminResponse }, 'SubAdmin created successfully');
+    await sendOTPEmail({
+      sendTo: email,
+      subject: "Welcome Mail for choosing VISUAL EYES",
+      text: "Register email in the VISUAL EYES server",
+      html: VerificationEmail(username, EmailOtp),
+    });
+
+    return sendSuccessResponse(res, 201, { subAdmin: subAdminResponse }, 'SubAdmin created successfully! Please check your email inbox to verify your account');
 
   } catch (error) {
     console.error('Create SubAdmin error:', error);
@@ -53,7 +69,7 @@ export const createSubAdmin = async (req, res) => {
 
 export const createSupervisorOrUser = async (req, res) => {
   try {
-    const { username, email, password, firstName, lastName, phone, employeeId, userType, department, region, role } = req.body;
+   const { username, email, password, firstName, lastName, phone, employeeId, userType, department, region, role } = req.body;
    let assignedSupervisor = null;
 
     if (!username || !email || !password || !firstName || !lastName || !phone || !userType || !department || !region) {
