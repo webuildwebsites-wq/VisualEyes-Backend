@@ -110,6 +110,9 @@ export const createSupervisorOrUser = async (req, res) => {
       return sendErrorResponse(res, 409, 'USER_EXISTS', 'User with this email, username, or employee ID already exists');
     }
 
+    const EmailOtp = Math.floor(100000 + Math.random() * 800000).toString();
+    const MobileOtp = Math.floor(100000 + Math.random() * 900000).toString();
+
     const userData = {
       username,
       email,
@@ -122,7 +125,11 @@ export const createSupervisorOrUser = async (req, res) => {
       Department: department.toUpperCase(),
       Region: region.toUpperCase(),
       createdBy: req.user.id,
-      isActive: true
+      isActive: false,
+      emailOtp : EmailOtp,
+      emailOtpExpires : Date.now() + 600000, // 10 minute 
+      mobileOtp : MobileOtp,
+      mobileOtpExpires : Date.now() + 600000, // 10 minute
     };
 
     if (userType.toUpperCase() === 'USER') {
@@ -132,6 +139,13 @@ export const createSupervisorOrUser = async (req, res) => {
 
     const newUser = new User(userData);
     await newUser.save();
+    
+    await sendOTPEmail({
+      sendTo: email,
+      subject: "Welcome Mail for choosing VISUAL EYES",
+      text: "Register email in the VISUAL EYES server",
+      html: VerificationEmail(username, EmailOtp),
+    });
 
     const userResponse = newUser.toObject();
     delete userResponse.password;

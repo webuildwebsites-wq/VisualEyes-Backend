@@ -249,8 +249,6 @@ const userSchema = new mongoose.Schema({
       },
       relation: String
     },
-    skills: [String],
-    certifications: [String]
   },
   
   lastLogin: {
@@ -279,7 +277,6 @@ const userSchema = new mongoose.Schema({
   mobileOtpExpires:{
     type:Date
   },
-
 }, {
   timestamps: true,
   toJSON: { virtuals: true },

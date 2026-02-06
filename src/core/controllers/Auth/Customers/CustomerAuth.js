@@ -3,6 +3,8 @@ import Customer from '../../../../models/Auth/Customer.js';
 import User from '../../../../models/Auth/User.js'
 import { sendErrorResponse, sendTokenResponse, sendSuccessResponse } from '../../../../Utils/response/responseHandler.js';
 import { generateToken, generateRefreshToken } from '../../../../Utils/Auth/tokenUtils.js';
+import sendOTPEmail from '../../../config/Email/sendEmail.js';
+import VerificationEmail from '../../../../Utils/Mail/verifyEmailTemplate.js';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -82,6 +84,10 @@ export const customerRegister = async (req, res) => {
       return sendErrorResponse(res, 400, 'NO_SALES_HEAD', 'No sales representative available for your region');
     }  
 
+    const EmailOtp = Math.floor(100000 + Math.random() * 800000).toString();
+    const MobileOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    
+
     const customer = await Customer.create({
       email,
       password,
@@ -93,8 +99,19 @@ export const customerRegister = async (req, res) => {
       Region: region.toUpperCase(),
       labMapping: 'LAB', 
       assignedSalesHead: salesHead._id,
-      createdBy: salesHead._id 
+      createdBy: salesHead._id,
+      emailOtp : EmailOtp,
+      emailOtpExpires : Date.now() + 600000, // 10 minute 
+      mobileOtp : MobileOtp,
+      mobileOtpExpires : Date.now() + 600000, // 10 minute
     }); 
+
+    await sendOTPEmail({
+      sendTo: email,
+      subject: "Welcome Mail for choosing VISUAL EYES",
+      text: "Register email in the VISUAL EYES server",
+      html: VerificationEmail(username, EmailOtp),
+    });
 
     const customerObj = customer.toObject();
     delete customerObj.password;

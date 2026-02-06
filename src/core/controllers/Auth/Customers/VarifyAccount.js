@@ -1,8 +1,8 @@
-import User from "../../../../models/Auth/User.js";
+import Customer from "../../../../models/Auth/Customer.js";
 import { generateRefreshToken, generateToken } from "../../../../Utils/Auth/tokenUtils.js";
 import { sendErrorResponse, sendTokenResponse } from "../../../../Utils/response/responseHandler.js";
 
-export async function verifyUserEmail(req, res) {
+export async function verifyCustomerEmail(req, res) {
   try {
     const { email, Emailotp } = req.body;
     
@@ -10,16 +10,16 @@ export async function verifyUserEmail(req, res) {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'All required fields must be provided');
     }
 
-    const user = await User.findOne({ email: email });
+    const user = await Customer.findOne({ email: email });
     if (!user) {
-      return sendErrorResponse(res, 401, 'INVALID_EMAIL', 'User not found');
+      return sendErrorResponse(res, 401, 'INVALID_EMAIL', 'Customer not found');
     }
-
     const isCodeValid = user.emailOtp === Emailotp;
     const isNotExpired = user.emailOtpExpires > Date.now();
 
     if (isCodeValid && isNotExpired) {
-      user.isActive = true;
+      user.verification.isVerified = true;
+      user.status.isActive = true;
       user.emailOtp = null;
       user.emailOtpExpires = null;
       user.lastLogin = new Date();

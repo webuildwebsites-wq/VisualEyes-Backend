@@ -172,7 +172,7 @@ const customerSchema = new mongoose.Schema({
   status: {
     isActive: {
       type: Boolean,
-      default: true
+      default: false
     },
     isSuspended: {
       type: Boolean,
@@ -273,7 +273,19 @@ const customerSchema = new mongoose.Schema({
   passwordResetExpires: {
     type: Date,
     select: false
-  }
+  },
+  emailOtp:{
+    type:String
+  },
+  emailOtpExpires:{
+    type:Date
+  },
+  mobileOtp:{
+    type:String
+  },
+  mobileOtpExpires:{
+    type:Date
+  },
 }, {
   timestamps: true,
   toJSON: { virtuals: true },
