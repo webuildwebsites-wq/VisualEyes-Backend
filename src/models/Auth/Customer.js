@@ -1,3 +1,4 @@
+import bcrypt from 'bcryptjs';
 import mongoose from 'mongoose';
 
 const customerSchema = new mongoose.Schema({
@@ -29,10 +30,10 @@ const customerSchema = new mongoose.Schema({
     trim: true,
     uppercase: true
   },
-  customerType: {
+  CustomerType: {
     type: String,
-    enum: ['Retailer', 'Distributor', 'End Customer', 'Wholesale'],
-    default: 'Retailer'
+    enum: ['RETAILER', 'DISTRIBUTOR', 'END_CUSTOMER', 'WHOLESALE'],
+    default: 'RETAILER'
   },
   shopName: {
     type: String,
@@ -46,10 +47,10 @@ const customerSchema = new mongoose.Schema({
     trim: true,
     maxlength: [100, 'Owner name cannot exceed 100 characters']
   },
-  businessType: {
+  BusinessType: {
     type: String,
-    enum: ['Optical Store', 'Eye Clinic', 'Hospital', 'Chain Store', 'Online Store', 'Individual'],
-    default: 'Optical Store'
+    enum: ['OPTICAL_STORE', 'EYE_CLINIC', 'HOSPITAL', 'CHAIN_STORE', 'ONLINE_STORE', 'INDIVIDUAL'],
+    default: 'OPTICAL_STORE'
   },
   phone: {
     type: String,
@@ -126,17 +127,17 @@ const customerSchema = new mongoose.Schema({
   },
   paymentTerms: {
     type: String,
-    enum: ['Cash', 'Credit', 'Advance', 'COD', 'Net Banking', 'Mixed'],
-    default: 'Cash'
+    enum: ['CASH', 'CREDIT', 'ADVANCE', 'COD', 'NET_BANKING', 'MIXED'],
+    default: 'CASH'
   },
   labMapping: {
     type: String,
-    enum: ['Lab'],
+    enum: ['LAB'],
     required: [true, 'Lab mapping is required']
   },
-  region: {
+  Region: {
     type: String,
-    enum: ['North', 'South', 'East', 'West'],
+    enum: ['NORTH', 'SOUTH', 'EAST', 'WEST'],
     required: [true, 'Region is required']
   },
   verification: {
@@ -158,7 +159,7 @@ const customerSchema = new mongoose.Schema({
     documents: [{
       type: {
         type: String,
-        enum: ['GST Certificate', 'PAN Card', 'Business License', 'Address Proof', 'Bank Details']
+        enum: ['GST_CERTIFICATE', 'PAN_CARD', 'BUSINESS_LICENSE', 'ADDRESS_PROOF', 'BANK_DETAILS']
       },
       filePath: String,
       uploadedAt: {
@@ -171,7 +172,7 @@ const customerSchema = new mongoose.Schema({
   status: {
     isActive: {
       type: Boolean,
-      default: true
+      default: false
     },
     isSuspended: {
       type: Boolean,
@@ -195,13 +196,13 @@ const customerSchema = new mongoose.Schema({
   
   orderMode: {
     type: String,
-    enum: ['Online', 'WhatsApp', 'Phone', 'Email', 'Offline'],
-    default: 'Online'
+    enum: ['ONLINE', 'WHATSAPP', 'PHONE', 'EMAIL', 'OFFLINE'],
+    default: 'ONLINE'
   },
   communicationMedium: {
     type: [String],
-    enum: ['Email', 'WhatsApp', 'SMS', 'Phone'],
-    default: ['Email']
+    enum: ['EMAIL', 'WHATSAPP', 'SMS', 'PHONE'],
+    default: ['EMAIL']
   },
   
   assignedSalesHead: {
@@ -223,8 +224,8 @@ const customerSchema = new mongoose.Schema({
     },
     orderFrequency: {
       type: String,
-      enum: ['Daily', 'Weekly', 'Monthly', 'Quarterly', 'Occasional'],
-      default: 'Monthly'
+      enum: ['DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'OCCASIONAL'],
+      default: 'MONTHLY'
     }
   },
   
@@ -262,10 +263,6 @@ const customerSchema = new mongoose.Schema({
   lastLogin: {
     type: Date
   },
-  loginAttempts: {
-    type: Number,
-    default: 0
-  },
   lockUntil: {
     type: Date
   },
@@ -276,11 +273,38 @@ const customerSchema = new mongoose.Schema({
   passwordResetExpires: {
     type: Date,
     select: false
-  }
+  },
+  emailOtp:{
+    type:String
+  },
+  emailOtpExpires:{
+    type:Date
+  },
+  mobileOtp:{
+    type:String
+  },
+  mobileOtpExpires:{
+    type:Date
+  },
 }, {
   timestamps: true,
   toJSON: { virtuals: true },
   toObject: { virtuals: true }
+});
+
+customerSchema.methods.comparePassword = async function(candidatePassword) {
+  return await bcrypt.compare(candidatePassword, this.password);
+};
+
+customerSchema.pre('save', async function () {
+  if (!this.isModified('password') || !this.password) return;
+  try {
+    const salt = await bcrypt.genSalt(12);
+    this.password = await bcrypt.hash(this.password, salt);
+  } catch (error) {
+    console.log("error : ",error);
+    return;
+  }
 });
 
 const Customer = mongoose.model('Customer', customerSchema);

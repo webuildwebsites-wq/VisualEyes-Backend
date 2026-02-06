@@ -1,5 +1,7 @@
 import jwt from 'jsonwebtoken';
 import Customer from '../../../models/Auth/Customer.js';
+import dotenv from 'dotenv';
+dotenv.config();
 
 export const protectCustomer = async (req, res, next) => {
   try {
@@ -48,7 +50,7 @@ export const protectCustomer = async (req, res, next) => {
 
       req.user = {
         id: customer._id,
-        accountType: 'customer',
+        AccountType: 'CUSTOMER',
         ...customer.toObject()
       };
 

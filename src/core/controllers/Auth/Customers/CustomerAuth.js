@@ -1,7 +1,12 @@
 import crypto from 'crypto';
 import Customer from '../../../../models/Auth/Customer.js';
 import User from '../../../../models/Auth/User.js'
-import { sendErrorResponse, sendTokenResponse } from '../../../../Utils/response/responseHandler.js';
+import { sendErrorResponse, sendTokenResponse, sendSuccessResponse } from '../../../../Utils/response/responseHandler.js';
+import { generateToken, generateRefreshToken } from '../../../../Utils/Auth/tokenUtils.js';
+import sendOTPEmail from '../../../config/Email/sendEmail.js';
+import VerificationEmail from '../../../../Utils/Mail/verifyEmailTemplate.js';
+import dotenv from 'dotenv';
+dotenv.config();
 
 export const customerLogin = async (req, res) => {
   try {
@@ -34,20 +39,11 @@ export const customerLogin = async (req, res) => {
     const isMatch = await customer.comparePassword(password);
 
     if (!isMatch) {
-      if (customer.incLoginAttempts) {
-        await customer.incLoginAttempts();
-      }
       return sendErrorResponse(res, 401, 'INVALID_CREDENTIALS', 'Invalid credentials');
     }
-
-    if (customer.resetLoginAttempts) {
-      await customer.resetLoginAttempts();
-    }
-    if (customer.updateLastLogin) {
-      await customer.updateLastLogin();
-    }
-
-    return sendTokenResponse(customer, 200, res, 'customer', generateToken, generateRefreshToken);
+    customer.lastLogin = new Date();
+    await customer.save();
+    return sendTokenResponse(customer, 200, res, 'CUSTOMER', generateToken, generateRefreshToken);
 
   } catch (error) {
     console.error('Customer login error:', error);
@@ -78,15 +74,19 @@ export const customerRegister = async (req, res) => {
     }
 
     const salesHead = await User.findOne({ 
-      userType: { $in: ['supervisor', 'user'] },
-      department: 'Sales',
-      region: region,
+      UserType: { $in: ['SUPERVISOR', 'USER'] },
+      Department: 'SALES',
+      Region: region.toUpperCase(),
       isActive: true 
     });
 
     if (!salesHead) {
       return sendErrorResponse(res, 400, 'NO_SALES_HEAD', 'No sales representative available for your region');
     }  
+
+    const EmailOtp = Math.floor(100000 + Math.random() * 800000).toString();
+    const MobileOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    
 
     const customer = await Customer.create({
       email,
@@ -96,11 +96,22 @@ export const customerRegister = async (req, res) => {
       phone,
       address,
       gstNumber,
-      region,
-      labMapping: 'Lab', 
+      Region: region.toUpperCase(),
+      labMapping: 'LAB', 
       assignedSalesHead: salesHead._id,
-      createdBy: salesHead._id 
+      createdBy: salesHead._id,
+      emailOtp : EmailOtp,
+      emailOtpExpires : Date.now() + 600000, // 10 minute 
+      mobileOtp : MobileOtp,
+      mobileOtpExpires : Date.now() + 600000, // 10 minute
     }); 
+
+    await sendOTPEmail({
+      sendTo: email,
+      subject: "Welcome Mail for choosing VISUAL EYES",
+      text: "Register email in the VISUAL EYES server",
+      html: VerificationEmail(username, EmailOtp),
+    });
 
     const customerObj = customer.toObject();
     delete customerObj.password;
@@ -177,7 +188,7 @@ export const customerResetPassword = async (req, res) => {
 
     await customer.save();
 
-    return sendTokenResponse(customer, 200, res, 'customer', generateToken, generateRefreshToken);
+    return sendTokenResponse(customer, 200, res, 'CUSTOMER', generateToken, generateRefreshToken);
 
   } catch (error) {
     console.error('Customer reset password error:', error);
@@ -202,7 +213,7 @@ export const customerUpdatePassword = async (req, res) => {
     customer.password = newPassword;
     await customer.save();
 
-    return sendTokenResponse(customer, 200, res, 'customer', generateToken, generateRefreshToken);
+    return sendTokenResponse(customer, 200, res, 'CUSTOMER', generateToken, generateRefreshToken);
 
   } catch (error) {
     console.error('Customer update password error:', error);
@@ -213,7 +224,7 @@ export const customerUpdatePassword = async (req, res) => {
 export const getCustomerProfile = async (req, res) => {
   try {
     const customer = await Customer.findById(req.user.id)
-      .populate('assignedSalesHead assignedAccountsHead', 'firstName lastName userType');
+      .populate('assignedSalesHead assignedAccountsHead', 'firstName lastName UserType');
 
     if (!customer) {
       return sendErrorResponse(res, 404, 'USER_NOT_FOUND', 'Customer not found');
@@ -222,8 +233,8 @@ export const getCustomerProfile = async (req, res) => {
     const customerData = {
       user: {
         ...customer.toObject(),
-        userType: req.user.userType,
-        accountType: req.user.accountType
+        UserType: req.user.UserType,
+        AccountType: req.user.AccountType
       }
     };
 

@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
 
 const userSchema = new mongoose.Schema({
   username: {
@@ -47,34 +48,34 @@ const userSchema = new mongoose.Schema({
     trim: true,
     uppercase: true
   },
-  userType: {
+  UserType: {
     type: String,
     required: [true, 'User type is required'],
     enum: {
-      values: ['superadmin', 'subadmin', 'supervisor', 'user'],
+      values: ['SUPERADMIN', 'SUBADMIN', 'SUPERVISOR', 'USER'],
       message: 'Invalid user type'
     }
   },
-  department: {
+  Department: {
     type: String,
-    enum: ['Lab', 'Store', 'Dispatch', 'Sales', 'Finance', 'Customer Support'],
+    enum: ['LAB', 'STORE', 'DISPATCH', 'SALES', 'FINANCE', 'CUSTOMER_SUPPORT'],
     required: function() {
-      return this.userType !== 'superadmin';
+      return !['SUPERADMIN', 'SUBADMIN'].includes(this.UserType);
     }
   },
-  region: {
+  Region: {
     type: String,
-    enum: ['North', 'South', 'East', 'West'],
+    enum: ['NORTH', 'SOUTH', 'EAST', 'WEST'],
     required: function() {
-      return this.userType !== 'superadmin';
+      return !['SUPERADMIN', 'SUBADMIN'].includes(this.UserType);
     }
   },
   
-  role: {
+  Role: {
     type: String,
-    enum: ['Production', 'QC', 'Dispatch', 'Sales', 'Finance', 'Support', 'Store'],
+    enum: ['PRODUCTION', 'QC', 'DISPATCH', 'SALES', 'FINANCE', 'SUPPORT', 'STORE'],
     required: function() {
-      return this.userType === 'user';
+      return this.UserType === 'USER';
     }
   },
   
@@ -82,14 +83,23 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: function() {
-      return this.userType !== 'superadmin';
+      return !['SUPERADMIN'].includes(this.UserType);
     }
   },
   supervisor: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: function() {
-      return this.userType === 'user';
+      return this.UserType === 'USER';
+    },
+    validate: {
+      validator: async function(supervisorId) {
+        if (!supervisorId || this.UserType !== 'USER') return true;
+        
+        const supervisor = await mongoose.model('User').findById(supervisorId);
+        return supervisor && supervisor.UserType === 'SUPERVISOR';
+      },
+      message: 'Supervisor must have SUPERVISOR user type'
     }
   },
   
@@ -107,104 +117,110 @@ const userSchema = new mongoose.Schema({
   },
   
   permissions: {
-    canCreateUsers: {
+    CanCreateUsers: {
       type: Boolean,
       default: function() {
-        return ['superadmin', 'subadmin', 'supervisor'].includes(this.userType);
+        return ['SUPERADMIN', 'SUBADMIN', 'SUPERVISOR'].includes(this.UserType);
       }
     },
-    canManageUsers: {
+    CanManageUsers: {
       type: Boolean,
       default: function() {
-        return ['superadmin', 'subadmin', 'supervisor'].includes(this.userType);
+        return ['SUPERADMIN', 'SUBADMIN', 'SUPERVISOR'].includes(this.UserType);
       }
     },
-    canManageDepartments: {
+    CanManageDepartments: {
       type: Boolean,
       default: function() {
-        return ['superadmin', 'subadmin'].includes(this.userType);
+        return ['SUPERADMIN', 'SUBADMIN'].includes(this.UserType);
       }
     },
-    canCreateOrders: {
+    CanManageAllDepartments: {
       type: Boolean,
       default: function() {
-        return this.userType !== 'user' || ['Sales', 'Support'].includes(this.role);
+        return this.UserType === 'SUBADMIN';
       }
     },
-    canUpdateOrders: {
+    CanCreateOrders: {
       type: Boolean,
       default: function() {
-        return this.userType !== 'user' || true; 
+        return this.UserType !== 'USER' || ['SALES', 'SUPPORT'].includes(this.Role);
       }
     },
-    canViewOrders: {
+    CanUpdateOrders: {
+      type: Boolean,
+      default: function() {
+        return this.UserType !== 'USER' || true; 
+      }
+    },
+    CanViewOrders: {
       type: Boolean,
       default: true
     },
-    canDeleteOrders: {
+    CanDeleteOrders: {
       type: Boolean,
       default: function() {
-        return ['superadmin', 'subadmin', 'supervisor'].includes(this.userType);
+        return ['SUPERADMIN', 'SUBADMIN', 'SUPERVISOR'].includes(this.UserType);
       }
     },
-    canProcessWorkflow: {
+    CanProcessWorkflow: {
       type: Boolean,
       default: function() {
-        return this.userType === 'user' && ['Production', 'QC'].includes(this.role);
+        return this.UserType === 'USER' && ['PRODUCTION', 'QC'].includes(this.Role);
       }
     },
-    canApproveWorkflow: {
+    CanApproveWorkflow: {
       type: Boolean,
       default: function() {
-        return ['superadmin', 'subadmin', 'supervisor'].includes(this.userType);
+        return ['SUPERADMIN', 'SUBADMIN', 'SUPERVISOR'].includes(this.UserType);
       }
     },
-    canCreateCustomers: {
+    CanCreateCustomers: {
       type: Boolean,
       default: function() {
-        return this.userType !== 'user' || ['Sales', 'Finance'].includes(this.role);
+        return this.UserType !== 'USER' || ['SALES', 'FINANCE'].includes(this.Role);
       }
     },
-    canManageCustomers: {
+    CanManageCustomers: {
       type: Boolean,
       default: function() {
-        return this.userType !== 'user' || ['Sales', 'Finance', 'Support'].includes(this.role);
+        return this.UserType !== 'USER' || ['SALES', 'FINANCE', 'SUPPORT'].includes(this.Role);
       }
     },
-    canManageProducts: {
+    CanManageProducts: {
       type: Boolean,
       default: function() {
-        return this.userType !== 'user' || ['Store'].includes(this.role);
+        return this.UserType !== 'USER' || ['STORE'].includes(this.Role);
       }
     },
-    canViewFinancials: {
+    CanViewFinancials: {
       type: Boolean,
       default: function() {
-        return this.userType !== 'user' || ['Finance', 'Sales'].includes(this.role);
+        return this.UserType !== 'USER' || ['FINANCE', 'SALES'].includes(this.Role);
       }
     },
-    canManageFinancials: {
+    CanManageFinancials: {
       type: Boolean,
       default: function() {
-        return this.userType !== 'user' || ['Finance'].includes(this.role);
+        return this.UserType !== 'USER' || ['FINANCE'].includes(this.Role);
       }
     },    
-    canManageSettings: {
+    CanManageSettings: {
       type: Boolean,
       default: function() {
-        return ['superadmin', 'subadmin'].includes(this.userType);
+        return ['SUPERADMIN', 'SUBADMIN'].includes(this.UserType);
       }
     },
-    canViewReports: {
+    CanViewReports: {
       type: Boolean,
       default: function() {
-        return this.userType !== 'user';
+        return this.UserType !== 'USER';
       }
     },
-    canExportReports: {
+    CanExportReports: {
       type: Boolean,
       default: function() {
-        return ['superadmin', 'subadmin', 'supervisor'].includes(this.userType);
+        return ['SUPERADMIN', 'SUBADMIN', 'SUPERVISOR'].includes(this.UserType);
       }
     }
   },
@@ -233,16 +249,10 @@ const userSchema = new mongoose.Schema({
       },
       relation: String
     },
-    skills: [String],
-    certifications: [String]
   },
   
   lastLogin: {
     type: Date
-  },
-  loginAttempts: {
-    type: Number,
-    default: 0
   },
   lockUntil: {
     type: Date
@@ -254,11 +264,38 @@ const userSchema = new mongoose.Schema({
   passwordResetExpires: {
     type: Date,
     select: false
-  }
+  },
+  emailOtp:{
+    type:String
+  },
+  emailOtpExpires:{
+    type:Date
+  },
+  mobileOtp:{
+    type:String
+  },
+  mobileOtpExpires:{
+    type:Date
+  },
 }, {
   timestamps: true,
   toJSON: { virtuals: true },
   toObject: { virtuals: true }
+});
+
+userSchema.methods.comparePassword = async function(candidatePassword) {
+  return await bcrypt.compare(candidatePassword, this.password);
+};
+
+userSchema.pre('save', async function () {
+  if (!this.isModified('password') || !this.password) return;
+  try {
+    const salt = await bcrypt.genSalt(12);
+    this.password = await bcrypt.hash(this.password, salt);
+  } catch (error) {
+    console.log("Error : ", error);
+    return;
+  }
 });
 
 const User = mongoose.model('User', userSchema);

@@ -1,12 +1,13 @@
 import crypto from 'crypto';
 import { sendSuccessResponse, sendErrorResponse, sendTokenResponse } from '../../../../Utils/response/responseHandler.js';
 import { generateToken, generateRefreshToken } from '../../../../Utils/Auth/tokenUtils.js';
-import User from '../../../../models/Auth/User.js'
+import User from '../../../../models/Auth/User.js';
+import dotenv from 'dotenv';
+dotenv.config();
 
 export const userLogin = async (req, res) => {
   try {
     const { username, password } = req.body;
-    
     if (!username || !password) {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Please provide username/email and password');
     }
@@ -14,33 +15,27 @@ export const userLogin = async (req, res) => {
     const user = await User.findOne({ 
       $or: [{ username }, { email: username }],
       isActive: true 
-    }).select('+password').populate('createdBy supervisor', 'firstName lastName userType');
+    }).select('+password').populate('createdBy supervisor', 'firstName lastName UserType');
 
     if (!user) {
       return sendErrorResponse(res, 401, 'INVALID_CREDENTIALS', 'Invalid credentials');
     }
-
+    
     if (user.isLocked) {
       return sendErrorResponse(res, 423, 'ACCOUNT_LOCKED', 'Account is temporarily locked due to too many failed login attempts');
     }
 
     const isMatch = await user.comparePassword(password);
+    console.log("isMatch : ",isMatch);
 
     if (!isMatch) {
-      if (user.incLoginAttempts) {
-        await user.incLoginAttempts();
-      }
       return sendErrorResponse(res, 401, 'INVALID_CREDENTIALS', 'Invalid credentials');
     }
 
-    if (user.resetLoginAttempts) {
-      await user.resetLoginAttempts();
-    }
-    if (user.updateLastLogin) {
-      await user.updateLastLogin();
-    }
+    user.lastLogin = new Date();
+    await user.save();
 
-    return sendTokenResponse(user, 200, res, 'user', generateToken, generateRefreshToken);
+    return sendTokenResponse(user, 200, res, 'USER', generateToken, generateRefreshToken);
 
   } catch (error) {
     console.error('User login error:', error);
@@ -106,13 +101,15 @@ export const userResetPassword = async (req, res) => {
       return sendErrorResponse(res, 400, 'INVALID_TOKEN', 'Invalid or expired reset token');
     }
 
+    // Password will be hashed by the pre-save middleware
     user.password = password;
     user.passwordResetToken = undefined;
     user.passwordResetExpires = undefined;
+    user.lockUntil = undefined;
 
     await user.save();
 
-    return sendTokenResponse(user, 200, res, 'user', generateToken, generateRefreshToken);
+    return sendTokenResponse(user, 200, res, 'USER', generateToken, generateRefreshToken);
 
   } catch (error) {
     console.error('User reset password error:', error);
@@ -137,7 +134,7 @@ export const userUpdatePassword = async (req, res) => {
     user.password = newPassword;
     await user.save();
 
-    return sendTokenResponse(user, 200, res, 'user', generateToken, generateRefreshToken);
+    return sendTokenResponse(user, 200, res, 'USER', generateToken, generateRefreshToken);
 
   } catch (error) {
     console.error('User update password error:', error);
@@ -148,7 +145,7 @@ export const userUpdatePassword = async (req, res) => {
 export const getUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.id)
-      .populate('createdBy supervisor', 'firstName lastName userType');
+      .populate('createdBy supervisor', 'firstName lastName UserType');
 
     if (!user) {
       return sendErrorResponse(res, 404, 'USER_NOT_FOUND', 'User not found');
@@ -157,8 +154,8 @@ export const getUserProfile = async (req, res) => {
     const userData = {
       user: {
         ...user.toObject(),
-        userType: req.user.userType,
-        accountType: req.user.accountType
+        UserType: req.user.UserType,
+        AccountType: req.user.AccountType
       }
     };
 
