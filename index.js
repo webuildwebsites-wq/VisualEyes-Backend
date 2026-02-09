@@ -20,6 +20,8 @@ const allowedOrigins = [
   "https://www.visualeye.digibysr.in",
   "https://visualeye.digibysr.com",
   "https://www.visualeye.digibysr.com",
+  "https://visualeyeye.netlify.app",
+  "https://www.visualeyeye.netlify.app"
 ];
 
 app.use(cors({
