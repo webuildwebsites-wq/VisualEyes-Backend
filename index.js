@@ -16,6 +16,10 @@ const app = express();
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
+  "https://visualeye.digibysr.in",
+  "https://www.visualeye.digibysr.in",
+  "https://visualeye.digibysr.com",
+  "https://www.visualeye.digibysr.com",
 ];
 
 app.use(cors({
