@@ -34,11 +34,11 @@ export const canManageUsers = (req, res, next) => {
   const UserType = req.user.UserType;
   
   if (!['SUPERADMIN', 'SUBADMIN', 'SUPERVISOR'].includes(UserType)) {
-    return sendErrorResponse(res, 403, 'FORBIDDEN', 'Access denied. User management privileges required.');
+    return sendErrorResponse(res, 403, 'FORBIDDEN', 'Access denied. Employee management privileges required.');
   }
   
   if (!req.user.permissions?.CanManageUsers) {
-    return sendErrorResponse(res, 403, 'FORBIDDEN', 'Access denied. User management permission not granted.');
+    return sendErrorResponse(res, 403, 'FORBIDDEN', 'Access denied. Employee management permission not granted.');
   }
   next();
 };

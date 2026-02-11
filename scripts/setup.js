@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import User from '../src/models/Auth/User.js';
+import employeeSchema from '../src/models/Auth/Employee.js';
 import connectDB from '../src/core/config/DB/connectDb.js';
 
 dotenv.config();
@@ -12,7 +12,7 @@ const setupProject = async () => {
     await connectDB();
     console.log('Connected to database');
 
-    const existingSuperAdmin = await User.findOne({ UserType: 'SUPERADMIN' });
+    const existingSuperAdmin = await employeeSchema.findOne({ UserType: 'SUPERADMIN' });
 
     if (existingSuperAdmin) {
       console.log('SuperAdmin already exists in the system');
@@ -62,7 +62,7 @@ const setupProject = async () => {
       }
     };
 
-    const superAdmin = new User(superAdminData);
+    const superAdmin = new employeeSchema(superAdminData);
     await superAdmin.save();
 
     console.log('Project setup completed successfully!');
@@ -81,7 +81,7 @@ const setupProject = async () => {
     }
 
     if (error.code === 11000) {
-      console.error('Duplicate key error: User with this email, username, or employee ID already exists');
+      console.error('Duplicate key error: Employee with this email, username, or employee ID already exists');
     }
     process.exit(1);
   } finally {

@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import Customer from '../../../../models/Auth/Customer.js';
-import User from '../../../../models/Auth/User.js'
+import employeeSchema from '../../../../models/Auth/Employee.js'
 import { sendErrorResponse, sendTokenResponse, sendSuccessResponse } from '../../../../Utils/response/responseHandler.js';
 import { generateToken, generateRefreshToken } from '../../../../Utils/Auth/tokenUtils.js';
 import sendOTPEmail from '../../../config/Email/sendEmail.js';
@@ -53,16 +53,7 @@ export const customerLogin = async (req, res) => {
 
 export const customerRegister = async (req, res) => {
   try {
-    const {
-      email,
-      password,
-      shopName,
-      ownerName,
-      phone,
-      address,
-      gstNumber,
-      region
-    } = req.body;
+    const { email, shopName, ownerName, phone, address, gstNumber, region } = req.body;
 
     if (!email || !shopName || !ownerName || !phone || !address || !region) {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Please provide all required fields');
@@ -73,7 +64,7 @@ export const customerRegister = async (req, res) => {
       return sendErrorResponse(res, 409, 'CUSTOMER_EXISTS', 'Customer with this email already exists');
     }
 
-    const salesHead = await User.findOne({ 
+    const salesHead = await employeeSchema.findOne({ 
       UserType: { $in: ['SUPERVISOR', 'USER'] },
       Department: 'SALES',
       Region: region.toUpperCase(),
@@ -86,11 +77,11 @@ export const customerRegister = async (req, res) => {
 
     const EmailOtp = Math.floor(100000 + Math.random() * 800000).toString();
     const MobileOtp = Math.floor(100000 + Math.random() * 900000).toString();
-    
+    const customerpassword = crypto.randomBytes(8).toString('hex');
 
     const customer = await Customer.create({
       email,
-      password,
+      password: customerpassword,
       shopName,
       ownerName,
       phone,

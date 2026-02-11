@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
-const userSchema = new mongoose.Schema({
+const employee = new mongoose.Schema({
   username: {
     type: String,
     required: [true, 'Username is required'],
@@ -50,11 +50,16 @@ const userSchema = new mongoose.Schema({
   },
   UserType: {
     type: String,
-    required: [true, 'User type is required'],
+    required: [true, 'Employee type is required'],
     enum: {
       values: ['SUPERADMIN', 'SUBADMIN', 'SUPERVISOR', 'USER'],
-      message: 'Invalid user type'
+      message: 'Invalid employee type'
     }
+  },
+  ProfilePicture: {
+    type: String,
+    trim: true,
+    default: null
   },
   Department: {
     type: String,
@@ -81,14 +86,14 @@ const userSchema = new mongoose.Schema({
   
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    ref: 'Employee',
     required: function() {
       return !['SUPERADMIN'].includes(this.UserType);
     }
   },
   supervisor: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    ref: 'Employee',
     required: function() {
       return this.UserType === 'USER';
     },
@@ -96,7 +101,7 @@ const userSchema = new mongoose.Schema({
       validator: async function(supervisorId) {
         if (!supervisorId || this.UserType !== 'USER') return true;
         
-        const supervisor = await mongoose.model('User').findById(supervisorId);
+        const supervisor = await mongoose.model('Employee').findById(supervisorId);
         return supervisor && supervisor.UserType === 'SUPERVISOR';
       },
       message: 'Supervisor must have SUPERVISOR user type'
@@ -283,11 +288,11 @@ const userSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-userSchema.methods.comparePassword = async function(candidatePassword) {
+employee.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-userSchema.pre('save', async function () {
+employee.pre('save', async function () {
   if (!this.isModified('password') || !this.password) return;
   try {
     const salt = await bcrypt.genSalt(12);
@@ -298,6 +303,6 @@ userSchema.pre('save', async function () {
   }
 });
 
-const User = mongoose.model('User', userSchema);
+const employeeSchema = mongoose.model('employee', employee);
 
-export default User;
+export default employeeSchema;

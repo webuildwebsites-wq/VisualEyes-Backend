@@ -7,8 +7,8 @@ import hpp from 'hpp';
 import compression from 'compression';
 import morgan from 'morgan';
 import customerRouter from './src/routes/Auth/CustomerAuth.js';
-import userRouter from './src/routes/Auth/UserAuth.js';
-import userManagementRouter from './src/routes/Auth/UserManagement.js';
+import employeeRouter from './src/routes/Auth/EmployeeAuth.js';
+import employeeManagementRouter from './src/routes/Auth/EmployeeManagement.js';
 import connectDB from './src/core/config/DB/connectDb.js';
 dotenv.config();
 
@@ -65,8 +65,8 @@ try {
     })
 
     // USER ROUTES (Admin/Staff)
-    app.use('/api/user/auth', userRouter);
-    app.use('/api/user/management', userManagementRouter);
+    app.use('/api/employee/auth', employeeRouter);
+    app.use('/api/employee/management', employeeManagementRouter);
     
 
    // CUSTOMER ROUTES

@@ -1,4 +1,4 @@
-import User from "../../../../models/Auth/User.js";
+import employeeSchema from "../../../../models/Auth/Employee.js";
 import { generateRefreshToken, generateToken } from "../../../../Utils/Auth/tokenUtils.js";
 import { sendErrorResponse, sendTokenResponse } from "../../../../Utils/response/responseHandler.js";
 
@@ -10,9 +10,9 @@ export async function verifyUserEmail(req, res) {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'All required fields must be provided');
     }
 
-    const user = await User.findOne({ email: email });
+    const user = await employeeSchema.findOne({ email: email });
     if (!user) {
-      return sendErrorResponse(res, 401, 'INVALID_EMAIL', 'User not found');
+      return sendErrorResponse(res, 401, 'INVALID_EMAIL', 'Employee not found');
     }
 
     const isCodeValid = user.emailOtp === Emailotp;

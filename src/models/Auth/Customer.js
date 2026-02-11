@@ -147,7 +147,7 @@ const customerSchema = new mongoose.Schema({
     },
     verifiedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
+      ref: 'Employee'
     },
     verificationDate: {
       type: Date
@@ -184,7 +184,7 @@ const customerSchema = new mongoose.Schema({
     },
     suspendedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
+      ref: 'Employee'
     },
     suspensionDate: {
       type: Date
@@ -207,12 +207,12 @@ const customerSchema = new mongoose.Schema({
   
   assignedSalesHead: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    ref: 'Employee',
     required: [true, 'Sales head assignment is required']
   },
   assignedAccountsHead: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
+    ref: 'Employee'
   },
   
   preferences: {
@@ -257,7 +257,7 @@ const customerSchema = new mongoose.Schema({
   
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    ref: 'Employee',
     required: [true, 'Creator reference is required']
   },
   lastLogin: {
