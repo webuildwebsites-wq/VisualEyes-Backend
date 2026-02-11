@@ -1,18 +1,18 @@
 import crypto from 'crypto';
 import { sendSuccessResponse, sendErrorResponse, sendTokenResponse } from '../../../../Utils/response/responseHandler.js';
 import { generateToken, generateRefreshToken } from '../../../../Utils/Auth/tokenUtils.js';
-import User from '../../../../models/Auth/User.js';
+import employeeSchema from '../../../../models/Auth/Employee.js';
 import dotenv from 'dotenv';
 dotenv.config();
 
-export const userLogin = async (req, res) => {
+export const employeeLogin = async (req, res) => {
   try {
     const { username, password } = req.body;
     if (!username || !password) {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Please provide username/email and password');
     }
 
-    const user = await User.findOne({ 
+    const user = await employeeSchema.findOne({ 
       $or: [{ username }, { email: username }],
       isActive: true 
     }).select('+password').populate('createdBy supervisor', 'firstName lastName UserType');
@@ -38,12 +38,12 @@ export const userLogin = async (req, res) => {
     return sendTokenResponse(user, 200, res, 'USER', generateToken, generateRefreshToken);
 
   } catch (error) {
-    console.error('User login error:', error);
+    console.error('Employee login error:', error);
     return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Internal server error during login');
   }
 };
 
-export const userForgotPassword = async (req, res) => {
+export const employeeForgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
     
@@ -51,7 +51,7 @@ export const userForgotPassword = async (req, res) => {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Please provide email address');
     }
 
-    const user = await User.findOne({ email, isActive: true });
+    const user = await employeeSchema.findOne({ email, isActive: true });
 
     if (!user) {
       return sendErrorResponse(res, 404, 'USER_NOT_FOUND', 'No user found with that email address');
@@ -74,12 +74,12 @@ export const userForgotPassword = async (req, res) => {
 
     return sendSuccessResponse(res, 200, null, response.message);
   } catch (error) {
-    console.error('User forgot password error:', error);
+    console.error('Employee forgot password error:', error);
     return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Email could not be sent');
   }
 };
 
-export const userResetPassword = async (req, res) => {
+export const employeeResetPassword = async (req, res) => {
   try {
     const { password } = req.body;
 
@@ -92,7 +92,7 @@ export const userResetPassword = async (req, res) => {
       .update(req.params.resettoken)
       .digest('hex');
 
-    const user = await User.findOne({
+    const user = await employeeSchema.findOne({
       passwordResetToken: resetPasswordToken,
       passwordResetExpires: { $gt: Date.now() }
     });
@@ -112,12 +112,12 @@ export const userResetPassword = async (req, res) => {
     return sendTokenResponse(user, 200, res, 'USER', generateToken, generateRefreshToken);
 
   } catch (error) {
-    console.error('User reset password error:', error);
+    console.error('Employee', error);
     return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Password could not be reset');
   }
 };
 
-export const userUpdatePassword = async (req, res) => {
+export const employeeUpdatePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
     
@@ -125,7 +125,7 @@ export const userUpdatePassword = async (req, res) => {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Please provide current password and new password');
     }
 
-    const user = await User.findById(req.user.id).select('+password');
+    const user = await employeeSchema.findById(req.user.id).select('+password');
     
     if (!(await user.comparePassword(currentPassword))) {
       return sendErrorResponse(res, 401, 'INVALID_PASSWORD', 'Current password is incorrect');
@@ -137,18 +137,18 @@ export const userUpdatePassword = async (req, res) => {
     return sendTokenResponse(user, 200, res, 'USER', generateToken, generateRefreshToken);
 
   } catch (error) {
-    console.error('User update password error:', error);
+    console.error('Employee update password error:', error);
     return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Password could not be updated');
   }
 };
 
-export const getUserProfile = async (req, res) => {
+export const getEmployeeProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id)
+    const user = await employeeSchema.findById(req.user.id)
       .populate('createdBy supervisor', 'firstName lastName UserType');
 
     if (!user) {
-      return sendErrorResponse(res, 404, 'USER_NOT_FOUND', 'User not found');
+      return sendErrorResponse(res, 404, 'USER_NOT_FOUND', 'Employee not found');
     }
 
     const userData = {

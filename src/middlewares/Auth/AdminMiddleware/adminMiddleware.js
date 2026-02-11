@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import User from '../../../models/Auth/User.js'
+import employeeSchema from '../../../models/Auth/Employee.js'
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -25,14 +25,14 @@ export const ProtectUser = async (req, res, next) => {
 
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      let user = await User.findById(decoded.id);
+      let user = await employeeSchema.findById(decoded.id);
       
       if (!user || !user.isActive) {
           return res.status(401).json({
             success: false,
             error: {
               code: 'USER_NOT_FOUND',
-              message: 'User no longer exists or is inactive',
+              message: 'Employee no longer exists or is inactive',
               timestamp: new Date().toISOString()
             }
           });

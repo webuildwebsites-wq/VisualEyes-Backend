@@ -1,13 +1,13 @@
 import VerificationEmail from '../../../../Utils/Mail/verifyEmailTemplate.js';
 import { sendSuccessResponse, sendErrorResponse } from '../../../../Utils/response/responseHandler.js';
-import User from '../../../../models/Auth/User.js';
+import employeeSchema from '../../../../models/Auth/Employee.js';
 import sendOTPEmail from '../../../config/Email/sendEmail.js';
 
 export const createSubAdmin = async (req, res) => {
   try {
-    const { username, email, password, firstName, lastName, phone, employeeId } = req.body;
+    const { username, email, firstName, lastName, phone, employeeId } = req.body;
     
-    if (!username || !email || !password || !firstName || !lastName || !phone) {
+    if (!username || !email || !firstName || !lastName || !phone) {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'All required fields must be provided');
     }
 
@@ -15,21 +15,22 @@ export const createSubAdmin = async (req, res) => {
       return sendErrorResponse(res, 403, 'FORBIDDEN', 'Only SuperAdmin can create SubAdmin');
     }
 
-    const existingUser = await User.findOne({
+    const existingUser = await employeeSchema.findOne({
       $or: [{ email }, { username }, { employeeId: employeeId || null }]
     });
 
     if (existingUser) {
-      return sendErrorResponse(res, 409, 'USER_EXISTS', 'User with this email, username, or employee ID already exists');
+      return sendErrorResponse(res, 409, 'USER_EXISTS', 'Employee with this email, username, or employee ID already exists');
     }
     
     const EmailOtp = Math.floor(100000 + Math.random() * 800000).toString();
     const MobileOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    const userpassword = Math.random().toString(36).slice(-8);
     
-    const subAdmin = new User({
+    const subAdmin = new employeeSchema({
       username,
       email,
-      password, 
+      password: userpassword, 
       firstName,
       lastName,
       phone,
@@ -67,17 +68,17 @@ export const createSubAdmin = async (req, res) => {
   }
 };
 
-export const createSupervisorOrUser = async (req, res) => {
+export const createSupervisorOrEmployee = async (req, res) => {
   try {
-   const { username, email, password, firstName, lastName, phone, employeeId, userType, department, region, role } = req.body;
+   const { username, email, firstName, lastName, phone, employeeId, userType, department, region, role } = req.body;
    let assignedSupervisor = null;
 
-    if (!username || !email || !password || !firstName || !lastName || !phone || !userType || !department || !region) {
+    if (!username || !email || !firstName || !lastName || !phone || !userType || !department || !region) {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'All required fields must be provided');
     }
 
     if (!['SUPERVISOR', 'USER'].includes(userType.toUpperCase())) {
-      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'User type must be either SUPERVISOR or USER');
+      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Employee type must be either SUPERVISOR or USER');
     }
 
     if (userType.toUpperCase()  === 'USER') {
@@ -85,7 +86,7 @@ export const createSupervisorOrUser = async (req, res) => {
         return sendErrorResponse(res,400,'VALIDATION_ERROR','Role is required for USER type');
       }
 
-      assignedSupervisor = await User.findOne({
+      assignedSupervisor = await employeeSchema.findOne({
         UserType: 'SUPERVISOR',
         Department: department.toUpperCase(),
         Region: region.toUpperCase(),
@@ -101,22 +102,23 @@ export const createSupervisorOrUser = async (req, res) => {
       }
     }
 
-    const existingUser = await User.findOne({
+    const existingUser = await employeeSchema.findOne({
       $or: [{ email }, { username }, 
       { employeeId: employeeId || null }]
     });
 
     if (existingUser) {
-      return sendErrorResponse(res, 409, 'USER_EXISTS', 'User with this email, username, or employee ID already exists');
+      return sendErrorResponse(res, 409, 'USER_EXISTS', 'Employee with this email, username, or employee ID already exists');
     }
 
     const EmailOtp = Math.floor(100000 + Math.random() * 800000).toString();
     const MobileOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    const userpassword = Math.random().toString(36).slice(-8);
 
     const userData = {
       username,
       email,
-      password, 
+      password : userpassword, 
       firstName,
       lastName,
       phone,
@@ -137,7 +139,7 @@ export const createSupervisorOrUser = async (req, res) => {
       userData.supervisor = assignedSupervisor._id;
     }
 
-    const newUser = new User(userData);
+    const newUser = new employeeSchema(userData);
     await newUser.save();
     
     await sendOTPEmail({
@@ -153,7 +155,7 @@ export const createSupervisorOrUser = async (req, res) => {
     return sendSuccessResponse(res, 201, { user: userResponse }, `${userType.charAt(0).toUpperCase() + userType.slice(1)} created successfully`);
 
   } catch (error) {
-    console.error('Create Supervisor/User error:', error);
+    console.error('Create Supervisor/Employee error:', error);
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(err => err.message);
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', messages.join(', '));
@@ -162,7 +164,7 @@ export const createSupervisorOrUser = async (req, res) => {
   }
 };
 
-export const getUsersByHierarchy = async (req, res) => {
+export const getEmployeesByHierarchy = async (req, res) => {
   try {
     const { page = 1, limit = 10, userType, department, region, search } = req.query;
     const skip = (page - 1) * limit;
@@ -213,14 +215,14 @@ export const getUsersByHierarchy = async (req, res) => {
       query = { $and: [query, searchQuery] };
     }
 
-    const users = await User.find(query)
+    const users = await employeeSchema.find(query)
       .select('-password -passwordResetToken -passwordResetExpires -twoFactorSecret')
       .populate('createdBy supervisor', 'firstName lastName UserType')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
 
-    const total = await User.countDocuments(query);
+    const total = await employeeSchema.countDocuments(query);
 
     const pagination = {
       currentPage: parseInt(page),
@@ -238,7 +240,7 @@ export const getUsersByHierarchy = async (req, res) => {
   }
 };
 
-export const updateUser = async (req, res) => {
+export const updateEmployeeDetails = async (req, res) => {
   try {
     const { userId } = req.params;
     const updates = req.body;
@@ -252,7 +254,7 @@ export const updateUser = async (req, res) => {
 
     if (req.user.UserType === 'SUPERADMIN') {
     } else if (req.user.UserType === 'SUBADMIN') {
-      const targetUser = await User.findById(userId);
+      const targetUser = await employeeSchema.findById(userId);
       if (targetUser && targetUser.UserType === 'SUPERADMIN') {
         return sendErrorResponse(res, 403, 'FORBIDDEN', 'SubAdmin cannot update SuperAdmin');
       }
@@ -264,10 +266,10 @@ export const updateUser = async (req, res) => {
       query._id = req.user.id;
     }
 
-    const user = await User.findOne(query);
+    const user = await employeeSchema.findOne(query);
 
     if (!user) {
-      return sendErrorResponse(res, 404, 'USER_NOT_FOUND', 'User not found or not authorized to update');
+      return sendErrorResponse(res, 404, 'USER_NOT_FOUND', 'Employee not found or not authorized to update');
     }
 
     Object.assign(user, updates);
@@ -276,10 +278,10 @@ export const updateUser = async (req, res) => {
     const userResponse = user.toObject();
     delete userResponse.password;
 
-    return sendSuccessResponse(res, 200, { user: userResponse }, 'User updated successfully');
+    return sendSuccessResponse(res, 200, { user: userResponse }, 'Employee updated successfully');
 
   } catch (error) {
-    console.error('Update user error:', error);
+    console.error('Update employee error:', error);
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(err => err.message);
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', messages.join(', '));
@@ -288,17 +290,17 @@ export const updateUser = async (req, res) => {
   }
 };
 
-export const deactivateUser = async (req, res) => {
+export const deactivateEmployee = async (req, res) => {
   try {
     const { userId } = req.params;
     let query = { _id: userId, isActive: true };
     if (req.user.UserType === 'SUPERADMIN') {
-      const targetUser = await User.findById(userId);
+      const targetUser = await employeeSchema.findById(userId);
       if (targetUser && targetUser.UserType === 'SUPERADMIN') {
         return sendErrorResponse(res, 403, 'FORBIDDEN', 'Cannot deactivate another SuperAdmin');
       }
     } else if (req.user.UserType === 'SUBADMIN') {
-      const targetUser = await User.findById(userId);
+      const targetUser = await employeeSchema.findById(userId);
       if (targetUser && targetUser.UserType === 'SUPERADMIN') {
         return sendErrorResponse(res, 403, 'FORBIDDEN', 'SubAdmin cannot deactivate SuperAdmin');
       }
@@ -309,30 +311,30 @@ export const deactivateUser = async (req, res) => {
     } else {
       return sendErrorResponse(res, 403, 'FORBIDDEN', 'Insufficient privileges to deactivate users');
     }
-    const user = await User.findOne(query);
+    const user = await employeeSchema.findOne(query);
     if (!user) {
-      return sendErrorResponse(res, 404, 'USER_NOT_FOUND', 'User not found or not authorized to deactivate');
+      return sendErrorResponse(res, 404, 'USER_NOT_FOUND', 'Employee not found or not authorized to deactivate');
     }
 
     user.isActive = false;
     await user.save();
 
-    return sendSuccessResponse(res, 200, null, 'User deactivated successfully');
+    return sendSuccessResponse(res, 200, null, 'Employee deactivated successfully');
 
   } catch (error) {
-    console.error('Deactivate user error:', error);
-    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to deactivate user');
+    console.error('Deactivate employee error:', error);
+    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to deactivate employee');
   }
 };
 
-export const getUserDetails = async (req, res) => {
+export const getEmployeeDetails = async (req, res) => {
   try {
     const { userId } = req.params;
 
     let query = { _id: userId, isActive: true };
     if (req.user.UserType === 'SUPERADMIN') {
     } else if (req.user.UserType === 'SUBADMIN') {
-      const targetUser = await User.findById(userId);
+      const targetUser = await employeeSchema.findById(userId);
       if (targetUser && targetUser.UserType === 'SUPERADMIN') {
         return sendErrorResponse(res, 403, 'FORBIDDEN', 'SubAdmin cannot view SuperAdmin details');
       }
@@ -340,7 +342,7 @@ export const getUserDetails = async (req, res) => {
       query.Department = req.user.Department;
       query.Region = req.user.Region;
     } else {
-      const targetUser = await User.findById(userId);
+      const targetUser = await employeeSchema.findById(userId);
       if (targetUser && 
           (targetUser._id.toString() !== req.user.id && 
            (targetUser.Department !== req.user.Department || 
@@ -350,19 +352,19 @@ export const getUserDetails = async (req, res) => {
       }
     }
 
-    const user = await User.findOne(query)
+    const user = await employeeSchema.findOne(query)
       .select('-password -passwordResetToken -passwordResetExpires -twoFactorSecret')
       .populate('createdBy supervisor', 'firstName lastName UserType');
 
     if (!user) {
-      return sendErrorResponse(res, 404, 'USER_NOT_FOUND', 'User not found');
+      return sendErrorResponse(res, 404, 'USER_NOT_FOUND', 'Employee not found');
     }
 
-    return sendSuccessResponse(res, 200, { user }, 'User details retrieved successfully');
+    return sendSuccessResponse(res, 200, { user }, 'Employee details retrieved successfully');
 
   } catch (error) {
-    console.error('Get user details error:', error);
-    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to retrieve user details');
+    console.error('Get employee details error:', error);
+    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to retrieve employee details');
   }
 };
 
@@ -388,7 +390,7 @@ export const getSupervisorsByDepartment = async (req, res) => {
       query.Region = req.user.Region;
     }
 
-    const supervisors = await User.find(query)
+    const supervisors = await employeeSchema.find(query)
       .select('firstName lastName username email Department Region')
       .sort({ firstName: 1, lastName: 1 });
 
