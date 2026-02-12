@@ -21,7 +21,8 @@ const allowedOrigins = [
   "https://visualeye.digibysr.com",
   "https://www.visualeye.digibysr.com",
   "https://visualeyeye.netlify.app",
-  "https://www.visualeyeye.netlify.app"
+  "https://www.visualeyeye.netlify.app",
+  "http://139.59.65.108"
 ];
 
 app.use(cors({
@@ -94,8 +95,10 @@ app.use((err, req, res, next) => {
     });
 });
 
-connectDB().then(() => {
-    app.listen(process.env.PORT || 8080, () => {
-        console.log(`Server is running http://localhost:${process.env.PORT || 8080}`);
-    })
-})
+app.listen(process.env.PORT || 8080, () => {
+    console.log(`Server is running http://localhost:${process.env.PORT || 8080}`);
+});
+
+connectDB()
+  .then(() => console.log("DB Connected"))
+  .catch(err => console.error("DB Failed:", err));

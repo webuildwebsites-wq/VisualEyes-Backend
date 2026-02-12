@@ -81,11 +81,11 @@ const customerSchema = new mongoose.Schema({
       required: [true, 'State is required'],
       trim: true
     },
-    pincode: {
-      type: String,
-      required: [true, 'Pincode is required'],
-      match: [/^[0-9]{6}$/, 'Invalid pincode format']
-    },
+    // pincode: {
+    //   type: String,
+    //   required: [true, 'Pincode is required'],
+    //   match: [/^[0-9]{6}$/, 'Invalid pincode format']
+    // },
     country: {
       type: String,
       default: 'India',
@@ -95,8 +95,8 @@ const customerSchema = new mongoose.Schema({
   gstNumber: {
     type: String,
     trim: true,
-    uppercase: true,
-    match: [/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/, 'Invalid GST number format']
+    // uppercase: true,
+    // match: [/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/, 'Invalid GST number format']
   },
   panNumber: {
     type: String,
@@ -147,7 +147,7 @@ const customerSchema = new mongoose.Schema({
     },
     verifiedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Employee'
+      ref: 'employee'
     },
     verificationDate: {
       type: Date
@@ -184,7 +184,7 @@ const customerSchema = new mongoose.Schema({
     },
     suspendedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Employee'
+      ref: 'employee'
     },
     suspensionDate: {
       type: Date
@@ -207,12 +207,12 @@ const customerSchema = new mongoose.Schema({
   
   assignedSalesHead: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Employee',
+    ref: 'employee',
     required: [true, 'Sales head assignment is required']
   },
   assignedAccountsHead: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Employee'
+    ref: 'employee'
   },
   
   preferences: {
@@ -257,7 +257,7 @@ const customerSchema = new mongoose.Schema({
   
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Employee',
+    ref: 'employee',
     required: [true, 'Creator reference is required']
   },
   lastLogin: {

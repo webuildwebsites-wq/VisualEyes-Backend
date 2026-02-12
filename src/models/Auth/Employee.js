@@ -86,14 +86,14 @@ const employee = new mongoose.Schema({
   
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Employee',
+    ref: 'employee',
     required: function() {
       return !['SUPERADMIN'].includes(this.UserType);
     }
   },
   supervisor: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Employee',
+    ref: 'employee',
     required: function() {
       return this.UserType === 'USER';
     },
@@ -101,7 +101,7 @@ const employee = new mongoose.Schema({
       validator: async function(supervisorId) {
         if (!supervisorId || this.UserType !== 'USER') return true;
         
-        const supervisor = await mongoose.model('Employee').findById(supervisorId);
+        const supervisor = await mongoose.model('employee').findById(supervisorId);
         return supervisor && supervisor.UserType === 'SUPERVISOR';
       },
       message: 'Supervisor must have SUPERVISOR user type'
