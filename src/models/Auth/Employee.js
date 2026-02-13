@@ -52,7 +52,7 @@ const employee = new mongoose.Schema({
     type: String,
     required: [true, 'Employee type is required'],
     enum: {
-      values: ['SUPERADMIN', 'SUBADMIN', 'SUPERVISOR', 'USER'],
+      values: ['SUPERADMIN', 'SUBADMIN', 'SUPERVISOR', 'EMPLOYEE'],
       message: 'Invalid employee type'
     }
   },
@@ -80,7 +80,7 @@ const employee = new mongoose.Schema({
     type: String,
     enum: ['PRODUCTION', 'QC', 'DISPATCH', 'SALES', 'FINANCE', 'SUPPORT', 'STORE'],
     required: function() {
-      return this.UserType === 'USER';
+      return this.UserType === 'EMPLOYEE';
     }
   },
   
@@ -95,11 +95,11 @@ const employee = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'employee',
     required: function() {
-      return this.UserType === 'USER';
+      return this.UserType === 'EMPLOYEE';
     },
     validate: {
       validator: async function(supervisorId) {
-        if (!supervisorId || this.UserType !== 'USER') return true;
+        if (!supervisorId || this.UserType !== 'EMPLOYEE') return true;
         
         const supervisor = await mongoose.model('employee').findById(supervisorId);
         return supervisor && supervisor.UserType === 'SUPERVISOR';
@@ -149,13 +149,13 @@ const employee = new mongoose.Schema({
     CanCreateOrders: {
       type: Boolean,
       default: function() {
-        return this.UserType !== 'USER' || ['SALES', 'SUPPORT'].includes(this.Role);
+        return this.UserType !== 'EMPLOYEE' || ['SALES', 'SUPPORT'].includes(this.Role);
       }
     },
     CanUpdateOrders: {
       type: Boolean,
       default: function() {
-        return this.UserType !== 'USER' || true; 
+        return this.UserType !== 'EMPLOYEE' || true; 
       }
     },
     CanViewOrders: {
@@ -171,7 +171,7 @@ const employee = new mongoose.Schema({
     CanProcessWorkflow: {
       type: Boolean,
       default: function() {
-        return this.UserType === 'USER' && ['PRODUCTION', 'QC'].includes(this.Role);
+        return this.UserType === 'EMPLOYEE' && ['PRODUCTION', 'QC'].includes(this.Role);
       }
     },
     CanApproveWorkflow: {
@@ -183,31 +183,31 @@ const employee = new mongoose.Schema({
     CanCreateCustomers: {
       type: Boolean,
       default: function() {
-        return this.UserType !== 'USER' || ['SALES', 'FINANCE'].includes(this.Role);
+        return this.UserType !== 'EMPLOYEE' || ['SALES', 'FINANCE'].includes(this.Role);
       }
     },
     CanManageCustomers: {
       type: Boolean,
       default: function() {
-        return this.UserType !== 'USER' || ['SALES', 'FINANCE', 'SUPPORT'].includes(this.Role);
+        return this.UserType !== 'EMPLOYEE' || ['SALES', 'FINANCE', 'SUPPORT'].includes(this.Role);
       }
     },
     CanManageProducts: {
       type: Boolean,
       default: function() {
-        return this.UserType !== 'USER' || ['STORE'].includes(this.Role);
+        return this.UserType !== 'EMPLOYEE' || ['STORE'].includes(this.Role);
       }
     },
     CanViewFinancials: {
       type: Boolean,
       default: function() {
-        return this.UserType !== 'USER' || ['FINANCE', 'SALES'].includes(this.Role);
+        return this.UserType !== 'EMPLOYEE' || ['FINANCE', 'SALES'].includes(this.Role);
       }
     },
     CanManageFinancials: {
       type: Boolean,
       default: function() {
-        return this.UserType !== 'USER' || ['FINANCE'].includes(this.Role);
+        return this.UserType !== 'EMPLOYEE' || ['FINANCE'].includes(this.Role);
       }
     },    
     CanManageSettings: {
@@ -219,7 +219,7 @@ const employee = new mongoose.Schema({
     CanViewReports: {
       type: Boolean,
       default: function() {
-        return this.UserType !== 'USER';
+        return this.UserType !== 'EMPLOYEE';
       }
     },
     CanExportReports: {

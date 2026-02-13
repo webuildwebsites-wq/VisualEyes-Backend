@@ -131,7 +131,7 @@ export const customerRegister = async (req, res) => {
     }
 
     const salesHead = await employeeSchema.findOne({
-      UserType: { $in: ["SUPERVISOR", "USER"] },
+      UserType: { $in: ["SUPERVISOR", "EMPLOYEE"] },
       Department: "SALES",
       Region: formattedRegion,
       isActive: true 

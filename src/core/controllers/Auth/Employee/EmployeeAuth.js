@@ -35,7 +35,7 @@ export const employeeLogin = async (req, res) => {
     user.lastLogin = new Date();
     await user.save();
 
-    return sendTokenResponse(user, 200, res, 'USER', generateToken, generateRefreshToken);
+    return sendTokenResponse(user, 200, res, 'EMPLOYEE', generateToken, generateRefreshToken);
 
   } catch (error) {
     console.error('Employee login error:', error);
@@ -109,7 +109,7 @@ export const employeeResetPassword = async (req, res) => {
 
     await user.save();
 
-    return sendTokenResponse(user, 200, res, 'USER', generateToken, generateRefreshToken);
+    return sendTokenResponse(user, 200, res, 'EMPLOYEE', generateToken, generateRefreshToken);
 
   } catch (error) {
     console.error('Employee', error);
@@ -134,7 +134,7 @@ export const employeeUpdatePassword = async (req, res) => {
     user.password = newPassword;
     await user.save();
 
-    return sendTokenResponse(user, 200, res, 'USER', generateToken, generateRefreshToken);
+    return sendTokenResponse(user, 200, res, 'EMPLOYEE', generateToken, generateRefreshToken);
 
   } catch (error) {
     console.error('Employee update password error:', error);

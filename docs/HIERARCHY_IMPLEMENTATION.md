@@ -131,7 +131,7 @@ POST /create-supervisor-user
   "lastName": "Johnson",
   "phone": "1234567890",
   "employeeId": "USR001",
-  "userType": "USER",
+  "userType": "EMPLOYEE",
   "department": "SALES",
   "region": "NORTH",
   "role": "SALES",

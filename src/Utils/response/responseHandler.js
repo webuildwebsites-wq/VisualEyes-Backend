@@ -24,7 +24,7 @@ export const sendErrorResponse = (res, statusCode = 500, code = 'INTERNAL_ERROR'
   return res.status(statusCode).json(response);
 };
 
-export const sendTokenResponse = (user, statusCode, res, AccountType = 'USER', generateToken, generateRefreshToken) => {
+export const sendTokenResponse = (user, statusCode, res, AccountType = 'EMPLOYEE', generateToken, generateRefreshToken) => {
   const UserType = AccountType === 'CUSTOMER' ? 'CUSTOMER' : user.UserType;
   const token = generateToken(user._id, UserType, AccountType);
   const refreshToken = generateRefreshToken(user._id, UserType, AccountType);

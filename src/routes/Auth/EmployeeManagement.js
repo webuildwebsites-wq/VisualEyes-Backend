@@ -8,7 +8,7 @@ const employeeManagementRouter = express.Router();
 employeeManagementRouter.use(ProtectUser);
 
 employeeManagementRouter.post('/create-subadmin', requireSuperAdmin, createSubAdmin);
-employeeManagementRouter.post('/create-supervisor-user', requireSubAdminOrHigher, createSupervisorOrEmployee);
+employeeManagementRouter.post('/create-supervisor-employee', requireSubAdminOrHigher, createSupervisorOrEmployee);
 
 employeeManagementRouter.get('/get-employees', canManageUsers, getEmployeesByHierarchy);
 employeeManagementRouter.get('/get-employee/:userId', canManageUsers, getEmployeeDetails);

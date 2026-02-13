@@ -65,7 +65,7 @@ try {
         })
     })
 
-    // USER ROUTES (Admin/Staff)
+    // EMPLOYEE ROUTES (Admin/Staff)
     app.use('/api/employee/auth', employeeRouter);
     app.use('/api/employee/management', employeeManagementRouter);
     

@@ -77,13 +77,13 @@ export const createSupervisorOrEmployee = async (req, res) => {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'All required fields must be provided');
     }
 
-    if (!['SUPERVISOR', 'USER'].includes(userType.toUpperCase())) {
-      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Employee type must be either SUPERVISOR or USER');
+    if (!['SUPERVISOR', 'EMPLOYEE'].includes(userType.toUpperCase())) {
+      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Employee type must be either SUPERVISOR or EMPLOYEE');
     }
 
-    if (userType.toUpperCase()  === 'USER') {
+    if (userType.toUpperCase()  === 'EMPLOYEE') {
       if (!role) {
-        return sendErrorResponse(res,400,'VALIDATION_ERROR','Role is required for USER type');
+        return sendErrorResponse(res,400,'VALIDATION_ERROR','Role is required for EMPLOYEE type');
       }
 
       assignedSupervisor = await employeeSchema.findOne({
@@ -134,7 +134,7 @@ export const createSupervisorOrEmployee = async (req, res) => {
       mobileOtpExpires : Date.now() + 600000, // 10 minute
     };
 
-    if (userType.toUpperCase() === 'USER') {
+    if (userType.toUpperCase() === 'EMPLOYEE') {
       userData.Role = role.toUpperCase();
       userData.supervisor = assignedSupervisor._id;
     }
@@ -185,9 +185,9 @@ export const getEmployeesByHierarchy = async (req, res) => {
     } else if (req.user.UserType === 'SUPERVISOR') {
       query.Department = req.user.Department;
       query.Region = req.user.Region;
-      query.UserType = { $in: ['SUPERVISOR', 'USER'] }; 
+      query.UserType = { $in: ['SUPERVISOR', 'EMPLOYEE'] }; 
       
-      if (userType && ['SUPERVISOR', 'USER'].includes(userType.toUpperCase())) {
+      if (userType && ['SUPERVISOR', 'EMPLOYEE'].includes(userType.toUpperCase())) {
         query.UserType = userType.toUpperCase();
       }
     } else {
@@ -196,7 +196,7 @@ export const getEmployeesByHierarchy = async (req, res) => {
         { 
           Department: req.user.Department, 
           Region: req.user.Region,
-          UserType: 'USER'
+          UserType: 'EMPLOYEE'
         } 
       ];
     }
@@ -261,7 +261,7 @@ export const updateEmployeeDetails = async (req, res) => {
     } else if (req.user.UserType === 'SUPERVISOR') {
       query.Department = req.user.Department;
       query.Region = req.user.Region;
-      query.UserType = { $in: ['USER'] }; 
+      query.UserType = { $in: ['EMPLOYEE'] }; 
     } else {
       query._id = req.user.id;
     }
@@ -307,7 +307,7 @@ export const deactivateEmployee = async (req, res) => {
     } else if (req.user.UserType === 'SUPERVISOR') {
       query.Department = req.user.Department;
       query.Region = req.user.Region;
-      query.UserType = 'USER';
+      query.UserType = 'EMPLOYEE';
     } else {
       return sendErrorResponse(res, 403, 'FORBIDDEN', 'Insufficient privileges to deactivate users');
     }
@@ -347,7 +347,7 @@ export const getEmployeeDetails = async (req, res) => {
           (targetUser._id.toString() !== req.user.id && 
            (targetUser.Department !== req.user.Department || 
             targetUser.Region !== req.user.Region ||
-            targetUser.UserType !== 'USER'))) {
+            targetUser.UserType !== 'EMPLOYEE'))) {
         return sendErrorResponse(res, 403, 'FORBIDDEN', 'Access denied');
       }
     }

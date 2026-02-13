@@ -24,7 +24,7 @@ export async function verifyUserEmail(req, res) {
       user.emailOtpExpires = null;
       user.lastLogin = new Date();
       await user.save();
-      return sendTokenResponse(user, 200, res, 'USER', generateToken, generateRefreshToken);
+      return sendTokenResponse(user, 200, res, 'EMPLOYEE', generateToken, generateRefreshToken);
     } else if (!isCodeValid) {
       return sendErrorResponse(res, 401, 'INVALID_OTP', 'Invalid OTP');
     } else {

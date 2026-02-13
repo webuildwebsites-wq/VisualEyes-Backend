@@ -3,11 +3,11 @@ import { sendErrorResponse, sendLogoutResponse, sendSuccessResponse } from '../r
 import dotenv from 'dotenv';
 dotenv.config();
 
-export const generateToken = (id, UserType, AccountType = 'USER') => {
+export const generateToken = (id, UserType, AccountType = 'EMPLOYEE') => {
   return jwt.sign({ id, UserType, AccountType }, process.env.JWT_SECRET,{ expiresIn: process.env.JWT_EXPIRE || '24h' });
 };
 
-export const generateRefreshToken = (id, UserType, AccountType = 'USER') => {
+export const generateRefreshToken = (id, UserType, AccountType = 'EMPLOYEE') => {
   return jwt.sign(
     { id, UserType, AccountType, type: 'refresh' },
     process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
