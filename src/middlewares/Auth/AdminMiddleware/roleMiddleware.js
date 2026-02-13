@@ -8,14 +8,14 @@ export const requireSuperAdmin = (req, res, next) => {
 };
 
 export const requireSubAdminOrHigher = (req, res, next) => {
-  if (!['SUPERADMIN', 'SUBADMIN'].includes(req.user.UserType)) {
-    return sendErrorResponse(res, 403, 'FORBIDDEN', 'Access denied. SubAdmin or higher privileges required.');
+  if (!['SUPERADMIN', 'ADMIN'].includes(req.user.UserType)) {
+    return sendErrorResponse(res, 403, 'FORBIDDEN', 'Access denied. Admin or higher privileges required.');
   }
   next();
 };
 
 export const requireSupervisorOrHigher = (req, res, next) => {
-  if (!['SUPERADMIN', 'SUBADMIN', 'SUPERVISOR'].includes(req.user.UserType)) {
+  if (!['SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(req.user.UserType)) {
     return sendErrorResponse(res, 403, 'FORBIDDEN', 'Access denied. Supervisor or higher privileges required.');
   }
   next();
@@ -33,7 +33,7 @@ export const requirePermission = (permission) => {
 export const canManageUsers = (req, res, next) => {
   const UserType = req.user.UserType;
   
-  if (!['SUPERADMIN', 'SUBADMIN', 'SUPERVISOR'].includes(UserType)) {
+  if (!['SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(UserType)) {
     return sendErrorResponse(res, 403, 'FORBIDDEN', 'Access denied. Employee management privileges required.');
   }
   
