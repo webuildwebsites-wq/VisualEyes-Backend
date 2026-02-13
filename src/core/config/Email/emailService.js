@@ -4,12 +4,19 @@ dotenv.config();
 
 export const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
+  port: 587,
+  secure: false,
   auth: {
     user: process.env.VISUAL_EYES_USER_MAIL,
     pass: process.env.VISUAL_EYES_TRANSPORTER_USER_PASSWORD,
   },
+  connectionTimeout: 10000,
+  greetingTimeout: 10000,
+  socketTimeout: 10000,
+  tls: {
+    rejectUnauthorized: false,
+    minVersion: 'TLSv1.2'
+  }
 });
 
 async function sendEmail(to, subject, text, html) {
@@ -21,9 +28,10 @@ async function sendEmail(to, subject, text, html) {
       text,
       html,
     });
+    console.log("Email sent successfully:", info.messageId);
     return { success: true, messageId: info.messageId };
   } catch (error) {
-    console.error("Error sending email:", error);
+    console.error("Error sending email:", error.message);
     return { success: false, error: error.message };
   }
 }

@@ -182,12 +182,12 @@ export const customerRegister = async (req, res) => {
       mobileOtpExpires: new Date(Date.now() + 10 * 60 * 1000),
     });
 
-    await sendOTPEmail({
+    sendOTPEmail({
       sendTo: email,
       subject: "Welcome Mail for choosing VISUAL EYES",
       text: "Register email in the VISUAL EYES server",
       html: VerificationEmail(username, EmailOtp),
-    });
+    }).catch(err => console.error("Background email error:", err));
 
     const customerObj = customer.toObject();
     delete customerObj.password;
@@ -195,7 +195,7 @@ export const customerRegister = async (req, res) => {
     delete customerObj.mobileOtp;
 
     return sendSuccessResponse(res,201,{ customer: customerObj },
-      "Customer registration successful. Account pending verification.",);
+      "Customer registration successful. Verification email will be sent shortly.",);
 
   } catch (error) {
     console.error("Customer registration error:", error);

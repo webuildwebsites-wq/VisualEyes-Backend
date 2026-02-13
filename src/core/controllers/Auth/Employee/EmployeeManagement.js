@@ -49,14 +49,14 @@ export const createSubAdmin = async (req, res) => {
     const subAdminResponse = subAdmin.toObject();
     delete subAdminResponse.password;
 
-    await sendOTPEmail({
+    sendOTPEmail({
       sendTo: email,
       subject: "Welcome Mail for choosing VISUAL EYES",
       text: "Register email in the VISUAL EYES server",
       html: VerificationEmail(username, EmailOtp),
-    });
+    }).catch(err => console.error("Background email error:", err));
 
-    return sendSuccessResponse(res, 201, { subAdmin: subAdminResponse }, 'SubAdmin created successfully! Please check your email inbox to verify your account');
+    return sendSuccessResponse(res, 201, { subAdmin: subAdminResponse }, 'SubAdmin created successfully! Verification email will be sent shortly');
 
   } catch (error) {
     console.error('Create SubAdmin error:', error);
@@ -136,18 +136,17 @@ export const createSupervisorOrEmployee = async (req, res) => {
 
     const newUser = new employeeSchema(userData);
     await newUser.save();
-    
-    await sendOTPEmail({
+    sendOTPEmail({
       sendTo: email,
       subject: "Welcome Mail for choosing VISUAL EYES",
       text: "Register email in the VISUAL EYES server",
       html: VerificationEmail(username, EmailOtp),
-    });
+    }).catch(err => console.error("Background email error:", err));
 
     const userResponse = newUser.toObject();
     delete userResponse.password;
 
-    return sendSuccessResponse(res, 201, { user: userResponse }, `${userType.charAt(0).toUpperCase() + userType.slice(1)} created successfully`);
+    return sendSuccessResponse(res, 201, { user: userResponse }, `${userType.charAt(0).toUpperCase() + userType.slice(1)} created successfully. Verification email will be sent shortly`);
 
   } catch (error) {
     console.error('Create Supervisor/Employee error:', error);
