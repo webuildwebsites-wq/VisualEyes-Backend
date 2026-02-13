@@ -1,17 +1,19 @@
 import { sendEmail } from "./emailService.js";
 
-const sendOTPEmail=async({sendTo, subject, text, html})=>{
+const sendOTPEmail = async ({ sendTo, subject, text, html }) => {
   try {
     const result = await sendEmail(sendTo, subject, text, html);
-    console.log("result  : ",result);
+    
     if (result.success) {
-      return { message: 'Email sent successfully', messageId: result.messageId };
+      console.log("Email sent successfully to:", sendTo);
+      return { success: true, message: 'Email sent successfully', messageId: result.messageId };
     } else {
-      return { message: 'Failed to send email', error: result.error };
+      console.error("Failed to send email to:", sendTo, "Error:", result.error);
+      return { success: false, message: 'Failed to send email', error: result.error };
     }
   } catch (error) {
-    console.log("Error. :",error);
-    return { message: 'Error sending email', error: error.message };
+    console.error("Error sending email:", error.message);
+    return { success: false, message: 'Error sending email', error: error.message };
   }
 }
 
