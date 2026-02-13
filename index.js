@@ -10,6 +10,7 @@ import customerRouter from './src/routes/Auth/CustomerAuth.js';
 import employeeRouter from './src/routes/Auth/EmployeeAuth.js';
 import employeeManagementRouter from './src/routes/Auth/EmployeeManagement.js';
 import connectDB from './src/core/config/DB/connectDb.js';
+import imageUploadRouter from './src/routes/uploads/upload.js';
 dotenv.config();
 
 const app = express();
@@ -72,6 +73,9 @@ try {
 
    // CUSTOMER ROUTES
     app.use('/api/customer/auth', customerRouter);
+
+   // UPLOAD IMAGE ROUTES
+    app.use('/api/bucket/upload-image', imageUploadRouter)
     
 } catch (error) {
     console.error("Error occurred:", error);
