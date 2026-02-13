@@ -5,12 +5,37 @@ export const createSubAdmin = async (req, res) => {
   try {
     const { username, email, password, phone, address, country, pincode, region, department, aadharCard, panCard, lab, expiry } = req.body;
     
-    if (!username || !email || !password || !phone || !address || !country || !region) {
+    if (!username || !email || !password || !phone || !address || !country || !region || !department) {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'All required fields must be provided');
     }
 
     if (req.user.UserType !== 'SUPERADMIN') {
       return sendErrorResponse(res, 403, 'FORBIDDEN', 'Only SuperAdmin can create Admin');
+    }
+
+    const validDepartments = [
+      'ADMIN', 'BRANCH USER', 'PRIORITY ORDER', 'CUSTOMER', 'ACCOUNTING MODULE',
+      'SALES EXECUTIVE', 'OTHER ADMIN', 'STOCK POINT USER', 'CUSTOMER CARE',
+      'STORES', 'PRODUCTION', 'SUPERVISOR', 'FITTING CENTER', 'F&A',
+      'DISTRIBUTOR', 'DISPATCH', 'STORES ADMIN', 'BELOW ADMIN',
+      'INVESTOR PROFILE', 'AUDITOR', 'CUSTOMER CARE (DB)',
+      'BELOW ADMIN (FITTING CENTER)', 'FITTING CENTER-V2', 'DISPATCH-KOLKATTA',
+      'SALES HEAD', 'CUSTOM PROFILE', 'F&A CFO'
+    ];
+
+    const validLabs = [
+      'KOLKATA STOCK', 'STOCK ORDER', 'VISUAL EYES LAB', 'VE AHMEDABAD LAB',
+      'VE CHENNAI LAB', 'VE KOCHI LAB', 'VE GURGAON LAB', 'VE MUMBAI LAB',
+      'VE TRIVANDRUM LAB', 'SERVICE', 'VE GLASS ORDER', 'VE PUNE LAB',
+      'VE NAGPUR LAB', 'VE BENGALURU LAB', 'VE HYDERBAD LAB', 'VE KOLKATTA LAB'
+    ];
+
+    if (!validDepartments.includes(department.toUpperCase())) {
+      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Invalid department value');
+    }
+
+    if (lab && !validLabs.includes(lab.toUpperCase())) {
+      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Invalid lab value');
     }
 
     const existingUser = await employeeSchema.findOne({
@@ -30,8 +55,8 @@ export const createSubAdmin = async (req, res) => {
       country,
       pincode,
       region,
-      department,
-      lab,
+      Department: department.toUpperCase(),
+      lab: lab ? lab.toUpperCase() : undefined,
       aadharCard,
       panCard,
       expiry,
@@ -131,7 +156,7 @@ export const createSupervisorOrEmployee = async (req, res) => {
       country,
       pincode,
       region,
-      department: department.toUpperCase(),
+      Department: department.toUpperCase(),
       lab: lab ? lab.toUpperCase() : undefined,
       aadharCard,
       panCard,
