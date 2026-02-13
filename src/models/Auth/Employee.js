@@ -24,35 +24,31 @@ const employee = new mongoose.Schema({
     minlength: [8, 'Password must be at least 8 characters'],
     select: false
   },
-  firstName: {
-    type: String,
-    required: [true, 'First name is required'],
-    trim: true,
-    maxlength: [50, 'First name cannot exceed 50 characters']
-  },
-  lastName: {
-    type: String,
-    required: [true, 'Last name is required'],
-    trim: true,
-    maxlength: [50, 'Last name cannot exceed 50 characters']
-  },
   phone: {
     type: String,
     required: [true, 'Phone number is required'],
     match: [/^[0-9]{10}$/, 'Please enter a valid 10-digit phone number']
   },
-  employeeId: {
+  address: {
     type: String,
-    unique: true,
-    sparse: true, 
+    required: [true, 'Address is required'],
+    trim: true
+  },
+  country: {
+    type: String,
+    required: [true, 'Country is required'],
+    trim: true
+  },
+  pincode: {
+    type: String,
     trim: true,
-    uppercase: true
+    match: [/^[0-9]{6}$/, 'Invalid pincode format']
   },
   UserType: {
     type: String,
     required: [true, 'Employee type is required'],
     enum: {
-      values: ['SUPERADMIN', 'SUBADMIN', 'SUPERVISOR', 'EMPLOYEE'],
+      values: ['SUPERADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE'],
       message: 'Invalid employee type'
     }
   },
@@ -63,19 +59,78 @@ const employee = new mongoose.Schema({
   },
   Department: {
     type: String,
-    enum: ['LAB', 'STORE', 'DISPATCH', 'SALES', 'FINANCE', 'CUSTOMER_SUPPORT'],
+    enum: [
+      'ADMIN',
+      'BRANCH USER',
+      'PRIORITY ORDER',
+      'CUSTOMER',
+      'ACCOUNTING MODULE',
+      'SALES EXECUTIVE',
+      'OTHER ADMIN',
+      'STOCK POINT USER',
+      'CUSTOMER CARE',
+      'STORES',
+      'PRODUCTION',
+      'SUPERVISOR',
+      'FITTING CENTER',
+      'F&A',
+      'DISTRIBUTOR',
+      'DISPATCH',
+      'STORES ADMIN',
+      'BELOW ADMIN',
+      'INVESTOR PROFILE',
+      'AUDITOR',
+      'CUSTOMER CARE (DB)',
+      'BELOW ADMIN (FITTING CENTER)',
+      'FITTING CENTER-V2',
+      'DISPATCH-KOLKATTA',
+      'SALES HEAD',
+      'CUSTOM PROFILE',
+      'F&A CFO'
+    ],
     required: function() {
-      return !['SUPERADMIN', 'SUBADMIN'].includes(this.UserType);
+      return !['SUPERADMIN'].includes(this.UserType);
     }
   },
-  Region: {
+  lab: {
     type: String,
-    enum: ['NORTH', 'SOUTH', 'EAST', 'WEST'],
-    required: function() {
-      return !['SUPERADMIN', 'SUBADMIN'].includes(this.UserType);
-    }
+    enum: [
+      'KOLKATA STOCK',
+      'STOCK ORDER',
+      'VISUAL EYES LAB',
+      'VE AHMEDABAD LAB',
+      'VE CHENNAI LAB',
+      'VE KOCHI LAB',
+      'VE GURGAON LAB',
+      'VE MUMBAI LAB',
+      'VE TRIVANDRUM LAB',
+      'SERVICE',
+      'VE GLASS ORDER',
+      'VE PUNE LAB',
+      'VE NAGPUR LAB',
+      'VE BENGALURU LAB',
+      'VE HYDERBAD LAB',
+      'VE KOLKATTA LAB'
+    ]
   },
-  
+  region: {
+    type: String,
+    required: function() {
+      return !['SUPERADMIN', 'ADMIN'].includes(this.UserType);
+    },
+    trim: true
+  },
+  aadharCard: {
+    type: String,
+    trim: true
+  },
+  panCard: {
+    type: String,
+    trim: true
+  },
+  expiry: {
+    type: Date
+  },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'employee',
@@ -88,18 +143,8 @@ const employee = new mongoose.Schema({
     ref: 'employee',
     required: function() {
       return this.UserType === 'EMPLOYEE';
-    },
-    validate: {
-      validator: async function(supervisorId) {
-        if (!supervisorId || this.UserType !== 'EMPLOYEE') return true;
-        
-        const supervisor = await mongoose.model('employee').findById(supervisorId);
-        return supervisor && supervisor.UserType === 'SUPERVISOR';
-      },
-      message: 'Supervisor must have SUPERVISOR user type'
     }
   },
-  
   isActive: {
     type: Boolean,
     default: true
@@ -117,38 +162,34 @@ const employee = new mongoose.Schema({
     CanCreateUsers: {
       type: Boolean,
       default: function() {
-        return ['SUPERADMIN', 'SUBADMIN', 'SUPERVISOR'].includes(this.UserType);
+        return ['SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(this.UserType);
       }
     },
     CanManageUsers: {
       type: Boolean,
       default: function() {
-        return ['SUPERADMIN', 'SUBADMIN', 'SUPERVISOR'].includes(this.UserType);
+        return ['SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(this.UserType);
       }
     },
     CanManageDepartments: {
       type: Boolean,
       default: function() {
-        return ['SUPERADMIN', 'SUBADMIN'].includes(this.UserType);
+        return ['SUPERADMIN', 'ADMIN'].includes(this.UserType);
       }
     },
     CanManageAllDepartments: {
       type: Boolean,
       default: function() {
-        return this.UserType === 'SUBADMIN';
+        return this.UserType === 'ADMIN';
       }
     },
     CanCreateOrders: {
       type: Boolean,
-      default: function() {
-        return this.UserType !== 'EMPLOYEE' || ['SALES', 'CUSTOMER_SUPPORT'].includes(this.Department);
-      }
+      default: true
     },
     CanUpdateOrders: {
       type: Boolean,
-      default: function() {
-        return this.UserType !== 'EMPLOYEE' || true; 
-      }
+      default: true
     },
     CanViewOrders: {
       type: Boolean,
@@ -157,55 +198,45 @@ const employee = new mongoose.Schema({
     CanDeleteOrders: {
       type: Boolean,
       default: function() {
-        return ['SUPERADMIN', 'SUBADMIN', 'SUPERVISOR'].includes(this.UserType);
+        return ['SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(this.UserType);
       }
     },
     CanProcessWorkflow: {
       type: Boolean,
-      default: function() {
-        return this.UserType === 'EMPLOYEE' && ['LAB'].includes(this.Department);
-      }
+      default: true
     },
     CanApproveWorkflow: {
       type: Boolean,
       default: function() {
-        return ['SUPERADMIN', 'SUBADMIN', 'SUPERVISOR'].includes(this.UserType);
+        return ['SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(this.UserType);
       }
     },
     CanCreateCustomers: {
       type: Boolean,
-      default: function() {
-        return this.UserType !== 'EMPLOYEE' || ['SALES', 'FINANCE'].includes(this.Department);
-      }
+      default: true
     },
     CanManageCustomers: {
       type: Boolean,
-      default: function() {
-        return this.UserType !== 'EMPLOYEE' || ['SALES', 'FINANCE', 'CUSTOMER_SUPPORT'].includes(this.Department);
-      }
+      default: true
     },
     CanManageProducts: {
       type: Boolean,
-      default: function() {
-        return this.UserType !== 'EMPLOYEE' || ['STORE'].includes(this.Department);
-      }
+      default: true
     },
     CanViewFinancials: {
       type: Boolean,
-      default: function() {
-        return this.UserType !== 'EMPLOYEE' || ['FINANCE', 'SALES'].includes(this.Department);
-      }
+      default: true
     },
     CanManageFinancials: {
       type: Boolean,
       default: function() {
-        return this.UserType !== 'EMPLOYEE' || ['FINANCE'].includes(this.Department);
+        return ['SUPERADMIN', 'ADMIN'].includes(this.UserType);
       }
     },    
     CanManageSettings: {
       type: Boolean,
       default: function() {
-        return ['SUPERADMIN', 'SUBADMIN'].includes(this.UserType);
+        return ['SUPERADMIN', 'ADMIN'].includes(this.UserType);
       }
     },
     CanViewReports: {
@@ -217,7 +248,7 @@ const employee = new mongoose.Schema({
     CanExportReports: {
       type: Boolean,
       default: function() {
-        return ['SUPERADMIN', 'SUBADMIN', 'SUPERVISOR'].includes(this.UserType);
+        return ['SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(this.UserType);
       }
     }
   },
@@ -228,15 +259,6 @@ const employee = new mongoose.Schema({
     },
     dateOfBirth: {
       type: Date
-    },
-    address: {
-      street: String,
-      city: String,
-      state: String,
-      pincode: {
-        type: String,
-        match: [/^[0-9]{6}$/, 'Invalid pincode format']
-      }
     },
     emergencyContact: {
       name: String,
@@ -261,18 +283,6 @@ const employee = new mongoose.Schema({
   passwordResetExpires: {
     type: Date,
     select: false
-  },
-  emailOtp:{
-    type:String
-  },
-  emailOtpExpires:{
-    type:Date
-  },
-  mobileOtp:{
-    type:String
-  },
-  mobileOtpExpires:{
-    type:Date
   },
 }, {
   timestamps: true,

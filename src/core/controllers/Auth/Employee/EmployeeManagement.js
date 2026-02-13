@@ -1,47 +1,43 @@
-import VerificationEmail from '../../../../Utils/Mail/verifyEmailTemplate.js';
 import { sendSuccessResponse, sendErrorResponse } from '../../../../Utils/response/responseHandler.js';
 import employeeSchema from '../../../../models/Auth/Employee.js';
-import sendOTPEmail from '../../../config/Email/sendEmail.js';
 
 export const createSubAdmin = async (req, res) => {
   try {
-    const { username, email, firstName, lastName, phone, employeeId } = req.body;
+    const { username, email, password, phone, address, country, pincode, region, department, aadharCard, panCard, lab, expiry } = req.body;
     
-    if (!username || !email || !firstName || !lastName || !phone) {
+    if (!username || !email || !password || !phone || !address || !country || !region) {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'All required fields must be provided');
     }
 
     if (req.user.UserType !== 'SUPERADMIN') {
-      return sendErrorResponse(res, 403, 'FORBIDDEN', 'Only SuperAdmin can create SubAdmin');
+      return sendErrorResponse(res, 403, 'FORBIDDEN', 'Only SuperAdmin can create Admin');
     }
 
     const existingUser = await employeeSchema.findOne({
-      $or: [{ email }, { username }, { employeeId: employeeId || null }]
+      $or: [{ email }, { username }]
     });
 
     if (existingUser) {
-      return sendErrorResponse(res, 409, 'USER_EXISTS', 'Employee with this email, username, or employee ID already exists');
+      return sendErrorResponse(res, 409, 'USER_EXISTS', 'Employee with this email or username already exists');
     }
-    
-    const EmailOtp = Math.floor(100000 + Math.random() * 800000).toString();
-    const MobileOtp = Math.floor(100000 + Math.random() * 900000).toString();
-    const userpassword = Math.random().toString(36).slice(-8);
     
     const subAdmin = new employeeSchema({
       username,
       email,
-      password: userpassword, 
-      firstName,
-      lastName,
+      password, 
       phone,
-      employeeId,
-      UserType: 'SUBADMIN',
+      address,
+      country,
+      pincode,
+      region,
+      department,
+      lab,
+      aadharCard,
+      panCard,
+      expiry,
+      UserType: 'ADMIN',
       createdBy: req.user.id,
-      isActive: false,
-      emailOtp : EmailOtp,
-      emailOtpExpires : Date.now() + 600000, // 10 minute 
-      mobileOtp : MobileOtp,
-      mobileOtpExpires : Date.now() + 600000, // 10 minute
+      isActive: true
     });
 
     await subAdmin.save();
@@ -49,104 +45,113 @@ export const createSubAdmin = async (req, res) => {
     const subAdminResponse = subAdmin.toObject();
     delete subAdminResponse.password;
 
-    sendOTPEmail({
-      sendTo: email,
-      subject: "Welcome Mail for choosing VISUAL EYES",
-      text: "Register email in the VISUAL EYES server",
-      html: VerificationEmail(username, EmailOtp),
-    }).catch(err => console.error("Background email error:", err));
-
-    return sendSuccessResponse(res, 201, { subAdmin: subAdminResponse }, 'SubAdmin created successfully! Verification email will be sent shortly');
+    return sendSuccessResponse(res, 201, { admin: subAdminResponse }, 'Admin created successfully');
 
   } catch (error) {
-    console.error('Create SubAdmin error:', error);
+    console.error('Create Admin error:', error);
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(err => err.message);
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', messages.join(', '));
     }
-    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to create SubAdmin');
+    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to create Admin');
   }
 };
 
 export const createSupervisorOrEmployee = async (req, res) => {
   try {
-   const { username, email, firstName, lastName, phone, employeeId, userType, department, region } = req.body;
-   let assignedSupervisor = null;
+    const { employeeType, username, email, password, phone, address, 
+      department, country, pincode, expiry, region, aadharCard, panCard, lab } = req.body;
 
-    if (!username || !email || !firstName || !lastName || !phone || !userType || !department || !region) {
+    let assignedSupervisor = null;
+
+    if (!employeeType || !username || !country || !email || !password || !phone || !address || !department || !region) {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'All required fields must be provided');
     }
 
-    if (!['SUPERVISOR', 'EMPLOYEE'].includes(userType.toUpperCase())) {
+    const validDepartments = [
+      'ADMIN', 'BRANCH USER', 'PRIORITY ORDER', 'CUSTOMER', 'ACCOUNTING MODULE',
+      'SALES EXECUTIVE', 'OTHER ADMIN', 'STOCK POINT USER', 'CUSTOMER CARE',
+      'STORES', 'PRODUCTION', 'SUPERVISOR', 'FITTING CENTER', 'F&A',
+      'DISTRIBUTOR', 'DISPATCH', 'STORES ADMIN', 'BELOW ADMIN',
+      'INVESTOR PROFILE', 'AUDITOR', 'CUSTOMER CARE (DB)',
+      'BELOW ADMIN (FITTING CENTER)', 'FITTING CENTER-V2', 'DISPATCH-KOLKATTA',
+      'SALES HEAD', 'CUSTOM PROFILE', 'F&A CFO'
+    ];
+
+    const validLabs = [
+      'KOLKATA STOCK', 'STOCK ORDER', 'VISUAL EYES LAB', 'VE AHMEDABAD LAB',
+      'VE CHENNAI LAB', 'VE KOCHI LAB', 'VE GURGAON LAB', 'VE MUMBAI LAB',
+      'VE TRIVANDRUM LAB', 'SERVICE', 'VE GLASS ORDER', 'VE PUNE LAB',
+      'VE NAGPUR LAB', 'VE BENGALURU LAB', 'VE HYDERBAD LAB', 'VE KOLKATTA LAB'
+    ];
+
+    if (!validDepartments.includes(department.toUpperCase())) {
+      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Invalid department value');
+    }
+
+    if (lab && !validLabs.includes(lab.toUpperCase())) {
+      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Invalid lab value');
+    }
+
+    if (!['SUPERVISOR', 'EMPLOYEE'].includes(employeeType.toUpperCase())) {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Employee type must be either SUPERVISOR or EMPLOYEE');
     }
 
-    if (userType.toUpperCase()  === 'EMPLOYEE') {
+    if (employeeType.toUpperCase() === 'EMPLOYEE') {
       assignedSupervisor = await employeeSchema.findOne({
         UserType: 'SUPERVISOR',
         Department: department.toUpperCase(),
-        Region: region.toUpperCase(),
+        region: region,
         isActive: true
       });
 
       if (!assignedSupervisor) {
-        return sendErrorResponse(res,400,'NO_SUPERVISOR_FOUND','No active supervisor found for this department and region');
+        return sendErrorResponse(res, 400, 'NO_SUPERVISOR_FOUND', 'No active supervisor found for this department and region');
       }
 
       if (req.user.UserType === 'SUPERVISOR' && assignedSupervisor._id.toString() !== req.user.id.toString()) {
-        return sendErrorResponse(res,403,'FORBIDDEN','Supervisors can only assign themselves as supervisor');
+        return sendErrorResponse(res, 403, 'FORBIDDEN', 'Supervisors can only assign themselves as supervisor');
       }
     }
 
     const existingUser = await employeeSchema.findOne({
-      $or: [{ email }, { username }, 
-      { employeeId: employeeId || null }]
+      $or: [{ email }, { username }]
     });
 
     if (existingUser) {
-      return sendErrorResponse(res, 409, 'USER_EXISTS', 'Employee with this email, username, or employee ID already exists');
+      return sendErrorResponse(res, 409, 'USER_EXISTS', 'Employee with this email or username already exists');
     }
-
-    const EmailOtp = Math.floor(100000 + Math.random() * 800000).toString();
-    const MobileOtp = Math.floor(100000 + Math.random() * 900000).toString();
-    const userpassword = Math.random().toString(36).slice(-8);
 
     const userData = {
       username,
       email,
-      password : userpassword, 
-      firstName,
-      lastName,
+      password, 
       phone,
-      employeeId,
-      UserType: userType.toUpperCase(),
-      Department: department.toUpperCase(),
-      Region: region.toUpperCase(),
+      address,
+      country,
+      pincode,
+      region,
+      department: department.toUpperCase(),
+      lab: lab ? lab.toUpperCase() : undefined,
+      aadharCard,
+      panCard,
+      expiry,
+      UserType: employeeType.toUpperCase(),
       createdBy: req.user.id,
-      isActive: false,
-      emailOtp : EmailOtp,
-      emailOtpExpires : Date.now() + 600000, // 10 minute 
-      mobileOtp : MobileOtp,
-      mobileOtpExpires : Date.now() + 600000, // 10 minute
+      isActive: true
     };
 
-    if (userType.toUpperCase() === 'EMPLOYEE') {
+    if (employeeType.toUpperCase() === 'EMPLOYEE') {
       userData.supervisor = assignedSupervisor._id;
     }
 
     const newUser = new employeeSchema(userData);
     await newUser.save();
-    sendOTPEmail({
-      sendTo: email,
-      subject: "Welcome Mail for choosing VISUAL EYES",
-      text: "Register email in the VISUAL EYES server",
-      html: VerificationEmail(username, EmailOtp),
-    }).catch(err => console.error("Background email error:", err));
 
     const userResponse = newUser.toObject();
     delete userResponse.password;
 
-    return sendSuccessResponse(res, 201, { user: userResponse }, `${userType.charAt(0).toUpperCase() + userType.slice(1)} created successfully. Verification email will be sent shortly`);
+    return sendSuccessResponse(res, 201, { user: userResponse }, `${employeeType.charAt(0).toUpperCase() + employeeType.slice(1)} created successfully`);
 
   } catch (error) {
     console.error('Create Supervisor/Employee error:', error);
@@ -168,17 +173,17 @@ export const getEmployeesByHierarchy = async (req, res) => {
     if (req.user.UserType === 'SUPERADMIN') {
       if (userType) query.UserType = userType.toUpperCase();
       if (department) query.Department = department.toUpperCase();
-      if (region) query.Region = region.toUpperCase();
-    } else if (req.user.UserType === 'SUBADMIN') {
+      if (region) query.region = region;
+    } else if (req.user.UserType === 'ADMIN') {
       query.UserType = { $ne: 'SUPERADMIN' };
       if (userType && userType.toUpperCase() !== 'SUPERADMIN') {
         query.UserType = userType.toUpperCase();
       }
       if (department) query.Department = department.toUpperCase();
-      if (region) query.Region = region.toUpperCase();
+      if (region) query.region = region;
     } else if (req.user.UserType === 'SUPERVISOR') {
       query.Department = req.user.Department;
-      query.Region = req.user.Region;
+      query.region = req.user.region;
       query.UserType = { $in: ['SUPERVISOR', 'EMPLOYEE'] }; 
       
       if (userType && ['SUPERVISOR', 'EMPLOYEE'].includes(userType.toUpperCase())) {
@@ -189,7 +194,7 @@ export const getEmployeesByHierarchy = async (req, res) => {
         { _id: req.user.id },
         { 
           Department: req.user.Department, 
-          Region: req.user.Region,
+          region: req.user.region,
           UserType: 'EMPLOYEE'
         } 
       ];
@@ -198,11 +203,8 @@ export const getEmployeesByHierarchy = async (req, res) => {
     if (search) {
       const searchQuery = {
         $or: [
-          { firstName: { $regex: search, $options: 'i' } },
-          { lastName: { $regex: search, $options: 'i' } },
           { username: { $regex: search, $options: 'i' } },
-          { email: { $regex: search, $options: 'i' } },
-          { employeeId: { $regex: search, $options: 'i' } }
+          { email: { $regex: search, $options: 'i' } }
         ]
       };
       
@@ -247,14 +249,14 @@ export const updateEmployeeDetails = async (req, res) => {
     let query = { _id: userId, isActive: true };
 
     if (req.user.UserType === 'SUPERADMIN') {
-    } else if (req.user.UserType === 'SUBADMIN') {
+    } else if (req.user.UserType === 'ADMIN') {
       const targetUser = await employeeSchema.findById(userId);
       if (targetUser && targetUser.UserType === 'SUPERADMIN') {
-        return sendErrorResponse(res, 403, 'FORBIDDEN', 'SubAdmin cannot update SuperAdmin');
+        return sendErrorResponse(res, 403, 'FORBIDDEN', 'Admin cannot update SuperAdmin');
       }
     } else if (req.user.UserType === 'SUPERVISOR') {
       query.Department = req.user.Department;
-      query.Region = req.user.Region;
+      query.region = req.user.region;
       query.UserType = { $in: ['EMPLOYEE'] }; 
     } else {
       query._id = req.user.id;
@@ -293,14 +295,14 @@ export const deactivateEmployee = async (req, res) => {
       if (targetUser && targetUser.UserType === 'SUPERADMIN') {
         return sendErrorResponse(res, 403, 'FORBIDDEN', 'Cannot deactivate another SuperAdmin');
       }
-    } else if (req.user.UserType === 'SUBADMIN') {
+    } else if (req.user.UserType === 'ADMIN') {
       const targetUser = await employeeSchema.findById(userId);
       if (targetUser && targetUser.UserType === 'SUPERADMIN') {
-        return sendErrorResponse(res, 403, 'FORBIDDEN', 'SubAdmin cannot deactivate SuperAdmin');
+        return sendErrorResponse(res, 403, 'FORBIDDEN', 'Admin cannot deactivate SuperAdmin');
       }
     } else if (req.user.UserType === 'SUPERVISOR') {
       query.Department = req.user.Department;
-      query.Region = req.user.Region;
+      query.region = req.user.region;
       query.UserType = 'EMPLOYEE';
     } else {
       return sendErrorResponse(res, 403, 'FORBIDDEN', 'Insufficient privileges to deactivate users');
@@ -327,20 +329,20 @@ export const getEmployeeDetails = async (req, res) => {
 
     let query = { _id: userId, isActive: true };
     if (req.user.UserType === 'SUPERADMIN') {
-    } else if (req.user.UserType === 'SUBADMIN') {
+    } else if (req.user.UserType === 'ADMIN') {
       const targetUser = await employeeSchema.findById(userId);
       if (targetUser && targetUser.UserType === 'SUPERADMIN') {
-        return sendErrorResponse(res, 403, 'FORBIDDEN', 'SubAdmin cannot view SuperAdmin details');
+        return sendErrorResponse(res, 403, 'FORBIDDEN', 'Admin cannot view SuperAdmin details');
       }
     } else if (req.user.UserType === 'SUPERVISOR') {
       query.Department = req.user.Department;
-      query.Region = req.user.Region;
+      query.region = req.user.region;
     } else {
       const targetUser = await employeeSchema.findById(userId);
       if (targetUser && 
           (targetUser._id.toString() !== req.user.id && 
            (targetUser.Department !== req.user.Department || 
-            targetUser.Region !== req.user.Region ||
+            targetUser.region !== req.user.region ||
             targetUser.UserType !== 'EMPLOYEE'))) {
         return sendErrorResponse(res, 403, 'FORBIDDEN', 'Access denied');
       }
@@ -372,21 +374,21 @@ export const getSupervisorsByDepartment = async (req, res) => {
     };
     if (req.user.UserType === 'SUPERADMIN') {
       if (department) query.Department = department.toUpperCase();
-      if (region) query.Region = region.toUpperCase();
-    } else if (req.user.UserType === 'SUBADMIN') {
+      if (region) query.region = region;
+    } else if (req.user.UserType === 'ADMIN') {
       if (department) query.Department = department.toUpperCase();
-      if (region) query.Region = region.toUpperCase();
+      if (region) query.region = region;
     } else if (req.user.UserType === 'SUPERVISOR') {
       query.Department = req.user.Department;
-      query.Region = req.user.Region;
+      query.region = req.user.region;
     } else {
       query.Department = req.user.Department;
-      query.Region = req.user.Region;
+      query.region = req.user.region;
     }
 
     const supervisors = await employeeSchema.find(query)
-      .select('firstName lastName username email Department Region')
-      .sort({ firstName: 1, lastName: 1 });
+      .select('username email Department region')
+      .sort({ username: 1 });
 
     return sendSuccessResponse(res, 200, { supervisors }, 'Supervisors retrieved successfully');
 
