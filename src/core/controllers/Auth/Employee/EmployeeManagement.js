@@ -70,7 +70,7 @@ export const createSubAdmin = async (req, res) => {
 
 export const createSupervisorOrEmployee = async (req, res) => {
   try {
-   const { username, email, firstName, lastName, phone, employeeId, userType, department, region, role } = req.body;
+   const { username, email, firstName, lastName, phone, employeeId, userType, department, region } = req.body;
    let assignedSupervisor = null;
 
     if (!username || !email || !firstName || !lastName || !phone || !userType || !department || !region) {
@@ -82,10 +82,6 @@ export const createSupervisorOrEmployee = async (req, res) => {
     }
 
     if (userType.toUpperCase()  === 'EMPLOYEE') {
-      if (!role) {
-        return sendErrorResponse(res,400,'VALIDATION_ERROR','Role is required for EMPLOYEE type');
-      }
-
       assignedSupervisor = await employeeSchema.findOne({
         UserType: 'SUPERVISOR',
         Department: department.toUpperCase(),
@@ -135,7 +131,6 @@ export const createSupervisorOrEmployee = async (req, res) => {
     };
 
     if (userType.toUpperCase() === 'EMPLOYEE') {
-      userData.Role = role.toUpperCase();
       userData.supervisor = assignedSupervisor._id;
     }
 

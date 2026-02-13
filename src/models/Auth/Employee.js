@@ -76,14 +76,6 @@ const employee = new mongoose.Schema({
     }
   },
   
-  Role: {
-    type: String,
-    enum: ['PRODUCTION', 'QC', 'DISPATCH', 'SALES', 'FINANCE', 'SUPPORT', 'STORE'],
-    required: function() {
-      return this.UserType === 'EMPLOYEE';
-    }
-  },
-  
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'employee',
@@ -149,7 +141,7 @@ const employee = new mongoose.Schema({
     CanCreateOrders: {
       type: Boolean,
       default: function() {
-        return this.UserType !== 'EMPLOYEE' || ['SALES', 'SUPPORT'].includes(this.Role);
+        return this.UserType !== 'EMPLOYEE' || ['SALES', 'CUSTOMER_SUPPORT'].includes(this.Department);
       }
     },
     CanUpdateOrders: {
@@ -171,7 +163,7 @@ const employee = new mongoose.Schema({
     CanProcessWorkflow: {
       type: Boolean,
       default: function() {
-        return this.UserType === 'EMPLOYEE' && ['PRODUCTION', 'QC'].includes(this.Role);
+        return this.UserType === 'EMPLOYEE' && ['LAB'].includes(this.Department);
       }
     },
     CanApproveWorkflow: {
@@ -183,31 +175,31 @@ const employee = new mongoose.Schema({
     CanCreateCustomers: {
       type: Boolean,
       default: function() {
-        return this.UserType !== 'EMPLOYEE' || ['SALES', 'FINANCE'].includes(this.Role);
+        return this.UserType !== 'EMPLOYEE' || ['SALES', 'FINANCE'].includes(this.Department);
       }
     },
     CanManageCustomers: {
       type: Boolean,
       default: function() {
-        return this.UserType !== 'EMPLOYEE' || ['SALES', 'FINANCE', 'SUPPORT'].includes(this.Role);
+        return this.UserType !== 'EMPLOYEE' || ['SALES', 'FINANCE', 'CUSTOMER_SUPPORT'].includes(this.Department);
       }
     },
     CanManageProducts: {
       type: Boolean,
       default: function() {
-        return this.UserType !== 'EMPLOYEE' || ['STORE'].includes(this.Role);
+        return this.UserType !== 'EMPLOYEE' || ['STORE'].includes(this.Department);
       }
     },
     CanViewFinancials: {
       type: Boolean,
       default: function() {
-        return this.UserType !== 'EMPLOYEE' || ['FINANCE', 'SALES'].includes(this.Role);
+        return this.UserType !== 'EMPLOYEE' || ['FINANCE', 'SALES'].includes(this.Department);
       }
     },
     CanManageFinancials: {
       type: Boolean,
       default: function() {
-        return this.UserType !== 'EMPLOYEE' || ['FINANCE'].includes(this.Role);
+        return this.UserType !== 'EMPLOYEE' || ['FINANCE'].includes(this.Department);
       }
     },    
     CanManageSettings: {
