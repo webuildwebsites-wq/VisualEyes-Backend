@@ -10,14 +10,7 @@ const customerSchema = new mongoose.Schema({
     minlength: [3, 'Username must be at least 3 characters'],
     maxlength: [50, 'Username cannot exceed 50 characters']
   },
-  email: {
-    type: String,
-    required: [true, 'Email is required'],
-    unique: true,
-    trim: true,
-    lowercase: true,
-    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email']
-  },
+
   password: {
     type: String,
     minlength: [8, 'Password must be at least 8 characters'],
@@ -32,8 +25,17 @@ const customerSchema = new mongoose.Schema({
   },
   CustomerType: {
     type: String,
-    enum: ['RETAILER', 'DISTRIBUTOR', 'END_CUSTOMER', 'WHOLESALE'],
-    default: 'RETAILER'
+    enum: [
+      'RETAILER',
+      'CORPORATE EYE HOSPITAL',
+      'DISTRIBUTOR',
+      'WHOLESALER',
+      'DR. AGARWAL EH',
+      'EYE CLINIC',
+      'RETAIL CHAIN',
+      'OEM'
+    ],
+    required: [true, 'Customer type is required']
   },
   shopName: {
     type: String,
@@ -47,28 +49,21 @@ const customerSchema = new mongoose.Schema({
     trim: true,
     maxlength: [100, 'Owner name cannot exceed 100 characters']
   },
-  BusinessType: {
+  emailId: {
     type: String,
-    enum: ['OPTICAL_STORE', 'EYE_CLINIC', 'HOSPITAL', 'CHAIN_STORE', 'ONLINE_STORE', 'INDIVIDUAL'],
-    default: 'OPTICAL_STORE'
-  },
-  phone: {
-    type: String,
-    required: [true, 'Phone number is required'],
-    match: [/^[0-9]{10}$/, 'Please enter a valid 10-digit phone number']
-  },
-  alternatePhone: {
-    type: String,
-    match: [/^[0-9]{10}$/, 'Please enter a valid 10-digit phone number']
-  },
-  whatsappNumber: {
-    type: String,
-    match: [/^[0-9]{10}$/, 'Please enter a valid 10-digit WhatsApp number']
+    required: [true, 'Email is required'],
+    trim: true,
+    lowercase: true,
+    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email']
   },
   address: {
-    street: {
+    address1: {
       type: String,
-      required: [true, 'Street address is required'],
+      required: [true, 'Address 1 is required'],
+      trim: true
+    },
+    address2: {
+      type: String,
       trim: true
     },
     city: {
@@ -79,18 +74,61 @@ const customerSchema = new mongoose.Schema({
     state: {
       type: String,
       required: [true, 'State is required'],
+      enum: [
+        'JAMMU & KASHMIR',
+        'HIMACHAL PRADESH',
+        'PUNJAB',
+        'CHANDIGARH',
+        'UTTARAKHAND',
+        'HARYAANA',
+        'DELHI',
+        'RAJASTHAN',
+        'UTTAR PRADESH',
+        'BIHAR',
+        'SIKKIM',
+        'ARUNACHAL PRADESH',
+        'NAGALAND',
+        'MANIPUR',
+        'MIZORAM',
+        'TRIPURA',
+        'MEGHALAYA',
+        'ASSAM',
+        'WEST BENGAL',
+        'JHARKHAND',
+        'ODISHA',
+        'CHHATTISGARH',
+        'MADHYA PRADESH',
+        'GUJARAT',
+        'DAMMAN & DIU',
+        'DADRA & NAGAR HAVELI',
+        'MAHARASHTRA',
+        'KARNATAKA',
+        'GOA',
+        'LAKSHDEEP',
+        'KERALA',
+        'TAMIL NADU',
+        'PUDUCHERRY',
+        'ANDAMAN & NICOBAR ISLANDS',
+        'TELANGANA',
+        'ANDHRA PRADESH',
+        'LADAKH',
+        'OTHERS'
+      ]
+    },
+    zipCode: {
+      type: String,
       trim: true
     },
-    // pincode: {
-    //   type: String,
-    //   required: [true, 'Pincode is required'],
-    //   match: [/^[0-9]{6}$/, 'Invalid pincode format']
-    // },
     country: {
       type: String,
-      default: 'India',
-      trim: true
+      required: [true, 'Country is required'],
+      enum: ['INDIA', 'OTHER'],
+      default: 'INDIA'
     }
+  },
+  gstType: {
+    type: String,
+    enum: ['REGULAR', 'COMPOSITION', 'UNREGISTERED', 'CONSUMER']
   },
   gstNumber: {
     type: String,
@@ -122,24 +160,330 @@ const customerSchema = new mongoose.Schema({
   },
   creditDays: {
     type: Number,
-    default: 0,
-    min: [0, 'Credit days cannot be negative']
+    enum: [0, 30, 45, 60, 90, 120, 150],
+    default: 0
   },
   paymentTerms: {
     type: String,
     enum: ['CASH', 'CREDIT', 'ADVANCE', 'COD', 'NET_BANKING', 'MIXED'],
     default: 'CASH'
   },
-  labMapping: {
+  plant: {
     type: String,
-    enum: ['LAB'],
-    required: [true, 'Lab mapping is required']
+    enum: ['VISUALEYES OPTIK TECHNOLOGIES', 'VISUALEYES RX LABS LLP']
   },
-  Region: {
+  lab: {
     type: String,
-    enum: ['NORTH', 'SOUTH', 'EAST', 'WEST'],
-    required: [true, 'Region is required']
+    enum: ['100', '101']
   },
+  fittingCenter: {
+    type: String,
+    enum: ['VISUALEYES-OPTIK TECHNOLOGIES', 'VISUALEYES RX LABS LLP']
+  },
+  dcWithoutValue: {
+    type: String,
+    enum: ['YES', 'NO']
+  },
+  courierName: {
+    type: String,
+    enum: [
+      'JAGDISH',
+      'SJ COURIER',
+      'VERMA COURIER',
+      'BLUEDART',
+      'SHYAM',
+      'SHREE RAJ COURIER',
+      'TANVEER',
+      'NAVEEN',
+      'RAHUL RAO',
+      'CHANCHAL',
+      'KAMAL',
+      'HARI RAM',
+      'DEEPAK',
+      'ANJANI COURIER',
+      'TRACKON COURIER',
+      'OFFICE'
+    ]
+  },
+  courierTime: {
+    type: String,
+    enum: [
+      'DELHI/NCR14:00PM',
+      '6:00PM',
+      '8:00PM',
+      '3:00AM',
+      'DELHI/NCR23:00AM',
+      '4:00PM',
+      'SPECIAL CASE INDEX',
+      'SPECIAL CASE TINTING',
+      'SPECIAL CASE FITTING'
+    ]
+  },
+  billingCurrency: {
+    type: String,
+    enum: ['INDIAN RUPEES', 'USD'],
+    default: 'INDIAN RUPEES'
+  },
+  salePerson: {
+    type: String,
+    enum: [
+      'GIRDHARI LAL ARORA',
+      'PRADEEP SHARMA',
+      'VINAY- BLR',
+      'KULVINDER SINGH',
+      'MOHIT SINGH',
+      'ANIL KUMAR',
+      'ARUNA CHAUDHARY',
+      'DURGESH KUMAR',
+      'SAPTARSHI',
+      'RANJEET RAY',
+      'RINKU SINGH',
+      'PROMISH MANGARA',
+      'JVISHESH SHARMA',
+      'DIRECT HO',
+      'VINAY SINGH- PB',
+      'ANUJ SHARMA',
+      'ANIRBAN GHOSH',
+      'MUKESH TANWAR',
+      'ARUP DAS',
+      'SANDIP SINGH',
+      'BHARAT KUMAR',
+      'HARSH SUTHAR',
+      'MOHIT KUMAR - HR',
+      'DEVI LAL',
+      'VCNT-MUMBAI',
+      'VCNT-KL',
+      'VINOD TURALE',
+      'VCNT-NASHIK',
+      'VISHESH SHARMA-UK',
+      'KUMER SINGH',
+      'VCNT - NW DELHI',
+      'NEHA TIWARI',
+      'SOUTH CS',
+      'SUJEET KUMAR',
+      'PRATAP CHOWDHURY',
+      'SOURAV BARUAH',
+      'PRATAP KUMAR JENA',
+      'LALAN KUMAR',
+      'VIJOY KARMAKAR',
+      'ROHIT MISHRA',
+      'MR. VIKAS KUMAR',
+      'SHRI PRAKASH CHAUBEY',
+      'POULOMI'
+    ]
+  },
+  zone: {
+    type: String,
+    trim: true
+  },
+  hasFlatFitting: {
+    type: String,
+    enum: ['YES', 'NO']
+  },
+  specificBrand: {
+    type: String,
+    enum: [
+      'VE-FUJI',
+      'VE-SIGNATURE',
+      'VISION EASE',
+      'VISUALEYES',
+      'ZIRCON',
+      'ZIRCON EXCLUSIVE',
+      'ASAHI-LITE',
+      '02LENS',
+      'ASDOL-OEM',
+      'LITHOUS-OEM',
+      'DIVA',
+      'PIXEL',
+      'VE-DUBAI',
+      'DIVA-WHL',
+      'DIVA-RETAIL'
+    ]
+  },
+  specificCategory: {
+    type: String,
+    enum: [
+      'ZIRCON FSV',
+      'ZIRCON FBF',
+      'ZIRCON SVRX',
+      'ZIRCON KT BIFOCAL',
+      'ZIRCON D BIFOCAL',
+      'CHORUS PEARL',
+      'CHORUS CLEAR',
+      'MARCO PAL',
+      'MARCO BF',
+      'MARBAL PAL',
+      'MARBAL BF',
+      'SIGHTX PAL',
+      'SIGHTX BF',
+      'ZIRCON PEARL',
+      'AURA',
+      'CLEO',
+      'NSOLACE',
+      'VISAO LITE',
+      'VLITE BF',
+      'VLITE DBF',
+      'ZIR+ SV-DS',
+      'CHORUS GARNET',
+      'CHORUS JADE',
+      'CHORUS TOPAZ',
+      'ZIR+ SINGLE VISION',
+      'ZIR+ DRIVEWEAR',
+      'ZIR+ PROGRESSIVE',
+      'VISION EASE FSV',
+      'VISION EASE SVRX',
+      'EVERYWHERE',
+      'NARRATIVE',
+      'NARRATIVE INDIVIDUAL',
+      'VISUALEYES FSV',
+      'KT BIFOCAL',
+      'DIAMOND PLUS',
+      'EMERALD PLUS',
+      'RUBY PLUS',
+      'SAPPHIRE DC',
+      'SAPPHIRE PLUS',
+      'D BIFOCAL',
+      'DS BIFOCAL',
+      'CHORUS OPAL',
+      'SINGLE VISION',
+      'VISUALEYES OFFICE PRO',
+      'FUJI',
+      'ASP FUJI',
+      'FUJI FSV',
+      'APEX LITE',
+      'FUJI SV RX',
+      'APEX',
+      'CREST',
+      'ZENITH',
+      'PINNACLE',
+      'FUJI SPORT TECH',
+      'FUJI OFFICE',
+      'FUJI SAFE RIDE',
+      'SIGNATURE SV',
+      'SIGNATURE SV-DS',
+      'SIGNATURE SV NUPOLAR',
+      'SV XTRACTIVES',
+      'SIGN TX9 XTRACTIVES',
+      'SIGN TX9 DRIVEWEAR',
+      'IRIDIUM',
+      'IRIDIUM NEOCHROME',
+      'IRIDIUM NUPOLAR',
+      'IRIDIUM XTRACTIVES',
+      'IRIDIUM TX9 XTRACTIVES',
+      'IRIDIUM TX9 DRIVEWEAR',
+      'PALLADIUM',
+      'PALLADIUM NEOCHROME',
+      'PALLADIUM NUPOLAR',
+      'PALLADIUM XTRACTIVES',
+      'PALLADIUM TX9 XTRACTIVES',
+      'PALLADIUM TX9 DRIVEWEAR',
+      'GOLD',
+      'GOLD NEOCHROME',
+      'GOLD NUPOLAR',
+      'GOLD XTRACTIVES',
+      'GOLD TX9 XTRACTIVES',
+      'GOLD TX9 DRIVEWEAR',
+      'PLATINUM',
+      'PLATINUM NEOCHROME',
+      'PLATINUM NUPOLAR',
+      'PLATINUM XTRACTIVES',
+      'PLATINUM TX9 XTRACTIVES',
+      'PLATINUM TX9 DRIVEWEAR',
+      'RHODIUM',
+      'RHODIUM NUPOLAR',
+      'RHODIUM TX9 XTRACTIVES',
+      'MYOPIA SV',
+      'SPORT SV RX',
+      'SPORT PAL',
+      'DRIVE SV RX',
+      'DRIVE PAL',
+      'OFFICE',
+      'PILOT',
+      'PILOT NUPOLAR',
+      'PILOT NEOCHROME',
+      'PILOT XTRACTIVES',
+      'NO LINE BIFOCAL',
+      'NO LINE NUPOLAR',
+      'ANTI-FATIGUE',
+      'ANTI-FATIGUE NUPOLAR',
+      'ANTI-FATIGUE NEOCHROME',
+      'GLASS D BIFOCAL',
+      'GLASS KT BIFOCAL',
+      'GLASS RUBY',
+      'GLASS SAPPHIRE',
+      'GLASS SV',
+      'LIFESTYLE PAL',
+      'OCUMADE KT',
+      'OCUMADE FSV',
+      'OCUMADE DBF',
+      'OCUMADE SV'
+    ]
+  },
+  specificLab: {
+    type: String,
+    enum: [
+      'KOLKATA STOCK',
+      'STOCK ORDER',
+      'VISUAL EYES LAB',
+      'VE AHMEDABAD LAB',
+      'VE CHENNAI LAB',
+      'VE KOCHI LAB',
+      'VE GURGAON LAB',
+      'VE HYDERBAD LAB',
+      'VE KOLKATTA LAB',
+      'VE MUMBAI LAB',
+      'VE TRIVANDRUM LAB',
+      'SERVICE',
+      'VE GLASS ORDER',
+      'VE PUNE LAB',
+      'VE NAGPUR LAB',
+      'VE BENGALURU LAB'
+    ]
+  },
+  approvalStatus: {
+    type: String,
+    enum: ['PENDING', 'FINANCE_APPROVED', 'SALES_APPROVED', 'REJECTED'],
+    default: 'PENDING'
+  },
+  
+  financeApproval: {
+    status: {
+      type: String,
+      enum: ['PENDING', 'APPROVED', 'REJECTED'],
+      default: 'PENDING'
+    },
+    approvedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'employee'
+    },
+    approvedAt: {
+      type: Date
+    },
+    remarks: {
+      type: String,
+      maxlength: [500, 'Remarks cannot exceed 500 characters']
+    }
+  },
+  
+  salesApproval: {
+    status: {
+      type: String,
+      enum: ['PENDING', 'APPROVED', 'REJECTED'],
+      default: 'PENDING'
+    },
+    approvedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'employee'
+    },
+    approvedAt: {
+      type: Date
+    },
+    remarks: {
+      type: String,
+      maxlength: [500, 'Remarks cannot exceed 500 characters']
+    }
+  },
+
   verification: {
     isVerified: {
       type: Boolean,
@@ -196,8 +540,24 @@ const customerSchema = new mongoose.Schema({
   
   orderMode: {
     type: String,
-    enum: ['ONLINE', 'WHATSAPP', 'PHONE', 'EMAIL', 'OFFLINE'],
-    default: 'ONLINE'
+    enum: ['ONLINE', 'OFFLINE'],
+    required: [true, 'Order mode is required']
+  },
+  billingMode: {
+    type: String,
+    trim: true
+  },
+  mobileNo1: {
+    type: String,
+    match: [/^[0-9]{10}$/, 'Please enter a valid 10-digit mobile number']
+  },
+  mobileNo2: {
+    type: String,
+    match: [/^[0-9]{10}$/, 'Please enter a valid 10-digit mobile number']
+  },
+  landlineNo: {
+    type: String,
+    trim: true
   },
   communicationMedium: {
     type: [String],
@@ -205,14 +565,26 @@ const customerSchema = new mongoose.Schema({
     default: ['EMAIL']
   },
   
-  assignedSalesHead: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'employee',
-    required: [true, 'Sales head assignment is required']
+  userType: {
+    type: String,
+    default: 'CUSTOMER'
   },
-  assignedAccountsHead: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'employee'
+  designation: {
+    type: String,
+    enum: [
+      'OWNER',
+      'MANAGER',
+      'OPTOMETRIST',
+      'SALES PERSON',
+      'ACCOUNTANT',
+      'STAFF',
+      'OTHER'
+    ]
+  },
+  hasMultipleStores: {
+    type: String,
+    enum: ['YES', 'NO'],
+    default: 'NO'
   },
   
   preferences: {
