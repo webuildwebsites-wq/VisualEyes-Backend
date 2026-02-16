@@ -3,31 +3,14 @@ import employeeSchema from '../../../../models/Auth/Employee.js';
 
 export const createSubAdmin = async (req, res) => {
   try {
-    const { username, email, password, phone, address, country, pincode, region, department, aadharCard, panCard, lab, expiry } = req.body;
+    const { username, email, password, phone, address, country, pincode, aadharCard, panCard, expiry } = req.body;
     
-    if (!username || !email || !password || !phone || !address || !country || !region || !department) {
+    if (!username || !email || !password || !phone || !address || !country) {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'All required fields must be provided');
     }
 
     if (req.user.UserType !== 'SUPERADMIN') {
       return sendErrorResponse(res, 403, 'FORBIDDEN', 'Only SuperAdmin can create Admin');
-    }
-
-    const validDepartments = ['LAB', 'STORE', 'DISPATCH', 'SALES', 'FINANCE', 'CUSTOMER_SUPPORT'];
-
-    const validLabs = [
-      'KOLKATA STOCK', 'STOCK ORDER', 'VISUAL EYES LAB', 'VE AHMEDABAD LAB',
-      'VE CHENNAI LAB', 'VE KOCHI LAB', 'VE GURGAON LAB', 'VE MUMBAI LAB',
-      'VE TRIVANDRUM LAB', 'SERVICE', 'VE GLASS ORDER', 'VE PUNE LAB',
-      'VE NAGPUR LAB', 'VE BENGALURU LAB', 'VE HYDERBAD LAB', 'VE KOLKATTA LAB'
-    ];
-
-    if (!validDepartments.includes(department.toUpperCase())) {
-      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Invalid department value');
-    }
-
-    if (lab && !validLabs.includes(lab.toUpperCase())) {
-      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Invalid lab value');
     }
 
     const existingUser = await employeeSchema.findOne({
@@ -46,9 +29,6 @@ export const createSubAdmin = async (req, res) => {
       address,
       country,
       pincode,
-      region,
-      Department: department.toUpperCase(),
-      lab: lab ? lab.toUpperCase() : undefined,
       aadharCard,
       panCard,
       expiry,
@@ -81,8 +61,13 @@ export const createSupervisorOrEmployee = async (req, res) => {
 
     let assignedSupervisor = null;
 
-    if (!employeeType || !username || !country || !email || !password || !phone || !address || !department || !region) {
+    if (!employeeType || !username || !country || !email || !password || !phone || !address || !department) {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'All required fields must be provided');
+    }
+
+    if (['EMPLOYEE', 'SUPERVISOR'].includes(employeeType.toUpperCase()) && 
+      department.toUpperCase() === 'SALES' && !region) {
+      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Region is required for SALES department employees and supervisors');
     }
 
     const validDepartments = ['LAB', 'STORE', 'DISPATCH', 'SALES', 'FINANCE', 'CUSTOMER_SUPPORT'];
@@ -107,15 +92,23 @@ export const createSupervisorOrEmployee = async (req, res) => {
     }
 
     if (employeeType.toUpperCase() === 'EMPLOYEE') {
-      assignedSupervisor = await employeeSchema.findOne({
+      const supervisorQuery = {
         UserType: 'SUPERVISOR',
         Department: department.toUpperCase(),
-        region: region,
         isActive: true
-      });
+      };
+
+      if (region) {
+        supervisorQuery.region = region;
+      }
+
+      assignedSupervisor = await employeeSchema.findOne(supervisorQuery);
 
       if (!assignedSupervisor) {
-        return sendErrorResponse(res, 400, 'NO_SUPERVISOR_FOUND', 'No active supervisor found for this department and region');
+        const errorMsg = region 
+          ? 'No active supervisor found for this department and region'
+          : 'No active supervisor found for this department';
+        return sendErrorResponse(res, 400, 'NO_SUPERVISOR_FOUND', errorMsg);
       }
 
       if (req.user.UserType === 'SUPERVISOR' && assignedSupervisor._id.toString() !== req.user.id.toString()) {
@@ -139,7 +132,6 @@ export const createSupervisorOrEmployee = async (req, res) => {
       address,
       country,
       pincode,
-      region,
       Department: department.toUpperCase(),
       lab: lab ? lab.toUpperCase() : undefined,
       aadharCard,
@@ -149,6 +141,10 @@ export const createSupervisorOrEmployee = async (req, res) => {
       createdBy: req.user.id,
       isActive: true
     };
+
+    if (region) {
+      userData.region = region;
+    }
 
     if (employeeType.toUpperCase() === 'EMPLOYEE') {
       userData.supervisor = assignedSupervisor._id;
