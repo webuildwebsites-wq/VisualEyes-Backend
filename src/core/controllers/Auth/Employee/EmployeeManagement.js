@@ -57,7 +57,7 @@ export const createSubAdmin = async (req, res) => {
 export const createSupervisorOrEmployee = async (req, res) => {
   try {
     const { employeeType, username, email, password, phone, address, 
-      department, country, pincode, expiry, region, aadharCard, panCard, lab } = req.body;
+      department, country, pincode, expiry, region, aadharCard, panCard, lab, role } = req.body;
 
     let assignedSupervisor = null;
 
@@ -139,7 +139,8 @@ export const createSupervisorOrEmployee = async (req, res) => {
       expiry,
       UserType: employeeType.toUpperCase(),
       createdBy: req.user.id,
-      isActive: true
+      isActive: true,
+      Role : role
     };
 
     if (region) {
