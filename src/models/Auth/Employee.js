@@ -56,39 +56,11 @@ const employee = new mongoose.Schema({
     trim: true,
     default: null
   },
-  Department: {
+    Department: {
     type: String,
-    enum: [
-      'ADMIN',
-      'BRANCH USER',
-      'PRIORITY ORDER',
-      'CUSTOMER',
-      'ACCOUNTING MODULE',
-      'SALES EXECUTIVE',
-      'OTHER ADMIN',
-      'STOCK POINT USER',
-      'CUSTOMER CARE',
-      'STORES',
-      'PRODUCTION',
-      'SUPERVISOR',
-      'FITTING CENTER',
-      'F&A',
-      'DISTRIBUTOR',
-      'DISPATCH',
-      'STORES ADMIN',
-      'BELOW ADMIN',
-      'INVESTOR PROFILE',
-      'AUDITOR',
-      'CUSTOMER CARE (DB)',
-      'BELOW ADMIN (FITTING CENTER)',
-      'FITTING CENTER-V2',
-      'DISPATCH-KOLKATTA',
-      'SALES HEAD',
-      'CUSTOM PROFILE',
-      'F&A CFO'
-    ],
+    enum: ['LAB', 'STORE', 'DISPATCH', 'SALES', 'FINANCE', 'CUSTOMER_SUPPORT'],
     required: function() {
-      return !['SUPERADMIN'].includes(this.UserType);
+      return !['SUPERADMIN', 'SUBADMIN'].includes(this.UserType);
     }
   },
   lab: {
