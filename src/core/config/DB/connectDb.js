@@ -2,9 +2,13 @@ import mongoose from "mongoose";
 import dotenv from 'dotenv'
 dotenv.config()
 
+if (!process.env.MONGODB_URI) {
+    throw new Error("Please provide MONGODB_URI in the .env file")
+}
+
 async function connectDB() {
     try {
-        await mongoose.connect("mongodb+srv://webuildwebsites_db_user:IyVAzXTxudFDommn@cluster0.yewk4no.mongodb.net/")
+        await mongoose.connect(process.env.MONGODB_URI)
         console.log("connect DB")
     } catch (error) {
         console.log("Mongodb connect error", error)

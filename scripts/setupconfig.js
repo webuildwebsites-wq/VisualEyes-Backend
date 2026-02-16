@@ -77,7 +77,7 @@ const seedData = {
 
 const seedSystemConfig = async () => {
   try {
-    await mongoose.connect(process.env.MONGO_URI || "mongodb+srv://webuildwebsites_db_user:IyVAzXTxudFDommn@cluster0.yewk4no.mongodb.net/");
+    await mongoose.connect(process.env.MONGO_URI);
     console.log('Connected to MongoDB');
 
     const superAdmin = await Employee.findOne({ UserType: 'SUPERADMIN' });
