@@ -23,8 +23,8 @@ const setupProject = async () => {
 
     // Create default superadmin details
     const superAdminData = {
-      username: 'Tanish',
-      email: 'tanishsinghrawat5@gmail.com',
+      username: 'anish',
+      email: 'anishsinghrawat5@gmail.com',
       password: 'anish@2026',
       phone: '6395607666',
       address: 'Admin Address, Admin City, Admin State',

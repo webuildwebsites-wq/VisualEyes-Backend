@@ -5,10 +5,11 @@ export const getConfigsByType = async (req, res) => {
   try {
     const { configType } = req.params;
     const config = await SystemConfig.findOne({ configType });
-    if (!config) {
+    const filteredValues = config.values.filter(value => value !== "SUPERADMIN");
+    if (!filteredValues) {
       return sendErrorResponse(res, 404, 'CONFIG_NOT_FOUND', 'Configuration not found');
     }
-    return sendSuccessResponse(res, 200, config.values, 'Configurations retrieved successfully');
+    return sendSuccessResponse(res, 200, filteredValues, 'Configurations retrieved successfully');
   } catch (error) {
     return sendErrorResponse(res, 500, 'INTERNAL_ERROR', error.message);
   }
@@ -16,8 +17,14 @@ export const getConfigsByType = async (req, res) => {
 
 export const getAllConfigs = async (req, res) => {
   try {
-    const configs = await SystemConfig.find();
-    return sendSuccessResponse(res, 200, configs, 'All configurations retrieved successfully');
+      const configs = await SystemConfig.find().lean();
+      const filteredConfigs = configs.map(config => ({
+      ...config,
+      values: config.values?.filter(
+      value => value !== "SUPERADMIN"
+      ) ?? []
+    }));
+    return sendSuccessResponse(res, 200, filteredConfigs, 'All configurations retrieved successfully');
   } catch (error) {
     return sendErrorResponse(res, 500, 'INTERNAL_ERROR', error.message);
   }
