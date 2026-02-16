@@ -42,7 +42,6 @@ const employee = new mongoose.Schema({
   pincode: {
     type: String,
     trim: true,
-    match: [/^[0-9]{6}$/, 'Invalid pincode format']
   },
   UserType: {
     type: String,

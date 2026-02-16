@@ -1,6 +1,5 @@
 import crypto from "crypto";
 import Customer from "../../../../models/Auth/Customer.js";
-import employeeSchema from "../../../../models/Auth/Employee.js";
 import {
   sendErrorResponse,
   sendTokenResponse,
@@ -95,60 +94,63 @@ export const customerLogin = async (req, res) => {
 
 export const customerRegister = async (req, res) => {
   try {
-    const { email, shopName, ownerName, phone, address, gstNumber, region, username } = req.body;
+    const { 
+      username,
+      CustomerType,
+      designation,
+      salePerson,
+      zone,
+      hasFlatFitting,
+      specificBrand,
+      specificCategory,
+      specificLab,
+      emailId,
+      shopName,
+      ownerName,
+      orderMode,
+      billingMode,
+      mobileNo1,
+      mobileNo2,
+      landlineNo,
+      gstType,
+      plant,
+      lab,
+      fittingCenter,
+      creditDays,
+      creditLimit,
+      dcWithoutValue,
+      courierName,
+      courierTime,
+      address,
+      billingCurrency,
+      hasMultipleStores,
+    } = req.body;
 
-    if (!email || !shopName || !ownerName || !phone || !address || !region || !username) {
+    if (!username || !CustomerType || !shopName || !ownerName || !emailId || !orderMode) {
       return sendErrorResponse(
         res,
         400,
         "VALIDATION_ERROR",
-        "Please provide all required fields",
-      );
-    }
-
-    const allowedRegions = ["NORTH", "SOUTH", "EAST", "WEST"];
-    const formattedRegion = region.toUpperCase();
-
-    if (!allowedRegions.includes(formattedRegion)) {
-      return sendErrorResponse(
-        res,
-        400,
-        "INVALID_REGION",
-        "Region must be one of NORTH, SOUTH, EAST, WEST",
+        "Please provide all required fields: username, CustomerType, shopName, ownerName, emailId, orderMode, createdBy",
       );
     }
 
     const existingCustomer = await Customer.findOne({
-      email: email.toLowerCase(),
+      $or: [
+        { username: username.toLowerCase() },
+        { emailId: emailId.toLowerCase() }
+      ]
     });
+    
     if (existingCustomer) {
       return sendErrorResponse(
         res,
         409,
         "CUSTOMER_EXISTS",
-        "Customer with this email already exists",
+        "Customer with this username or email already exists",
       );
     }
 
-    const salesHead = await employeeSchema.findOne({
-      UserType: { $in: ["SUPERVISOR", "EMPLOYEE"] },
-      Department: "SALES",
-      Region: formattedRegion,
-      isActive: true 
-    });
-
-    if (!salesHead) {
-      return sendErrorResponse(
-        res,
-        400,
-        "NO_SALES_HEAD",
-        "No sales representative available for your region",
-      );
-    }
-
-    const EmailOtp = Math.floor(100000 + Math.random() * 800000).toString();
-    const MobileOtp = Math.floor(100000 + Math.random() * 900000).toString();
-    const customerpassword = crypto.randomBytes(8).toString("hex");
     const lastCustomer = await Customer.findOne().sort({ createdAt: -1 });
     let nextNumber = 1;
     if (lastCustomer && lastCustomer.customerCode) {
@@ -157,33 +159,63 @@ export const customerRegister = async (req, res) => {
     }
     const customerCode = `CUS${String(nextNumber).padStart(5, "0")}`;
 
-    const customer = await Customer.create({
-      customerCode,
-      username: username.toLowerCase().trim(),
-      email: email.toLowerCase().trim(),
-      password: customerpassword,
+    const EmailOtp = Math.floor(100000 + Math.random() * 800000).toString();
+    const MobileOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    const customerpassword = crypto.randomBytes(8).toString("hex");
+
+    const customerData = {
       shopName: shopName?.trim(),
       ownerName: ownerName?.trim(),
-      phone: phone?.trim(),
-      address: {
-        street: address.street?.trim(),
-        city: address.city?.trim(),
-        state: address.state?.trim(),
-        country: address.country || "India",
-      },
-      gstNumber: gstNumber?.trim(),
-      Region: formattedRegion,
-      labMapping: "LAB",
-      assignedSalesHead: salesHead._id,
-      createdBy: salesHead._id,
+      CustomerType,
+      orderMode,
+      billingMode,
+      emailId: emailId.toLowerCase().trim(),
+      mobileNo1,
+      mobileNo2,
+      landlineNo,
+      gstType,
+      plant,
+      lab,
+      fittingCenter,
+      creditDays,
+      creditLimit,
+      dcWithoutValue,
+      courierName,
+      courierTime,
+      hasMultipleStores,
+      customerCode,
+      username: username.toLowerCase().trim(),
+      password: customerpassword,
+      designation,
+      salePerson,
+      zone,
+      hasFlatFitting,
+      specificBrand,
+      specificCategory,
+      specificLab,
+      billingCurrency,
+      createdBy : req.user.id,
       emailOtp: EmailOtp,
       emailOtpExpires: new Date(Date.now() + 10 * 60 * 1000),
       mobileOtp: MobileOtp,
       mobileOtpExpires: new Date(Date.now() + 10 * 60 * 1000),
-    });
+    };
+
+    if (address) {
+      customerData.address = {
+        country: address.country || 'INDIA',
+        state: address.state,
+        city: address.city?.trim(),
+        address1: address.address1?.trim(),
+        address2: address.address2?.trim(),
+        zipCode: address.zipCode?.trim(),
+      };
+    }
+
+    const customer = await Customer.create(customerData);
 
     sendOTPEmail({
-      sendTo: email,
+      sendTo: emailId,
       subject: "Welcome Mail for choosing VISUAL EYES",
       text: "Register email in the VISUAL EYES server",
       html: VerificationEmail(username, EmailOtp),
@@ -194,8 +226,12 @@ export const customerRegister = async (req, res) => {
     delete customerObj.emailOtp;
     delete customerObj.mobileOtp;
 
-    return sendSuccessResponse(res,201,{ customer: customerObj },
-      "Customer registration successful. Verification email will be sent shortly.",);
+    return sendSuccessResponse(
+      res,
+      201,
+      { customer: customerObj },
+      "Customer registration successful. Verification email will be sent shortly.",
+    );
 
   } catch (error) {
     console.error("Customer registration error:", error);
@@ -412,6 +448,297 @@ export const getCustomerProfile = async (req, res) => {
       500,
       "INTERNAL_ERROR",
       "Internal server error",
+    );
+  }
+};
+
+// Finance Department Approval
+export const financeApproveCustomer = async (req, res) => {
+  try {
+    const { customerId } = req.params;
+    const { status, remarks } = req.body;
+
+    // Check if user is from Finance department
+    const employee = await employeeSchema.findById(req.user.id);
+    if (!employee || !['F&A', 'F&A CFO', 'ACCOUNTING MODULE'].includes(employee.Department)) {
+      return sendErrorResponse(
+        res,
+        403,
+        "UNAUTHORIZED",
+        "Only Finance/Accounts department can perform this action",
+      );
+    }
+
+    if (!['APPROVED', 'REJECTED'].includes(status)) {
+      return sendErrorResponse(
+        res,
+        400,
+        "VALIDATION_ERROR",
+        "Status must be either APPROVED or REJECTED",
+      );
+    }
+
+    const customer = await Customer.findById(customerId);
+    if (!customer) {
+      return sendErrorResponse(
+        res,
+        404,
+        "CUSTOMER_NOT_FOUND",
+        "Customer not found",
+      );
+    }
+
+    if (customer.approvalStatus !== 'PENDING') {
+      return sendErrorResponse(
+        res,
+        400,
+        "INVALID_STATUS",
+        `Customer is already ${customer.approvalStatus}`,
+      );
+    }
+
+    // Update finance approval
+    customer.financeApproval = {
+      status: status,
+      approvedBy: req.user.id,
+      approvedAt: new Date(),
+      remarks: remarks || ''
+    };
+
+    if (status === 'APPROVED') {
+      customer.approvalStatus = 'FINANCE_APPROVED';
+    } else {
+      customer.approvalStatus = 'REJECTED';
+      customer.status.isActive = false;
+    }
+
+    await customer.save();
+
+    return sendSuccessResponse(
+      res,
+      200,
+      { customer },
+      `Customer ${status.toLowerCase()} by Finance department`,
+    );
+
+  } catch (error) {
+    console.error("Finance approval error:", error);
+    return sendErrorResponse(
+      res,
+      500,
+      "INTERNAL_ERROR",
+      "Finance approval failed",
+    );
+  }
+};
+
+// Sales Head Final Approval
+export const salesApproveCustomer = async (req, res) => {
+  try {
+    const { customerId } = req.params;
+    const { status, remarks } = req.body;
+
+    // Check if user is from Sales department with appropriate role
+    const employee = await employeeSchema.findById(req.user.id);
+    if (!employee || !['SALES HEAD', 'SALES EXECUTIVE'].includes(employee.Department)) {
+      return sendErrorResponse(
+        res,
+        403,
+        "UNAUTHORIZED",
+        "Only Sales Head/Executive can perform this action",
+      );
+    }
+
+    if (!['APPROVED', 'REJECTED'].includes(status)) {
+      return sendErrorResponse(
+        res,
+        400,
+        "VALIDATION_ERROR",
+        "Status must be either APPROVED or REJECTED",
+      );
+    }
+
+    const customer = await Customer.findById(customerId);
+    if (!customer) {
+      return sendErrorResponse(
+        res,
+        404,
+        "CUSTOMER_NOT_FOUND",
+        "Customer not found",
+      );
+    }
+
+    if (customer.approvalStatus !== 'FINANCE_APPROVED') {
+      return sendErrorResponse(
+        res,
+        400,
+        "INVALID_STATUS",
+        "Customer must be approved by Finance department first",
+      );
+    }
+
+    // Update sales approval
+    customer.salesApproval = {
+      status: status,
+      approvedBy: req.user.id,
+      approvedAt: new Date(),
+      remarks: remarks || ''
+    };
+
+    if (status === 'APPROVED') {
+      customer.approvalStatus = 'SALES_APPROVED';
+      customer.status.isActive = true;
+    } else {
+      customer.approvalStatus = 'REJECTED';
+      customer.status.isActive = false;
+    }
+
+    await customer.save();
+
+    return sendSuccessResponse(
+      res,
+      200,
+      { customer },
+      `Customer ${status.toLowerCase()} by Sales Head`,
+    );
+
+  } catch (error) {
+    console.error("Sales approval error:", error);
+    return sendErrorResponse(
+      res,
+      500,
+      "INTERNAL_ERROR",
+      "Sales approval failed",
+    );
+  }
+};
+
+// Get Pending Approvals for Finance
+export const getPendingFinanceApprovals = async (req, res) => {
+  try {
+    const employee = await employeeSchema.findById(req.user.id);
+    if (!employee || !['F&A', 'F&A CFO', 'ACCOUNTING MODULE'].includes(employee.Department)) {
+      return sendErrorResponse(
+        res,
+        403,
+        "UNAUTHORIZED",
+        "Only Finance/Accounts department can view this",
+      );
+    }
+
+    const customers = await Customer.find({
+      approvalStatus: 'PENDING',
+      'financeApproval.status': 'PENDING'
+    })
+    .populate('createdBy', 'username email Department')
+    .sort({ createdAt: -1 });
+
+    return sendSuccessResponse(
+      res,
+      200,
+      { customers, count: customers.length },
+      "Pending finance approvals retrieved successfully",
+    );
+
+  } catch (error) {
+    console.error("Get pending finance approvals error:", error);
+    return sendErrorResponse(
+      res,
+      500,
+      "INTERNAL_ERROR",
+      "Failed to retrieve pending approvals",
+    );
+  }
+};
+
+// Get Pending Approvals for Sales
+export const getPendingSalesApprovals = async (req, res) => {
+  try {
+    const employee = await employeeSchema.findById(req.user.id);
+    if (!employee || !['SALES HEAD', 'SALES EXECUTIVE'].includes(employee.Department)) {
+      return sendErrorResponse(
+        res,
+        403,
+        "UNAUTHORIZED",
+        "Only Sales Head/Executive can view this",
+      );
+    }
+
+    const customers = await Customer.find({
+      approvalStatus: 'FINANCE_APPROVED',
+      'salesApproval.status': 'PENDING'
+    })
+    .populate('createdBy', 'username email Department')
+    .populate('financeApproval.approvedBy', 'username email')
+    .sort({ 'financeApproval.approvedAt': -1 });
+
+    return sendSuccessResponse(
+      res,
+      200,
+      { customers, count: customers.length },
+      "Pending sales approvals retrieved successfully",
+    );
+
+  } catch (error) {
+    console.error("Get pending sales approvals error:", error);
+    return sendErrorResponse(
+      res,
+      500,
+      "INTERNAL_ERROR",
+      "Failed to retrieve pending approvals",
+    );
+  }
+};
+
+// Get All Customers with Approval Status (for Admin/SuperAdmin)
+export const getAllCustomersWithApprovalStatus = async (req, res) => {
+  try {
+    const employee = await employeeSchema.findById(req.user.id);
+    if (!employee || !['SUPERADMIN', 'ADMIN'].includes(employee.UserType)) {
+      return sendErrorResponse(
+        res,
+        403,
+        "UNAUTHORIZED",
+        "Only Admin/SuperAdmin can view all customers",
+      );
+    }
+
+    const { approvalStatus, page = 1, limit = 10 } = req.query;
+    
+    const query = {};
+    if (approvalStatus) {
+      query.approvalStatus = approvalStatus;
+    }
+
+    const customers = await Customer.find(query)
+      .populate('createdBy', 'username email Department')
+      .populate('financeApproval.approvedBy', 'username email')
+      .populate('salesApproval.approvedBy', 'username email')
+      .sort({ createdAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+
+    const count = await Customer.countDocuments(query);
+
+    return sendSuccessResponse(
+      res,
+      200,
+      { 
+        customers, 
+        totalPages: Math.ceil(count / limit),
+        currentPage: page,
+        totalCustomers: count
+      },
+      "Customers retrieved successfully",
+    );
+
+  } catch (error) {
+    console.error("Get all customers error:", error);
+    return sendErrorResponse(
+      res,
+      500,
+      "INTERNAL_ERROR",
+      "Failed to retrieve customers",
     );
   }
 };
