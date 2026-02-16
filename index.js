@@ -9,21 +9,22 @@ import morgan from 'morgan';
 import customerRouter from './src/routes/Auth/CustomerAuth.js';
 import employeeRouter from './src/routes/Auth/EmployeeAuth.js';
 import employeeManagementRouter from './src/routes/Auth/EmployeeManagement.js';
+import systemConfigRouter from './src/routes/Auth/SystemConfig.js';
 import connectDB from './src/core/config/DB/connectDb.js';
 import imageUploadRouter from './src/routes/uploads/upload.js';
 dotenv.config();
 
 const app = express();
 const allowedOrigins = [
-  "http://localhost:5173",
-  "http://localhost:5174",
   "https://visualeye.digibysr.in",
   "https://www.visualeye.digibysr.in",
-  "https://visualeye.digibysr.com",
-  "https://www.visualeye.digibysr.com",
+  "http://visualeye.digibysr.in",
+  "http://www.visualeye.digibysr.in",
   "https://visualeyeye.netlify.app",
   "https://www.visualeyeye.netlify.app",
-  "http://139.59.65.108"
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://139.59.65.108",
 ];
 
 app.use(cors({
@@ -70,6 +71,8 @@ try {
     app.use('/api/employee/auth', employeeRouter);
     app.use('/api/employee/management', employeeManagementRouter);
     
+    // SYSTEM CONFIGURATION ROUTES (SuperAdmin/Admin only)
+    app.use('/api/system/config', systemConfigRouter);
 
    // CUSTOMER ROUTES
     app.use('/api/customer/auth', customerRouter);
