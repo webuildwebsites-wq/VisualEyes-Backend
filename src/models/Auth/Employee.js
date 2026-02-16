@@ -87,7 +87,7 @@ const employee = new mongoose.Schema({
   region: {
     type: String,
     required: function() {
-      return !['SUPERADMIN', 'ADMIN'].includes(this.UserType);
+      return ['EMPLOYEE', 'SUPERVISOR'].includes(this.UserType) && this.Department === 'SALES';
     },
     trim: true
   },
