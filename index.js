@@ -15,15 +15,15 @@ dotenv.config();
 
 const app = express();
 const allowedOrigins = [
-  "http://localhost:5173",
-  "http://localhost:5174",
   "https://visualeye.digibysr.in",
   "https://www.visualeye.digibysr.in",
-  "https://visualeye.digibysr.com",
-  "https://www.visualeye.digibysr.com",
+  "http://visualeye.digibysr.in",
+  "http://www.visualeye.digibysr.in",
   "https://visualeyeye.netlify.app",
   "https://www.visualeyeye.netlify.app",
-  "http://139.59.65.108"
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://139.59.65.108",
 ];
 
 app.use(cors({

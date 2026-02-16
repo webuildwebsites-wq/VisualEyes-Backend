@@ -51,6 +51,19 @@ const employee = new mongoose.Schema({
       message: 'Invalid employee type'
     }
   },
+  Role : {
+  type: String,
+    required: [true, 'Role type is required'],
+    enum: {
+    values: ["ADMIN", "BRANCH USER", "PRIORITY ORDER", "CUSTOMER", "ACCOUNTING MODULE",
+    "SALES EXECUTIVE", "OTHER ADMIN", "STOCK POINT USER", "CUSTOMER CARE",
+    "STORES", "PRODUCTION", "SUPERVISOR", "FITTING CENTER", "F&A",
+    "DISTRIBUTOR", "DISPATCH", "STORES ADMIN", "BELOW ADMIN", "INVESTOR PROFILE",
+    "AUDITOR", "CUSTOMER CARE (DB)", "BELOW ADMIN (FITTING CENTER)",
+    "FITTING CENTER-V2", "DISPATCH-KOLKATTA", "SALES HEAD", "CUSTOM PROFILE", "F&A CFO"],
+    message: 'Invalid Role type'
+    }
+  },
   ProfilePicture: {
     type: String,
     trim: true,
