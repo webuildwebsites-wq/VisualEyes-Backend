@@ -13,15 +13,7 @@ export const createSubAdmin = async (req, res) => {
       return sendErrorResponse(res, 403, 'FORBIDDEN', 'Only SuperAdmin can create Admin');
     }
 
-    const validDepartments = [
-      'ADMIN', 'BRANCH USER', 'PRIORITY ORDER', 'CUSTOMER', 'ACCOUNTING MODULE',
-      'SALES EXECUTIVE', 'OTHER ADMIN', 'STOCK POINT USER', 'CUSTOMER CARE',
-      'STORES', 'PRODUCTION', 'SUPERVISOR', 'FITTING CENTER', 'F&A',
-      'DISTRIBUTOR', 'DISPATCH', 'STORES ADMIN', 'BELOW ADMIN',
-      'INVESTOR PROFILE', 'AUDITOR', 'CUSTOMER CARE (DB)',
-      'BELOW ADMIN (FITTING CENTER)', 'FITTING CENTER-V2', 'DISPATCH-KOLKATTA',
-      'SALES HEAD', 'CUSTOM PROFILE', 'F&A CFO'
-    ];
+    const validDepartments = ['LAB', 'STORE', 'DISPATCH', 'SALES', 'FINANCE', 'CUSTOMER_SUPPORT'];
 
     const validLabs = [
       'KOLKATA STOCK', 'STOCK ORDER', 'VISUAL EYES LAB', 'VE AHMEDABAD LAB',
@@ -93,15 +85,7 @@ export const createSupervisorOrEmployee = async (req, res) => {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'All required fields must be provided');
     }
 
-    const validDepartments = [
-      'ADMIN', 'BRANCH USER', 'PRIORITY ORDER', 'CUSTOMER', 'ACCOUNTING MODULE',
-      'SALES EXECUTIVE', 'OTHER ADMIN', 'STOCK POINT USER', 'CUSTOMER CARE',
-      'STORES', 'PRODUCTION', 'SUPERVISOR', 'FITTING CENTER', 'F&A',
-      'DISTRIBUTOR', 'DISPATCH', 'STORES ADMIN', 'BELOW ADMIN',
-      'INVESTOR PROFILE', 'AUDITOR', 'CUSTOMER CARE (DB)',
-      'BELOW ADMIN (FITTING CENTER)', 'FITTING CENTER-V2', 'DISPATCH-KOLKATTA',
-      'SALES HEAD', 'CUSTOM PROFILE', 'F&A CFO'
-    ];
+    const validDepartments = ['LAB', 'STORE', 'DISPATCH', 'SALES', 'FINANCE', 'CUSTOMER_SUPPORT'];
 
     const validLabs = [
       'KOLKATA STOCK', 'STOCK ORDER', 'VISUAL EYES LAB', 'VE AHMEDABAD LAB',
