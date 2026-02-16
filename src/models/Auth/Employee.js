@@ -56,12 +56,12 @@ const employee = new mongoose.Schema({
     trim: true,
     default: null
   },
-    Department: {
+  Department: {
     type: String,
     enum: ['LAB', 'STORE', 'DISPATCH', 'SALES', 'FINANCE', 'CUSTOMER_SUPPORT'],
     required: function() {
-      return !['SUPERADMIN', 'SUBADMIN'].includes(this.UserType);
-    }
+      return !['SUPERADMIN', 'ADMIN'].includes(this.UserType);
+  }
   },
   lab: {
     type: String,
