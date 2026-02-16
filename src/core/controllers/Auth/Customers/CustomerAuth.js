@@ -164,22 +164,12 @@ export const customerRegister = async (req, res) => {
     const customerpassword = crypto.randomBytes(8).toString("hex");
 
     const customerData = {
-      customerCode,
-      username: username.toLowerCase().trim(),
-      password: customerpassword,
-      CustomerType,
-      designation,
-      salePerson,
-      zone,
-      hasFlatFitting,
-      specificBrand,
-      specificCategory,
-      specificLab,
-      emailId: emailId.toLowerCase().trim(),
       shopName: shopName?.trim(),
       ownerName: ownerName?.trim(),
+      CustomerType,
       orderMode,
       billingMode,
+      emailId: emailId.toLowerCase().trim(),
       mobileNo1,
       mobileNo2,
       landlineNo,
@@ -192,8 +182,18 @@ export const customerRegister = async (req, res) => {
       dcWithoutValue,
       courierName,
       courierTime,
-      billingCurrency,
       hasMultipleStores,
+      customerCode,
+      username: username.toLowerCase().trim(),
+      password: customerpassword,
+      designation,
+      salePerson,
+      zone,
+      hasFlatFitting,
+      specificBrand,
+      specificCategory,
+      specificLab,
+      billingCurrency,
       createdBy : req.user.id,
       emailOtp: EmailOtp,
       emailOtpExpires: new Date(Date.now() + 10 * 60 * 1000),
@@ -203,12 +203,12 @@ export const customerRegister = async (req, res) => {
 
     if (address) {
       customerData.address = {
+        country: address.country || 'INDIA',
+        state: address.state,
+        city: address.city?.trim(),
         address1: address.address1?.trim(),
         address2: address.address2?.trim(),
-        city: address.city?.trim(),
-        state: address.state,
         zipCode: address.zipCode?.trim(),
-        country: address.country || 'INDIA',
       };
     }
 
