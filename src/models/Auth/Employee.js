@@ -46,23 +46,12 @@ const employee = new mongoose.Schema({
   UserType: {
     type: String,
     required: [true, 'Employee type is required'],
-    enum: {
-      values: ['SUPERADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE'],
-      message: 'Invalid employee type'
-    }
+    trim: true
   },
-  Role : {
-  type: String,
+  Role: {
+    type: String,
     required: [true, 'Role type is required'],
-    enum: {
-    values: ["ADMIN", "BRANCH USER", "PRIORITY ORDER", "CUSTOMER", "ACCOUNTING MODULE",
-    "SALES EXECUTIVE", "OTHER ADMIN", "STOCK POINT USER", "CUSTOMER CARE",
-    "STORES", "PRODUCTION", "SUPERVISOR", "FITTING CENTER", "F&A",
-    "DISTRIBUTOR", "DISPATCH", "STORES ADMIN", "BELOW ADMIN", "INVESTOR PROFILE",
-    "AUDITOR", "CUSTOMER CARE (DB)", "BELOW ADMIN (FITTING CENTER)",
-    "FITTING CENTER-V2", "DISPATCH-KOLKATTA", "SALES HEAD", "CUSTOM PROFILE", "F&A CFO"],
-    message: 'Invalid Role type'
-    }
+    trim: true
   },
   ProfilePicture: {
     type: String,
@@ -71,31 +60,14 @@ const employee = new mongoose.Schema({
   },
   Department: {
     type: String,
-    enum: ['LAB', 'STORE', 'DISPATCH', 'SALES', 'FINANCE', 'CUSTOMER_SUPPORT'],
+    trim: true,
     required: function() {
       return !['SUPERADMIN', 'ADMIN'].includes(this.UserType);
-  }
+    }
   },
   lab: {
     type: String,
-    enum: [
-      'KOLKATA STOCK',
-      'STOCK ORDER',
-      'VISUAL EYES LAB',
-      'VE AHMEDABAD LAB',
-      'VE CHENNAI LAB',
-      'VE KOCHI LAB',
-      'VE GURGAON LAB',
-      'VE MUMBAI LAB',
-      'VE TRIVANDRUM LAB',
-      'SERVICE',
-      'VE GLASS ORDER',
-      'VE PUNE LAB',
-      'VE NAGPUR LAB',
-      'VE BENGALURU LAB',
-      'VE HYDERBAD LAB',
-      'VE KOLKATTA LAB'
-    ]
+    trim: true
   },
   region: {
     type: String,
