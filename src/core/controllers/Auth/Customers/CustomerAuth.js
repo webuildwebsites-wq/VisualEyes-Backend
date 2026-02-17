@@ -128,11 +128,12 @@ export const customerRegister = async (req, res) => {
       AadharCard,
       PANCardImg,
       AadharCardImg,
+      salesPerson,
     } = req.body;
 
-    if (!username || !CustomerType || !shopName || !ownerName || !emailId || !orderMode) {
+    if (!username || !CustomerType || !shopName || !ownerName || !salesPerson || !emailId || !orderMode) {
       return sendErrorResponse(res,400,
-      "VALIDATION_ERROR","username, CustomerType, shopName, ownerName, emailId and orderMode are required");
+      "VALIDATION_ERROR","username, CustomerType, shopName, ownerName, salesPerson, emailId and orderMode are required");
     }
 
     if (!Array.isArray(address) || address.length === 0) {
