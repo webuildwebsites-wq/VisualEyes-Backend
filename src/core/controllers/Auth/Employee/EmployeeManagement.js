@@ -169,40 +169,87 @@ export const createSupervisorOrEmployee = async (req, res) => {
   }
 };
 
-export const getEmployeesByHierarchy = async (req, res) => {
+export const getAllEmployees = async (req, res) => {
   try {
-    const { page = 1, limit = 10, userType, department, region, search } = req.query;
+     const page = Math.max(parseInt(req.query.page) || 1, 1);
+     const limit = Math.min(parseInt(req.query.limit) || 10, 100); 
+     const skip = (page - 1) * limit;
+     const query = {};
+
+    const [users, total] = await Promise.all([
+      employeeSchema
+        .find(query)
+        .select('-password -passwordResetToken -passwordResetExpires -twoFactorSecret -permissions -profile')
+        .populate('createdBy supervisor', 'firstName lastName UserType')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      employeeSchema.countDocuments(query)
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+      const pagination = {
+      currentPage: page,
+      totalPages,
+      totalUsers: total,
+      hasNext: page < totalPages,
+      hasPrev: page > 1
+    };
+
+    return sendSuccessResponse(res, 200, { users, pagination }, 'Users retrieved successfully');
+
+  } catch (error) {
+    console.error('Get users by hierarchy error:', error);
+    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to retrieve users');
+  }
+};
+
+export const getFilteredEmployees = async (req, res) => {
+  try {
+    const page = Math.max(parseInt(req.query.page) || 1, 1);
+    const limit = Math.min(parseInt(req.query.limit) || 10, 100);
     const skip = (page - 1) * limit;
+
+    const { userType, department, region, search } = req.query;
 
     let query = { isActive: true };
 
-    if (req.user.UserType === 'SUPERADMIN') {
+     if (req.user.UserType === 'SUPERADMIN') {
       if (userType) query.UserType = userType.toUpperCase();
       if (department) query.Department = department.toUpperCase();
       if (region) query.region = region;
+
     } else if (req.user.UserType === 'ADMIN') {
       query.UserType = { $ne: 'SUPERADMIN' };
+
       if (userType && userType.toUpperCase() !== 'SUPERADMIN') {
         query.UserType = userType.toUpperCase();
       }
+
       if (department) query.Department = department.toUpperCase();
       if (region) query.region = region;
+
     } else if (req.user.UserType === 'SUPERVISOR') {
       query.Department = req.user.Department;
       query.region = req.user.region;
-      query.UserType = { $in: ['SUPERVISOR', 'EMPLOYEE'] }; 
-      
-      if (userType && ['SUPERVISOR', 'EMPLOYEE'].includes(userType.toUpperCase())) {
+      query.UserType = { $in: ['SUPERVISOR', 'EMPLOYEE'] };
+
+      if (
+        userType &&
+        ['SUPERVISOR', 'EMPLOYEE'].includes(userType.toUpperCase())
+      ) {
         query.UserType = userType.toUpperCase();
       }
+
     } else {
       query.$or = [
         { _id: req.user.id },
-        { 
-          Department: req.user.Department, 
+        {
+          Department: req.user.Department,
           region: req.user.region,
           UserType: 'EMPLOYEE'
-        } 
+        }
       ];
     }
 
@@ -213,26 +260,31 @@ export const getEmployeesByHierarchy = async (req, res) => {
           { email: { $regex: search, $options: 'i' } }
         ]
       };
-      
       query = { $and: [query, searchQuery] };
     }
 
-    const users = await employeeSchema.find(query)
-      .select('-password -passwordResetToken -passwordResetExpires -twoFactorSecret')
-      .populate('createdBy supervisor', 'firstName lastName UserType')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(parseInt(limit));
+     const [users, total] = await Promise.all([
+      employeeSchema
+        .find(query)
+        .select('-password -passwordResetToken -passwordResetExpires -twoFactorSecret -permissions -profile')
+        .populate('createdBy supervisor', 'firstName lastName UserType')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      employeeSchema.countDocuments(query)
+    ]);
 
-    const total = await employeeSchema.countDocuments(query);
+    const totalPages = Math.ceil(total / limit);
 
     const pagination = {
-      currentPage: parseInt(page),
-      totalPages: Math.ceil(total / limit),
+      currentPage: page,
+      totalPages,
       totalUsers: total,
-      hasNext: page < Math.ceil(total / limit),
+      hasNext: page < totalPages,
       hasPrev: page > 1
     };
+
 
     return sendSuccessResponse(res, 200, { users, pagination }, 'Users retrieved successfully');
 

@@ -8,7 +8,7 @@ const categorySchema = new mongoose.Schema(
       trim: true,
       maxlength: [100, "Category name cannot exceed 100 characters"],
     },
-    brand: {
+    brandId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Brand",
       required: [true, "Brand is required"],

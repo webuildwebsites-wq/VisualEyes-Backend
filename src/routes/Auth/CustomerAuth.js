@@ -10,7 +10,10 @@ import {
   salesApproveCustomer,
   getPendingFinanceApprovals,
   getPendingSalesApprovals,
-  getAllCustomersWithApprovalStatus
+  getAllCustomersWithApprovalStatus,
+  getAllCustomers,
+  getFilteredCustomers,
+  getCustomerDetails
 } from '../../core/controllers/Auth/Customers/CustomerAuth.js';
 import { protectCustomer, protectCustomerCreation } from '../../middlewares/Auth/CustomerMiddleware/customerMiddleware.js';
 import { logout, refreshToken } from '../../Utils/Auth/tokenUtils.js';
@@ -35,6 +38,12 @@ customerRouter.post('/logout', protectCustomer, logout);
 // Approval workflow routes
 customerRouter.put('/finance-approve/:customerId', ProtectUser, financeApproveCustomer);
 customerRouter.put('/sales-approve/:customerId', ProtectUser, salesApproveCustomer);
+
+// Get All Customers
+customerRouter.get('/get-all-customers', getAllCustomers);
+customerRouter.get('/get-filtered-customers', getFilteredCustomers);
+customerRouter.get('/get-customer/:userId', getCustomerDetails);
+
 
 customerRouter.get('/pending-finance-approvals', ProtectUser, getPendingFinanceApprovals);
 customerRouter.get('/pending-sales-approvals', ProtectUser, getPendingSalesApprovals);

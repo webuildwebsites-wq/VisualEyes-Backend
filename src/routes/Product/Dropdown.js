@@ -21,21 +21,6 @@ const dropdownRouter = express.Router();
 
 dropdownRouter.use(ProtectUser);
 
-// Brand Routes
-dropdownRouter.post('/brands', createBrand);
-dropdownRouter.get('/brands', getAllBrands);
-dropdownRouter.get('/brands/:id', getBrandById);
-dropdownRouter.put('/brands/:id', updateBrand);
-dropdownRouter.delete('/brands/:id', deleteBrand);
-
-// Category Routes
-dropdownRouter.post('/categories', createCategory);
-dropdownRouter.get('/categories', getAllCategories);
-dropdownRouter.get('/categories/brand/:brandId', getCategoriesByBrand);
-dropdownRouter.get('/categories/:id', getCategoryById);
-dropdownRouter.put('/categories/:id', updateCategory);
-dropdownRouter.delete('/categories/:id', deleteCategory);
-
 // Customer Type Routes
 dropdownRouter.post('/customer-types', createCustomerType);
 dropdownRouter.get('/customer-types', getAllCustomerTypes);
@@ -112,6 +97,21 @@ dropdownRouter.get('/billing-currencies', getAllBillingCurrencies);
 dropdownRouter.get('/billing-currencies/:id', getBillingCurrencyById);
 dropdownRouter.put('/billing-currencies/:id', updateBillingCurrency);
 dropdownRouter.delete('/billing-currencies/:id', deleteBillingCurrency);
+
+// Brand Routes
+dropdownRouter.post('/brands', createBrand);
+dropdownRouter.get('/brands', getAllBrands);
+dropdownRouter.get('/brands/:id', getBrandById);
+dropdownRouter.put('/brands/:id', updateBrand);
+dropdownRouter.delete('/brands/:id', deleteBrand);
+
+// Category Routes
+dropdownRouter.post('/categories', createCategory);
+dropdownRouter.get('/categories', getAllCategories);
+dropdownRouter.get('/categories/brand/:brandId', getCategoriesByBrand);
+dropdownRouter.get('/categories/:id', getCategoryById);
+dropdownRouter.put('/categories/:id', updateCategory);
+dropdownRouter.delete('/categories/:id', deleteCategory);
 
 // Specific Lab Routes
 dropdownRouter.post('/specific-labs', createSpecificLab);
