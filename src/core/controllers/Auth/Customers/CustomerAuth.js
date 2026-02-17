@@ -804,3 +804,112 @@ export const getAllCustomersWithApprovalStatus = async (req, res) => {
     );
   }
 };
+
+export const getAllCustomers = async (req, res) => {
+  try {
+    const page = Math.max(parseInt(req.query.page) || 1, 1);
+    const limit = Math.min(parseInt(req.query.limit) || 10, 100);
+    const skip = (page - 1) * limit;
+    const query = {};
+
+    const [customers, total] = await Promise.all([
+      Customer
+        .find(query)
+        .select('-password -emailOtp -emailOtpExpires -mobileOtp -mobileOtpExpires')
+        .populate('createdBy', 'firstName lastName UserType')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Customer.countDocuments(query)
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+    const pagination = {
+      currentPage: page,
+      totalPages,
+      totalCustomers: total,
+      hasNext: page < totalPages,
+      hasPrev: page > 1
+    };
+
+    return sendSuccessResponse(res, 200, { customers, pagination }, 'Customers retrieved successfully');
+
+  } catch (error) {
+    console.error('Get all customers error:', error);
+    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to retrieve customers');
+  }
+};
+
+export const getFilteredCustomers = async (req, res) => {
+  try {
+    const page = Math.max(parseInt(req.query.page) || 1, 1);
+    const limit = Math.min(parseInt(req.query.limit) || 10, 100);
+    const skip = (page - 1) * limit;
+
+    const { customerType, zone, specificBrand, specificCategory, search } = req.query;
+
+    let query = {};
+
+    if (customerType) query.CustomerType = customerType;
+    if (zone) query.zone = zone;
+    if (specificBrand) query.specificBrand = specificBrand;
+    if (specificCategory) query.specificCategory = specificCategory;
+
+    if (search) {
+      const searchQuery = {
+        $or: [
+          { shopName: { $regex: search, $options: 'i' } },
+          { ownerName: { $regex: search, $options: 'i' } },
+          { emailId: { $regex: search, $options: 'i' } },
+          { username: { $regex: search, $options: 'i' } }
+        ]
+      };
+      query = { $and: [query, searchQuery] };
+    }
+
+    const [customers, total] = await Promise.all([
+      Customer
+        .find(query)
+        .select('-password -emailOtp -emailOtpExpires -mobileOtp -mobileOtpExpires')
+        .populate('createdBy', 'firstName lastName UserType')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Customer.countDocuments(query)
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    const pagination = {
+      currentPage: page,
+      totalPages,
+      totalCustomers: total,
+      hasNext: page < totalPages,
+      hasPrev: page > 1
+    };
+
+    return sendSuccessResponse(res, 200, { customers, pagination }, 'Customers retrieved successfully');
+
+  } catch (error) {
+    console.error('Get filtered customers error:', error);
+    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to retrieve customers');
+  }
+};
+
+export const getCustomerDetails = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await Customer.findOne({_id: userId}).select('-password -emailOtp -emailOtpExpires -mobileOtp -mobileOtpExpires')
+    if (!user) {
+      return sendErrorResponse(res, 404, 'USER_NOT_FOUND', 'Employee not found');
+    }
+
+    return sendSuccessResponse(res, 200, { user }, 'Employee details retrieved successfully');
+
+  } catch (error) {
+    console.error('Get employee details error:', error);
+    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to retrieve employee details');
+  }
+};
