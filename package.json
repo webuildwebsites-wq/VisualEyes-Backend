@@ -11,6 +11,8 @@
     "dev": "nodemon index.js",
     "setup": "node scripts/setup.js",
     "create-superadmin": "node scripts/createSuperAdmin.js",
+    "seed-brands": "node scripts/seedBrandsCategories.js",
+    "seed-dropdowns": "node scripts/seedCustomerDropdowns.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
