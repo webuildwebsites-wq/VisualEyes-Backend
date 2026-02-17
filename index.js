@@ -14,6 +14,9 @@ import connectDB from './src/core/config/DB/connectDb.js';
 import imageUploadRouter from './src/routes/uploads/upload.js';
 import brandRouter from './src/routes/Product/Brand.js';
 import categoryRouter from './src/routes/Product/Category.js';
+import customerTypeRouter from './src/routes/Product/CustomerType.js';
+import dropdownRouter from './src/routes/Product/Dropdown.js';
+import salesPersonRouter from './src/routes/Auth/SalesPerson.js';
 dotenv.config();
 
 const app = express();
@@ -85,6 +88,11 @@ try {
     // PRODUCT ROUTES (Brand & Category)
     app.use('/api/product/brands', brandRouter);
     app.use('/api/product/categories', categoryRouter);
+    app.use('/api/product/customer-types', customerTypeRouter);
+    app.use('/api/product/dropdowns', dropdownRouter);
+
+    // SALES PERSON ROUTES
+    app.use('/api/employee/sales-persons', salesPersonRouter);
     
 } catch (error) {
     console.error("Error occurred:", error);
