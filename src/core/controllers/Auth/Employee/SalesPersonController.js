@@ -2,27 +2,12 @@ import employeeSchema from "../../../../models/Auth/Employee.js";
 import { sendErrorResponse, sendSuccessResponse } from "../../../../Utils/response/responseHandler.js";
 
 export const getAllSalesPersons = async (req, res) => {
-  try {
-    const { isActive, region } = req.query;
-    
+  try {    
     const filter = {
       Department: 'SALES',
       UserType: { $in: ['EMPLOYEE', 'SUPERVISOR'] }
     };
-    
-    if (isActive !== undefined) {
-      filter.isActive = isActive === 'true';
-    }
-    
-    if (region) {
-      filter.region = region;
-    }
-
-    const salesPersons = await employeeSchema
-      .find(filter)
-      .select('username email phone Department UserType Role region lab isActive')
-      .sort({ username: 1 });
-
+    const salesPersons = await employeeSchema.find(filter).select('username email phone Department UserType Role region lab isActive');
     return sendSuccessResponse(res, 200, salesPersons, "Sales persons retrieved successfully");
   } catch (error) {
     console.error("Get All Sales Persons Error:", error);
@@ -34,13 +19,11 @@ export const getSalesPersonById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const salesPerson = await employeeSchema
-      .findOne({ 
+    const salesPerson = await employeeSchema.findOne({ 
         _id: id, 
         Department: 'SALES',
         UserType: { $in: ['EMPLOYEE', 'SUPERVISOR'] }
-      })
-      .select('username email phone Department UserType Role region lab isActive profile');
+      }).select('username email phone Department UserType Role region lab isActive profile');
 
     if (!salesPerson) {
       return sendErrorResponse(res, 404, "NOT_FOUND", "Sales person not found");

@@ -10,11 +10,7 @@ const addressSchema = new mongoose.Schema(
     state: { type: String, required: true },
     zipCode: { type: String, required: true, trim: true },
     country: { type: String, default: "INDIA" },
-    billingCurrency: {
-      type: String,
-      enum: ["INR", "USD"],
-      required: true,
-    },
+    billingCurrency: { type: String, required: true },
     billingMode: { type: String, required: true },
   },
   { _id: false }
@@ -41,7 +37,6 @@ const customerSchema = new mongoose.Schema(
     },
     orderMode: {
       type: String,
-      enum: ["ONLINE", "OFFLINE"],
       required: true,
     },
     mobileNo1: {
@@ -109,12 +104,12 @@ const customerSchema = new mongoose.Schema(
     },
     specificLab: String,
     specificBrand: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Brand",
+      type : String,
+      required : true,
     },
     specificCategory: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Category",
+      type : String,
+      required : true,
     },
     salesPerson : String,
 
@@ -186,7 +181,6 @@ const customerSchema = new mongoose.Schema(
     },
     creditDays: {
       type: Number,
-      enum: [0, 30, 45, 60, 90, 120, 150],
       default: 0,
     },
     courierName: String,

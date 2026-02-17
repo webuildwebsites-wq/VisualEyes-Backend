@@ -12,9 +12,6 @@ import employeeManagementRouter from './src/routes/Auth/EmployeeManagement.js';
 import systemConfigRouter from './src/routes/Auth/SystemConfig.js';
 import connectDB from './src/core/config/DB/connectDb.js';
 import imageUploadRouter from './src/routes/uploads/upload.js';
-import brandRouter from './src/routes/Product/Brand.js';
-import categoryRouter from './src/routes/Product/Category.js';
-import customerTypeRouter from './src/routes/Product/CustomerType.js';
 import dropdownRouter from './src/routes/Product/Dropdown.js';
 import salesPersonRouter from './src/routes/Auth/SalesPerson.js';
 dotenv.config();
@@ -76,6 +73,9 @@ try {
     app.use('/api/employee/auth', employeeRouter);
     app.use('/api/employee/management', employeeManagementRouter);
     
+    // SALES PERSON ROUTES
+    app.use('/api/employee/sales-persons', salesPersonRouter);
+    
     // SYSTEM CONFIGURATION ROUTES (SuperAdmin/Admin only)
     app.use('/api/system/config', systemConfigRouter);
 
@@ -85,14 +85,8 @@ try {
    // UPLOAD IMAGE ROUTES
     app.use('/api/bucket/upload-image', imageUploadRouter)
 
-    // PRODUCT ROUTES (Brand & Category)
-    app.use('/api/product/brands', brandRouter);
-    app.use('/api/product/categories', categoryRouter);
-    app.use('/api/product/customer-types', customerTypeRouter);
-    app.use('/api/product/dropdowns', dropdownRouter);
-
-    // SALES PERSON ROUTES
-    app.use('/api/employee/sales-persons', salesPersonRouter);
+    // PRODUCT ROUTES (All dropdowns including brands, categories, customer-types)
+    app.use('/api/product', dropdownRouter);
     
 } catch (error) {
     console.error("Error occurred:", error);
