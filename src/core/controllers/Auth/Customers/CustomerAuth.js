@@ -94,11 +94,9 @@ export const customerLogin = async (req, res) => {
 
 export const customerRegister = async (req, res) => {
   try {
-    const { 
+    const {
       username,
       CustomerType,
-      designation,
-      salePerson,
       zone,
       hasFlatFitting,
       specificBrand,
@@ -108,7 +106,6 @@ export const customerRegister = async (req, res) => {
       shopName,
       ownerName,
       orderMode,
-      billingMode,
       mobileNo1,
       mobileNo2,
       landlineNo,
@@ -118,21 +115,80 @@ export const customerRegister = async (req, res) => {
       fittingCenter,
       creditDays,
       creditLimit,
-      dcWithoutValue,
       courierName,
       courierTime,
       address,
-      billingCurrency,
-      hasMultipleStores,
+      IsGSTRegistered,
+      selectType,
+      selectTypeIndex,
+      Price,
+      GSTNumber,
+      GSTCertificateImg,
+      PANCard,
+      AadharCard,
+      PANCardImg,
+      AadharCardImg,
     } = req.body;
 
     if (!username || !CustomerType || !shopName || !ownerName || !emailId || !orderMode) {
-      return sendErrorResponse(
-        res,
-        400,
-        "VALIDATION_ERROR",
-        "Please provide all required fields: username, CustomerType, shopName, ownerName, emailId, orderMode, createdBy",
-      );
+      return sendErrorResponse(res,400,
+      "VALIDATION_ERROR","username, CustomerType, shopName, ownerName, emailId and orderMode are required");
+    }
+
+    if (!Array.isArray(address) || address.length === 0) {
+      return sendErrorResponse(res, 400, "VALIDATION_ERROR", "At least one address is required");
+    }
+
+    for (const addr of address) {
+      if (
+        !addr.address1 ||
+        !addr.contactPerson ||
+        !addr.contactNumber ||
+        !addr.country ||
+        !addr.state ||
+        !addr.city ||
+        !addr.zipCode ||
+        !addr.billingCurrency ||
+        !addr.billingMode
+      ) {
+        return sendErrorResponse(
+          res,
+          400,
+          "VALIDATION_ERROR",
+          "All address fields are required"
+        );
+      }
+    }
+
+    if (hasFlatFitting === true) {
+      if (!Array.isArray(selectType) || !Array.isArray(selectTypeIndex) || !Price) {
+        return sendErrorResponse(
+          res,
+          400,
+          "VALIDATION_ERROR",
+          "selectType, selectTypeIndex and Price are required when hasFlatFitting is true"
+        );
+      }
+    }
+
+    if (IsGSTRegistered === true) {
+      if (!GSTNumber || !gstType || !GSTCertificateImg) {
+        return sendErrorResponse(
+          res,
+          400,
+          "VALIDATION_ERROR",
+          "GSTNumber, gstType and GSTCertificateImg are required when GST registered"
+        );
+      }
+    } else {
+      if (!PANCard || !AadharCard || !PANCardImg || !AadharCardImg) {
+        return sendErrorResponse(
+          res,
+          400,
+          "VALIDATION_ERROR",
+          "PANCard, AadharCard and their images are required when not GST registered"
+        );
+      }
     }
 
     const existingCustomer = await Customer.findOne({
@@ -151,66 +207,76 @@ export const customerRegister = async (req, res) => {
       );
     }
 
-    const lastCustomer = await Customer.findOne().sort({ createdAt: -1 });
-    let nextNumber = 1;
-    if (lastCustomer && lastCustomer.customerCode) {
-      const lastNumber = parseInt(lastCustomer.customerCode.replace("CUS", ""));
-      nextNumber = lastNumber + 1;
-    }
-    const customerCode = `CUS${String(nextNumber).padStart(5, "0")}`;
-
     const EmailOtp = Math.floor(100000 + Math.random() * 800000).toString();
     const MobileOtp = Math.floor(100000 + Math.random() * 900000).toString();
     const customerpassword = crypto.randomBytes(8).toString("hex");
 
     const customerData = {
-      shopName: shopName?.trim(),
-      ownerName: ownerName?.trim(),
+      // Basic Details
+      shopName: shopName.trim(),
+      ownerName: ownerName.trim(),
       CustomerType,
       orderMode,
-      billingMode,
-      emailId: emailId.toLowerCase().trim(),
       mobileNo1,
       mobileNo2,
       landlineNo,
-      gstType,
+      emailId: emailId.toLowerCase().trim(),
+      
+
+      // multuple Address Details as an array
+       address: address.map((addr) => ({
+        address1: addr.address1.trim(),
+        contactPerson: addr.contactPerson.trim(),
+        contactNumber: addr.contactNumber.trim(),
+        country: addr.country,
+        state: addr.state,
+        city: addr.city.trim(),
+        zipCode: addr.zipCode.trim(),
+        billingCurrency: addr.billingCurrency,
+        billingMode: addr.billingMode,
+      })),
+
+
+      // Login details 
+      username: username.toLowerCase().trim(),
+      zone,
+      hasFlatFitting,
+      selectType: hasFlatFitting ? selectType : undefined,
+      selectTypeIndex: hasFlatFitting ? selectTypeIndex : undefined,
+      Price: hasFlatFitting ? Price : undefined,
+      specificLab,
+      specificBrand,
+      specificCategory,
+      salesPerson,
+
+
+      // Documentation
+      IsGSTRegistered,
+      GSTNumber: IsGSTRegistered ? GSTNumber : undefined,
+      gstType: IsGSTRegistered ? gstType : undefined,
+      GSTCertificateImg: IsGSTRegistered ? GSTCertificateImg : undefined,
+      PANCard: !IsGSTRegistered ? PANCard : undefined,
+      AadharCard: !IsGSTRegistered ? AadharCard : undefined,
+      PANCardImg: !IsGSTRegistered ? PANCardImg : undefined,
+      AadharCardImg: !IsGSTRegistered ? AadharCardImg : undefined,
       plant,
       lab,
       fittingCenter,
       creditDays,
       creditLimit,
-      dcWithoutValue,
       courierName,
       courierTime,
-      hasMultipleStores,
-      customerCode,
-      username: username.toLowerCase().trim(),
+            
+      // System Internall details
+      dcWithoutValue: false,
       password: customerpassword,
-      designation,
-      salePerson,
-      zone,
-      hasFlatFitting,
-      specificBrand,
-      specificCategory,
-      specificLab,
-      billingCurrency,
+      designation : "Customer",
       createdBy : req.user.id,
       emailOtp: EmailOtp,
       emailOtpExpires: new Date(Date.now() + 10 * 60 * 1000),
       mobileOtp: MobileOtp,
       mobileOtpExpires: new Date(Date.now() + 10 * 60 * 1000),
     };
-
-    if (address) {
-      customerData.address = {
-        country: address.country || 'INDIA',
-        state: address.state,
-        city: address.city?.trim(),
-        address1: address.address1?.trim(),
-        address2: address.address2?.trim(),
-        zipCode: address.zipCode?.trim(),
-      };
-    }
 
     const customer = await Customer.create(customerData);
 
@@ -226,13 +292,8 @@ export const customerRegister = async (req, res) => {
     delete customerObj.emailOtp;
     delete customerObj.mobileOtp;
 
-    return sendSuccessResponse(
-      res,
-      201,
-      { customer: customerObj },
-      "Customer registration successful. Verification email will be sent shortly.",
-    );
-
+    return sendSuccessResponse(res,201,
+    { customer: customerObj },"Customer registration successful. Verification email will be sent shortly.",);
   } catch (error) {
     console.error("Customer registration error:", error);
     if (error.name === "ValidationError") {

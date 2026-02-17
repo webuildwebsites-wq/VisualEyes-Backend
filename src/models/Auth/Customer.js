@@ -224,7 +224,7 @@ const customerSchema = new mongoose.Schema({
     enum: ['INDIAN RUPEES', 'USD'],
     default: 'INDIAN RUPEES'
   },
-  salePerson: {
+  salesPerson: {
     type: String,
     enum: [
       'GIRDHARI LAL ARORA',
@@ -581,12 +581,6 @@ const customerSchema = new mongoose.Schema({
       'OTHER'
     ]
   },
-  hasMultipleStores: {
-    type: String,
-    enum: ['YES', 'NO'],
-    default: 'NO'
-  },
-  
   preferences: {
     preferredBrands: [String],
     preferredLensTypes: [String],
