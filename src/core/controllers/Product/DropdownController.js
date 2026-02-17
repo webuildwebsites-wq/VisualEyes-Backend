@@ -13,6 +13,7 @@ import Country from "../../../models/Product/Country.js";
 import BillingCurrency from "../../../models/Product/BillingCurrency.js";
 import SpecificLab from "../../../models/Product/SpecificLab.js";
 import { sendErrorResponse, sendSuccessResponse } from "../../../Utils/response/responseHandler.js";
+import mongoose from "mongoose";
 
 // Generic CRUD functions
 const createGenericItem = (Model, itemName) => async (req, res) => {
@@ -377,25 +378,29 @@ export const deleteBrand = async (req, res) => {
 // Category
 export const createCategory = async (req, res) => {
   try {
-    const { name, brand, description } = req.body;
-
-    if (!name || !brand) {
+    const { name, brandId, description } = req.body;
+    
+    if (!name || !brandId) {
       return sendErrorResponse(res, 400, "VALIDATION_ERROR", "Category name and brand are required");
     }
 
-    const brandExists = await Brand.findById(brand);
+    if (!mongoose.Types.ObjectId.isValid(brandId)) {
+      return sendErrorResponse(res, 400, "VALIDATION_ERROR", "Invalid brandId format");
+    }
+
+    const brandExists = await Brand.findById(brandId);
     if (!brandExists) {
       return sendErrorResponse(res, 404, "NOT_FOUND", "Brand not found");
     }
 
-    const existingCategory = await Category.findOne({ name, brand });
+    const existingCategory = await Category.findOne({ name, brandId });
     if (existingCategory) {
       return sendErrorResponse(res, 409, "DUPLICATE_ERROR", "Category already exists for this brand");
     }
 
     const category = await Category.create({
       name,
-      brand,
+      brandId,
       description,
       createdBy: req.user._id,
     });
