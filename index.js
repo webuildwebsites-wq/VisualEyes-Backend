@@ -12,6 +12,8 @@ import employeeManagementRouter from './src/routes/Auth/EmployeeManagement.js';
 import systemConfigRouter from './src/routes/Auth/SystemConfig.js';
 import connectDB from './src/core/config/DB/connectDb.js';
 import imageUploadRouter from './src/routes/uploads/upload.js';
+import brandRouter from './src/routes/Product/Brand.js';
+import categoryRouter from './src/routes/Product/Category.js';
 dotenv.config();
 
 const app = express();
@@ -79,6 +81,10 @@ try {
 
    // UPLOAD IMAGE ROUTES
     app.use('/api/bucket/upload-image', imageUploadRouter)
+
+    // PRODUCT ROUTES (Brand & Category)
+    app.use('/api/product/brands', brandRouter);
+    app.use('/api/product/categories', categoryRouter);
     
 } catch (error) {
     console.error("Error occurred:", error);

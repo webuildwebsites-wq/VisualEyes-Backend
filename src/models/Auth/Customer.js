@@ -108,8 +108,14 @@ const customerSchema = new mongoose.Schema(
       },
     },
     specificLab: String,
-    specificBrand: String,
-    specificCategory: String,
+    specificBrand: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Brand",
+    },
+    specificCategory: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Category",
+    },
     salesPerson : String,
 
 
@@ -190,13 +196,13 @@ const customerSchema = new mongoose.Schema(
       default: false,
     },
 
+
     // SYSTEM INTERNAL DETAILS
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "employee",
       required: true,
     },
-
     emailOtp: String,
     emailOtpExpires: Date,
     mobileOtp: String,
