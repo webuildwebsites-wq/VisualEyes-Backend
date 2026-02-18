@@ -378,29 +378,29 @@ export const deleteBrand = async (req, res) => {
 // Category
 export const createCategory = async (req, res) => {
   try {
-    const { name, brandId, description } = req.body;
+    const { name, brand, description } = req.body;
     
-    if (!name || !brandId) {
+    if (!name || !brand) {
       return sendErrorResponse(res, 400, "VALIDATION_ERROR", "Category name and brand are required");
     }
 
-    if (!mongoose.Types.ObjectId.isValid(brandId)) {
-      return sendErrorResponse(res, 400, "VALIDATION_ERROR", "Invalid brandId format");
+    if (!mongoose.Types.ObjectId.isValid(brand)) {
+      return sendErrorResponse(res, 400, "VALIDATION_ERROR", "Invalid brand format");
     }
 
-    const brandExists = await Brand.findById(brandId);
+    const brandExists = await Brand.findById(brand);
     if (!brandExists) {
       return sendErrorResponse(res, 404, "NOT_FOUND", "Brand not found");
     }
 
-    const existingCategory = await Category.findOne({ name, brandId });
+    const existingCategory = await Category.findOne({ name, brand });
     if (existingCategory) {
       return sendErrorResponse(res, 409, "DUPLICATE_ERROR", "Category already exists for this brand");
     }
 
     const category = await Category.create({
       name,
-      brandId,
+      brand,
       description,
       createdBy: req.user._id,
     });
@@ -416,13 +416,13 @@ export const createCategory = async (req, res) => {
 
 export const getAllCategories = async (req, res) => {
   try {
-    const { brandId, isActive } = req.query;
+    const { brand, isActive } = req.query;
     
     const filter = {};
-    if (brandId) filter.brand = brandId;
+    if (brand) filter.brand = brand;
     if (isActive !== undefined) filter.isActive = isActive === 'true';
 
-    const categories = await Category.find(filter).populate('brandId', 'name').sort({ name: 1 });
+    const categories = await Category.find(filter).populate('brand', 'name').sort({ name: 1 });
 
     return sendSuccessResponse(res, 200, categories, "Categories retrieved successfully");
   } catch (error) {
@@ -475,23 +475,23 @@ export const getCategoryById = async (req, res) => {
 export const updateCategory = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, brandId, description, isActive } = req.body;
+    const { name, brand, description, isActive } = req.body;
 
     const category = await Category.findById(id);
     if (!category) {
       return sendErrorResponse(res, 404, "NOT_FOUND", "Category not found");
     }
-    if (brandId && brandId !== category.brandId.toString()) {
-      const brandExists = await Brand.findById(brandId);
+    if (brand && brand !== category.brand.toString()) {
+      const brandExists = await Brand.findById(brand);
       if (!brandExists) {
         return sendErrorResponse(res, 404, "NOT_FOUND", "Brand not found");
       }
-      category.brandId = brandId;
+      category.brand = brand;
     }
     if (name && name !== category.name) {
       const existingCategory = await Category.findOne({ 
         name, 
-        brand: category.brandId,
+        brand: category.brand,
         _id: { $ne: id }
       });
       if (existingCategory) {
@@ -505,7 +505,7 @@ export const updateCategory = async (req, res) => {
 
     await category.save();
 
-    const updatedCategory = await Category.findById(id).populate('brandId', 'name');
+    const updatedCategory = await Category.findById(id).populate('brand', 'name');
 
     return sendSuccessResponse(res, 200, updatedCategory, "Category updated successfully");
   } catch (error) {
