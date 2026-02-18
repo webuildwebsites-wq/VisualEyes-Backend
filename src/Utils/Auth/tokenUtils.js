@@ -3,13 +3,13 @@ import { sendErrorResponse, sendLogoutResponse, sendSuccessResponse } from '../r
 import dotenv from 'dotenv';
 dotenv.config();
 
-export const generateToken = (id, UserType, AccountType = 'EMPLOYEE') => {
-  return jwt.sign({ id, UserType, AccountType }, process.env.JWT_SECRET,{ expiresIn: process.env.JWT_EXPIRE || '24h' });
+export const generateToken = (id, EmployeeType, AccountType = 'EMPLOYEE') => {
+  return jwt.sign({ id, EmployeeType, AccountType }, process.env.JWT_SECRET,{ expiresIn: process.env.JWT_EXPIRE || '24h' });
 };
 
-export const generateRefreshToken = (id, UserType, AccountType = 'EMPLOYEE') => {
+export const generateRefreshToken = (id, EmployeeType, AccountType = 'EMPLOYEE') => {
   return jwt.sign(
-    { id, UserType, AccountType, type: 'refresh' },
+    { id, EmployeeType, AccountType, type: 'refresh' },
     process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_REFRESH_EXPIRE || '7d' }
   );
@@ -29,7 +29,7 @@ export const refreshToken = async (req, res) => {
       return sendErrorResponse(res, 401, 'INVALID_TOKEN_TYPE', 'Invalid token type');
     }
 
-    const newAccessToken = generateToken(decoded.id, decoded.UserType, decoded.AccountType);
+    const newAccessToken = generateToken(decoded.id, decoded.EmployeeType, decoded.AccountType);
 
     return sendSuccessResponse(res, 200, {
       accessToken: newAccessToken,

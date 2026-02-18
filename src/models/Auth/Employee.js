@@ -2,13 +2,13 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
 const employee = new mongoose.Schema({
-  username: {
+  employeeName: {
     type: String,
-    required: [true, 'Username is required'],
+    required: [true, 'Employee name is required'],
     unique: true,
     trim: true,
-    minlength: [3, 'Username must be at least 3 characters'],
-    maxlength: [50, 'Username cannot exceed 50 characters']
+    minlength: [3, 'Employee name must be at least 3 characters'],
+    maxlength: [50, 'Employee name cannot exceed 50 characters']
   },
   email: {
     type: String,
@@ -43,7 +43,7 @@ const employee = new mongoose.Schema({
     type: String,
     trim: true,
   },
-  UserType: {
+  EmployeeType: {
     type: String,
     required: [true, 'Employee type is required'],
     trim: true
@@ -62,7 +62,7 @@ const employee = new mongoose.Schema({
     type: String,
     trim: true,
     required: function() {
-      return !['SUPERADMIN', 'ADMIN'].includes(this.UserType);
+      return !['SUPERADMIN', 'ADMIN'].includes(this.EmployeeType);
     }
   },
   lab: {
@@ -72,7 +72,7 @@ const employee = new mongoose.Schema({
   region: {
     type: String,
     required: function() {
-      return ['EMPLOYEE', 'SUPERVISOR'].includes(this.UserType) && this.Department === 'SALES';
+      return ['EMPLOYEE', 'SUPERVISOR'].includes(this.EmployeeType) && this.Department === 'SALES';
     },
     trim: true
   },
@@ -91,14 +91,14 @@ const employee = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'employee',
     required: function() {
-      return !['SUPERADMIN'].includes(this.UserType);
+      return !['SUPERADMIN'].includes(this.EmployeeType);
     }
   },
   supervisor: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'employee',
     required: function() {
-      return this.UserType === 'EMPLOYEE';
+      return this.EmployeeType === 'EMPLOYEE';
     }
   },
   isActive: {
@@ -115,28 +115,28 @@ const employee = new mongoose.Schema({
   },
   
   permissions: {
-    CanCreateUsers: {
+    CanCreateEmployee: {
       type: Boolean,
       default: function() {
-        return ['SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(this.UserType);
+        return ['SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(this.EmployeeType);
       }
     },
-    CanManageUsers: {
+    CanManageEmployee: {
       type: Boolean,
       default: function() {
-        return ['SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(this.UserType);
+        return ['SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(this.EmployeeType);
       }
     },
     CanManageDepartments: {
       type: Boolean,
       default: function() {
-        return ['SUPERADMIN', 'ADMIN'].includes(this.UserType);
+        return ['SUPERADMIN', 'ADMIN'].includes(this.EmployeeType);
       }
     },
     CanManageAllDepartments: {
       type: Boolean,
       default: function() {
-        return this.UserType === 'ADMIN';
+        return this.EmployeeType === 'ADMIN';
       }
     },
     CanCreateOrders: {
@@ -154,7 +154,7 @@ const employee = new mongoose.Schema({
     CanDeleteOrders: {
       type: Boolean,
       default: function() {
-        return ['SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(this.UserType);
+        return ['SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(this.EmployeeType);
       }
     },
     CanProcessWorkflow: {
@@ -164,7 +164,7 @@ const employee = new mongoose.Schema({
     CanApproveWorkflow: {
       type: Boolean,
       default: function() {
-        return ['SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(this.UserType);
+        return ['SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(this.EmployeeType);
       }
     },
     CanCreateCustomers: {
@@ -186,25 +186,25 @@ const employee = new mongoose.Schema({
     CanManageFinancials: {
       type: Boolean,
       default: function() {
-        return ['SUPERADMIN', 'ADMIN'].includes(this.UserType);
+        return ['SUPERADMIN', 'ADMIN'].includes(this.EmployeeType);
       }
     },    
     CanManageSettings: {
       type: Boolean,
       default: function() {
-        return ['SUPERADMIN', 'ADMIN'].includes(this.UserType);
+        return ['SUPERADMIN', 'ADMIN'].includes(this.EmployeeType);
       }
     },
     CanViewReports: {
       type: Boolean,
       default: function() {
-        return this.UserType !== 'EMPLOYEE';
+        return this.EmployeeType !== 'EMPLOYEE';
       }
     },
     CanExportReports: {
       type: Boolean,
       default: function() {
-        return ['SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(this.UserType);
+        return ['SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(this.EmployeeType);
       }
     }
   },

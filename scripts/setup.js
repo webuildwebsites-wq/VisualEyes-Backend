@@ -12,33 +12,33 @@ const setupProject = async () => {
     await connectDB();
     console.log('Connected to database');
 
-    const existingSuperAdmin = await employeeSchema.findOne({ UserType: 'SUPERADMIN' });
+    const existingSuperAdmin = await employeeSchema.findOne({ EmployeeType: 'SUPERADMIN' });
 
     if (existingSuperAdmin) {
       console.log('\n✓ SuperAdmin already exists in the system');
       console.log('Email:', existingSuperAdmin.email);
-      console.log('Username:', existingSuperAdmin.username);
+      console.log('Employee Name:', existingSuperAdmin.employeeName);
       return;
     }
 
     // Create default superadmin details
     const superAdminData = {
-      username: 'anish',
+      employeeName: 'anish',
       email: 'anishsinghrawat5@gmail.com',
       password: 'anish@2026',
       phone: '6395607666',
       address: 'Admin Address, Admin City, Admin State',
       country: 'India',
       pincode: '123456',
-      UserType: 'SUPERADMIN',
+      EmployeeType: 'SUPERADMIN',
       Role: 'SUPERADMIN',
       isActive: true,
       profile: {
         dateOfJoining: new Date()
       },
       permissions: {
-        CanCreateUsers: true,
-        CanManageUsers: true,
+        CanCreateEmployee: true,
+        CanManageEmployee: true,
         CanManageDepartments: true,
         CanManageAllDepartments: true,
         CanCreateOrders: true,
@@ -64,7 +64,7 @@ const setupProject = async () => {
     console.log('\n✓ Project setup completed successfully!');
     console.log('\nSuperAdmin Account Created:');
     console.log('Email:', superAdmin.email);
-    console.log('Username:', superAdmin.username);
+    console.log('Employee Name:', superAdmin.employeeName);
     console.log('Phone:', superAdmin.phone);
     console.log('Password: anish@2026');
 
@@ -76,7 +76,7 @@ const setupProject = async () => {
     }
 
     if (error.code === 11000) {
-      console.error('✗ Duplicate key error: Employee with this email or username already exists');
+      console.error('✗ Duplicate key error: Employee with this email or employee name already exists');
     }
     process.exit(1);
   } finally {

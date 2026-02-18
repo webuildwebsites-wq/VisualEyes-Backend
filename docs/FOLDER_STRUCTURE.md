@@ -177,7 +177,7 @@ permissions: {
   canCreateUsers: {
     type: Boolean,
     default: function() {
-      return ['superadmin', 'subadmin', 'supervisor'].includes(this.userType);
+      return ['superadmin', 'subadmin', 'supervisor'].includes(this.EmployeeType);
     }
   }
 }

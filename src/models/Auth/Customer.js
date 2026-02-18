@@ -51,6 +51,7 @@ const customerSchema = new mongoose.Schema(
     emailId: {
       type: String,
       required: true,
+      unique: true,
       lowercase: true,
       trim: true,
       match: [/^\S+@\S+\.\S+$/, "Invalid email"],
@@ -67,8 +68,8 @@ const customerSchema = new mongoose.Schema(
     // LOGIN DETAILS
     username: {
       type: String,
+      required: true,
       unique: true,
-      sparse: true,
       trim: true,
       lowercase: true,
       minlength: 3,
@@ -201,10 +202,6 @@ const customerSchema = new mongoose.Schema(
     emailOtpExpires: Date,
     mobileOtp: String,
     mobileOtpExpires: Date,
-    userType: {
-      type: String,
-      default: "CUSTOMER",
-    },
     designation: {
       type: String,
       default: "Customer",

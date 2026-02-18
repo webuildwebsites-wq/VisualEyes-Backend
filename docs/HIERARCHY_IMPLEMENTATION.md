@@ -114,7 +114,7 @@ POST /create-supervisor-user
   "lastName": "Smith",
   "phone": "1234567890",
   "employeeId": "SUP001",
-  "userType": "SUPERVISOR",
+  "EmployeeType": "SUPERVISOR",
   "department": "SALES",
   "region": "NORTH"
 }
@@ -131,7 +131,7 @@ POST /create-supervisor-user
   "lastName": "Johnson",
   "phone": "1234567890",
   "employeeId": "USR001",
-  "userType": "EMPLOYEE",
+  "EmployeeType": "EMPLOYEE",
   "department": "SALES",
   "region": "NORTH",
   "role": "SALES",

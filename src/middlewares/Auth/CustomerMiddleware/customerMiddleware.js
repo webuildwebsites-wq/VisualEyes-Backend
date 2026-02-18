@@ -129,7 +129,7 @@ export const protectCustomerCreation = async (req, res, next) => {
     req.user = {
       id: employee._id,
       AccountType: decoded.AccountType,
-      UserType: decoded.UserType,
+      EmployeeType: decoded.EmployeeType,
     };
 
     next();
