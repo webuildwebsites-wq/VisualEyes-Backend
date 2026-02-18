@@ -1,7 +1,6 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import employeeSchema from '../src/models/Auth/Employee.js';
-import connectDB from '../src/core/config/DB/connectDb.js';
 
 dotenv.config();
 
@@ -9,7 +8,7 @@ const setupProject = async () => {
   try {
     console.log('Starting VisualEyes ERP Setup...\n');
 
-    await connectDB();
+    await mongoose.connect(process.env.MONGO_URI);
     console.log('Connected to database');
 
     const existingSuperAdmin = await employeeSchema.findOne({ EmployeeType: 'SUPERADMIN' });

@@ -33,6 +33,7 @@ export const createSubAdmin = async (req, res) => {
       panCard,
       expiry,
       EmployeeType: 'ADMIN',
+      Role : 'ADMIN',
       createdBy: req.user.id,
       isActive: true
     });

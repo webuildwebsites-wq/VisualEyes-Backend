@@ -1,7 +1,6 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import CustomerType from '../src/models/Product/CustomerType.js';
-import OrderMode from '../src/models/Product/OrderMode.js';
 import GSTType from '../src/models/Product/GSTType.js';
 import Plant from '../src/models/Product/Plant.js';
 import Lab from '../src/models/Product/Lab.js';
@@ -9,7 +8,6 @@ import FittingCenter from '../src/models/Product/FittingCenter.js';
 import CreditDay from '../src/models/Product/CreditDay.js';
 import CourierName from '../src/models/Product/CourierName.js';
 import CourierTime from '../src/models/Product/CourierTime.js';
-import SpecialCase from '../src/models/Product/SpecialCase.js';
 import State from '../src/models/Product/State.js';
 import Country from '../src/models/Product/Country.js';
 import BillingCurrency from '../src/models/Product/BillingCurrency.js';
@@ -20,7 +18,7 @@ dotenv.config();
 
 const seedData = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI);
+    await mongoose.connect(process.env.MONGODB_URL);
     console.log('Connected to MongoDB');
 
     // Find a super admin to use as createdBy
@@ -54,18 +52,6 @@ const seedData = async () => {
     }
     console.log(`✓ ${customerTypes.length} Customer Types seeded`);
 
-    // Order Modes
-    const orderModes = ['Online', 'Offline'];
-
-    console.log('Seeding Order Modes...');
-    for (const name of orderModes) {
-      await OrderMode.findOneAndUpdate(
-        { name },
-        { name, createdBy, isActive: true },
-        { upsert: true, new: true }
-      );
-    }
-    console.log(`✓ ${orderModes.length} Order Modes seeded`);
 
     // GST Types
     const gstTypes = ['Regular', 'Composition', 'Unregistered', 'Consumer'];
@@ -189,23 +175,6 @@ const seedData = async () => {
       );
     }
     console.log(`✓ ${courierTimes.length} Courier Times seeded`);
-
-    // Special Cases
-    const specialCases = [
-      'Special Case index',
-      'Special Case Tinting',
-      'Special Case Fitting'
-    ];
-
-    console.log('Seeding Special Cases...');
-    for (const name of specialCases) {
-      await SpecialCase.findOneAndUpdate(
-        { name },
-        { name, createdBy, isActive: true },
-        { upsert: true, new: true }
-      );
-    }
-    console.log(`✓ ${specialCases.length} Special Cases seeded`);
 
     // States
     const states = [
