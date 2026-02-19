@@ -97,11 +97,16 @@ export const customerRegister = async (req, res) => {
     const {
       username,
       CustomerType,
+      CustomerTypeRefId,
       zone,
+      zoneRefId,
       hasFlatFitting,
       specificBrand,
+      specificBrandRefId,
       specificCategory,
+      specificCategoryRefId,
       specificLab,
+      specificLabRefId,
       emailId,
       shopName,
       ownerName,
@@ -110,13 +115,21 @@ export const customerRegister = async (req, res) => {
       mobileNo2,
       landlineNo,
       gstType,
+      gstTypeRefId,
       plant,
+      plantRefId,
       lab,
+      labRefId,
       fittingCenter,
+      fittingCenterRefId,
       creditDays,
+      creditDaysRefId,
       creditLimit,
+      creditLimitRefId,
       courierName,
+      courierNameRefId,
       courierTime,
+      courierTimeRefId,
       address,
       IsGSTRegistered,
       selectType,
@@ -129,6 +142,7 @@ export const customerRegister = async (req, res) => {
       PANCardImg,
       AadharCardImg,
       salesPerson,
+      salesPersonRefId,
     } = req.body;
 
     if (!username || !CustomerType || !shopName || !ownerName || !salesPerson || !emailId || !orderMode) {
@@ -213,19 +227,18 @@ export const customerRegister = async (req, res) => {
     const customerpassword = crypto.randomBytes(8).toString("hex");
 
     const customerData = {
-      // Basic Details
       shopName: shopName.trim(),
       ownerName: ownerName.trim(),
-      CustomerType,
+      CustomerType: {
+        name: CustomerType,
+        refId: CustomerTypeRefId
+      },
       orderMode,
       mobileNo1,
       mobileNo2,
       landlineNo,
       emailId: emailId.toLowerCase().trim(),
-      
-
-      // multuple Address Details as an array
-       address: address.map((addr) => ({
+      address: address.map((addr) => ({
         address1: addr.address1.trim(),
         contactPerson: addr.contactPerson.trim(),
         contactNumber: addr.contactNumber.trim(),
@@ -236,38 +249,77 @@ export const customerRegister = async (req, res) => {
         billingCurrency: addr.billingCurrency,
         billingMode: addr.billingMode,
       })),
-
-
+      
+      
       // Login details 
       username: username.toLowerCase().trim(),
-      zone,
+      zone: zone ? {
+        name: zone,
+        refId: zoneRefId
+      } : undefined,
       hasFlatFitting,
       selectType: hasFlatFitting ? selectType : undefined,
       selectTypeIndex: hasFlatFitting ? selectTypeIndex : undefined,
       Price: hasFlatFitting ? Price : undefined,
-      specificLab,
-      specificBrand,
-      specificCategory,
-      salesPerson,
+      specificLab: specificLab ? {
+        name: specificLab,
+        refId: specificLabRefId
+      } : undefined,
+      specificBrand: {
+        name: specificBrand,
+        refId: specificBrandRefId
+      },
+      specificCategory: {
+        name: specificCategory,
+        refId: specificCategoryRefId
+      },
+      salesPerson: salesPerson ? {
+        name: salesPerson,
+        refId: salesPersonRefId
+      } : undefined,
 
 
       // Documentation
       IsGSTRegistered,
       GSTNumber: IsGSTRegistered ? GSTNumber : undefined,
-      gstType: IsGSTRegistered ? gstType : undefined,
+      gstType: IsGSTRegistered && gstType ? {
+        name: gstType,
+        refId: gstTypeRefId
+      } : undefined,
       GSTCertificateImg: IsGSTRegistered ? GSTCertificateImg : undefined,
       PANCard: !IsGSTRegistered ? PANCard : undefined,
       AadharCard: !IsGSTRegistered ? AadharCard : undefined,
       PANCardImg: !IsGSTRegistered ? PANCardImg : undefined,
       AadharCardImg: !IsGSTRegistered ? AadharCardImg : undefined,
-      plant,
-      lab,
-      fittingCenter,
-      creditDays,
-      creditLimit,
-      courierName,
-      courierTime,
-            
+      plant: plant ? {
+        name: plant,
+        refId: plantRefId
+      } : undefined,
+      lab: lab ? {
+        name: lab,
+        refId: labRefId
+      } : undefined,
+      fittingCenter: fittingCenter ? {
+        name: fittingCenter,
+        refId: fittingCenterRefId
+      } : undefined,
+      creditDays: creditDays ? {
+        name: creditDays,
+        refId: creditDaysRefId
+      } : undefined,
+      creditLimit: creditLimit ? {
+        name: creditLimit,
+        refId: creditLimitRefId
+      } : undefined,
+      courierName: courierName ? {
+        name: courierName,
+        refId: courierNameRefId
+      } : undefined,
+      courierTime: courierTime ? {
+        name: courierTime,
+        refId: courierTimeRefId
+      } : undefined,
+      
       // System Internall details
       dcWithoutValue: false,
       password: customerpassword,
@@ -522,7 +574,7 @@ export const financeApproveCustomer = async (req, res) => {
 
     // Check if user is from Finance department
     const employee = await employeeSchema.findById(req.user.id);
-    if (!employee || !['F&A', 'F&A CFO', 'ACCOUNTING MODULE'].includes(employee.Department)) {
+    if (!employee || !['F&A', 'F&A CFO', 'ACCOUNTING MODULE'].includes(employee.Department?.name)) {
       return sendErrorResponse(
         res,
         403,
@@ -602,7 +654,7 @@ export const salesApproveCustomer = async (req, res) => {
 
     // Check if user is from Sales department with appropriate role
     const employee = await employeeSchema.findById(req.user.id);
-    if (!employee || !['SALES HEAD', 'SALES EXECUTIVE'].includes(employee.Department)) {
+    if (!employee || !['SALES HEAD', 'SALES EXECUTIVE'].includes(employee.Department?.name)) {
       return sendErrorResponse(
         res,
         403,
@@ -679,7 +731,7 @@ export const salesApproveCustomer = async (req, res) => {
 export const getPendingFinanceApprovals = async (req, res) => {
   try {
     const employee = await employeeSchema.findById(req.user.id);
-    if (!employee || !['F&A', 'F&A CFO', 'ACCOUNTING MODULE'].includes(employee.Department)) {
+    if (!employee || !['F&A', 'F&A CFO', 'ACCOUNTING MODULE'].includes(employee.Department?.name)) {
       return sendErrorResponse(
         res,
         403,
@@ -717,7 +769,7 @@ export const getPendingFinanceApprovals = async (req, res) => {
 export const getPendingSalesApprovals = async (req, res) => {
   try {
     const employee = await employeeSchema.findById(req.user.id);
-    if (!employee || !['SALES HEAD', 'SALES EXECUTIVE'].includes(employee.Department)) {
+    if (!employee || !['SALES HEAD', 'SALES EXECUTIVE'].includes(employee.Department?.name)) {
       return sendErrorResponse(
         res,
         403,
@@ -756,7 +808,7 @@ export const getPendingSalesApprovals = async (req, res) => {
 export const getAllCustomersWithApprovalStatus = async (req, res) => {
   try {
     const employee = await employeeSchema.findById(req.user.id);
-    if (!employee || !['SUPERADMIN', 'ADMIN'].includes(employee.EmployeeType)) {
+    if (!employee || !['SUPERADMIN', 'ADMIN'].includes(employee.EmployeeType?.name)) {
       return sendErrorResponse(
         res,
         403,
@@ -816,7 +868,12 @@ export const getAllCustomers = async (req, res) => {
       Customer
         .find(query)
         .select('-password -emailOtp -emailOtpExpires -mobileOtp -mobileOtpExpires')
-        .populate('createdBy', 'firstName lastName CustomerType')
+        .populate('CustomerType', 'name')
+        .populate('zone', 'name')
+        .populate('specificBrand', 'name')
+        .populate('specificCategory', 'name')
+        .populate('salesPerson', 'employeeName email')
+        .populate('createdBy', 'employeeName email')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
@@ -872,7 +929,12 @@ export const getFilteredCustomers = async (req, res) => {
       Customer
         .find(query)
         .select('-password -emailOtp -emailOtpExpires -mobileOtp -mobileOtpExpires')
-        .populate('createdBy', 'firstName lastName CustomerType')
+        .populate('CustomerType', 'name')
+        .populate('zone', 'name')
+        .populate('specificBrand', 'name')
+        .populate('specificCategory', 'name')
+        .populate('salesPerson', 'employeeName email')
+        .populate('createdBy', 'employeeName email')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
@@ -901,15 +963,33 @@ export const getFilteredCustomers = async (req, res) => {
 export const getCustomerDetails = async (req, res) => {
   try {
     const { userId } = req.params;
-    const user = await Customer.findOne({_id: userId}).select('-password -emailOtp -emailOtpExpires -mobileOtp -mobileOtpExpires')
+    const user = await Customer.findOne({_id: userId})
+      .select('-password -emailOtp -emailOtpExpires -mobileOtp -mobileOtpExpires')
+      .populate('CustomerType', 'name')
+      .populate('zone', 'name')
+      .populate('specificBrand', 'name')
+      .populate('specificCategory', 'name')
+      .populate('specificLab', 'name')
+      .populate('salesPerson', 'employeeName email')
+      .populate('gstType', 'name')
+      .populate('plant', 'name')
+      .populate('lab', 'name')
+      .populate('fittingCenter', 'name')
+      .populate('creditLimit', 'name')
+      .populate('creditDays', 'name')
+      .populate('courierName', 'name')
+      .populate('courierTime', 'name')
+      .populate('selectType', 'name')
+      .populate('createdBy', 'employeeName email');
+      
     if (!user) {
-      return sendErrorResponse(res, 404, 'USER_NOT_FOUND', 'Employee not found');
+      return sendErrorResponse(res, 404, 'USER_NOT_FOUND', 'Customer not found');
     }
 
-    return sendSuccessResponse(res, 200, { user }, 'Employee details retrieved successfully');
+    return sendSuccessResponse(res, 200, { user }, 'Customer details retrieved successfully');
 
   } catch (error) {
-    console.error('Get employee details error:', error);
-    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to retrieve employee details');
+    console.error('Get customer details error:', error);
+    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to retrieve customer details');
   }
 };

@@ -115,12 +115,18 @@ const employee = new mongoose.Schema({
     }
   },
   regionManager: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'employee',
-    required: function() {
-      const empType = this.EmployeeType?.name || this.EmployeeType;
-      const dept = this.Department?.name || this.Department;
-      return empType === 'EMPLOYEE' && dept === 'SALES';
+    name: {
+      type: String,
+      trim: true
+    },
+    refId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'employee',
+      required: function() {
+        const empType = this.EmployeeType?.name || this.EmployeeType;
+        const dept = this.Department?.name || this.Department;
+        return empType === 'EMPLOYEE' && dept === 'SALES';
+      }
     }
   },
   aadharCard: {

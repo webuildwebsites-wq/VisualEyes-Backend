@@ -15,7 +15,7 @@ const seedLocations = async () => {
     // Find SuperAdmin to use as createdBy
     const superAdmin = await employeeSchema.findOne({ 
       $or: [
-        { EmployeeType: 'SUPERADMIN' },
+        { 'EmployeeType.name': 'SUPERADMIN' },
         { 'EmployeeType.name': 'SUPERADMIN' }
       ]
     });
