@@ -482,7 +482,7 @@ export const getCustomerProfile = async (req, res) => {
   try {
     const customer = await Customer.findById(req.user.id).populate(
       "assignedSalesHead assignedAccountsHead",
-      "firstName lastName UserType",
+      "firstName lastName EmployeeType",
     );
 
     if (!customer) {
@@ -497,7 +497,7 @@ export const getCustomerProfile = async (req, res) => {
     const customerData = {
       user: {
         ...customer.toObject(),
-        UserType: req.user.UserType,
+        CustomerType: req.user.CustomerType,
         AccountType: req.user.AccountType,
       },
     };
@@ -756,7 +756,7 @@ export const getPendingSalesApprovals = async (req, res) => {
 export const getAllCustomersWithApprovalStatus = async (req, res) => {
   try {
     const employee = await employeeSchema.findById(req.user.id);
-    if (!employee || !['SUPERADMIN', 'ADMIN'].includes(employee.UserType)) {
+    if (!employee || !['SUPERADMIN', 'ADMIN'].includes(employee.EmployeeType)) {
       return sendErrorResponse(
         res,
         403,
@@ -816,7 +816,7 @@ export const getAllCustomers = async (req, res) => {
       Customer
         .find(query)
         .select('-password -emailOtp -emailOtpExpires -mobileOtp -mobileOtpExpires')
-        .populate('createdBy', 'firstName lastName UserType')
+        .populate('createdBy', 'firstName lastName CustomerType')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
@@ -872,7 +872,7 @@ export const getFilteredCustomers = async (req, res) => {
       Customer
         .find(query)
         .select('-password -emailOtp -emailOtpExpires -mobileOtp -mobileOtpExpires')
-        .populate('createdBy', 'firstName lastName UserType')
+        .populate('createdBy', 'firstName lastName CustomerType')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)

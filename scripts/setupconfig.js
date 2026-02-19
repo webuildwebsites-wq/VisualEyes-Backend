@@ -6,7 +6,7 @@ import Employee from '../src/models/Auth/Employee.js';
 dotenv.config();
 
 const seedData = {
-  UserType: ['SUPERADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE'],
+  EmployeeType: ['SUPERADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE'],
   
   Role: [
     'ADMIN',
@@ -80,14 +80,14 @@ const seedSystemConfig = async () => {
     await mongoose.connect(process.env.MONGO_URI);
     console.log('Connected to MongoDB');
 
-    const superAdmin = await Employee.findOne({ UserType: 'SUPERADMIN' });
+    const superAdmin = await Employee.findOne({ EmployeeType: 'SUPERADMIN' });
     
     if (!superAdmin) {
       console.log('No SUPERADMIN found. Please create a SUPERADMIN first.');
       process.exit(1);
     }
 
-    console.log(`Using SUPERADMIN: ${superAdmin.username} (${superAdmin._id})`);
+    console.log(`Using SUPERADMIN: ${superAdmin.employeeName} (${superAdmin._id})`);
 
     await SystemConfig.deleteMany({});
     console.log('Cleared existing system configurations');

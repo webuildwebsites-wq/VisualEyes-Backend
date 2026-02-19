@@ -23,7 +23,7 @@ import mongoSanitize from 'express-mongo-sanitize';
 ```javascript
 // Mongoose schema example from User.js
 const userSchema = new mongoose.Schema({
-  userType: {
+  EmployeeType: {
     type: String,
     enum: ['superadmin', 'subadmin', 'supervisor', 'user']
   },
@@ -173,7 +173,7 @@ permissions: {
   canCreateUsers: {
     type: Boolean,
     default: function() {
-      return ['superadmin', 'subadmin', 'supervisor'].includes(this.userType);
+      return ['superadmin', 'subadmin', 'supervisor'].includes(this.EmployeeType);
     }
   }
 }
@@ -190,7 +190,7 @@ permissions: {
 // Recommended indexes for performance
 userSchema.index({ username: 1 });
 userSchema.index({ email: 1 });
-userSchema.index({ userType: 1, department: 1, region: 1 });
+userSchema.index({ EmployeeType: 1, department: 1, region: 1 });
 customerSchema.index({ customerCode: 1 });
 customerSchema.index({ region: 1, labMapping: 1 });
 ```

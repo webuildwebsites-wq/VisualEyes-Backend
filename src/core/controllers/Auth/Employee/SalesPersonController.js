@@ -5,9 +5,9 @@ export const getAllSalesPersons = async (req, res) => {
   try {    
     const filter = {
       Department: 'SALES',
-      UserType: { $in: ['EMPLOYEE', 'SUPERVISOR'] }
+      EmployeeType: { $in: ['EMPLOYEE', 'SUPERVISOR'] }
     };
-    const salesPersons = await employeeSchema.find(filter).select('username email phone Department UserType Role region lab isActive');
+    const salesPersons = await employeeSchema.find(filter).select('employeeName email phone Department EmployeeType Role region lab isActive');
     return sendSuccessResponse(res, 200, salesPersons, "Sales persons retrieved successfully");
   } catch (error) {
     console.error("Get All Sales Persons Error:", error);
@@ -22,8 +22,8 @@ export const getSalesPersonById = async (req, res) => {
     const salesPerson = await employeeSchema.findOne({ 
         _id: id, 
         Department: 'SALES',
-        UserType: { $in: ['EMPLOYEE', 'SUPERVISOR'] }
-      }).select('username email phone Department UserType Role region lab isActive profile');
+        EmployeeType: { $in: ['EMPLOYEE', 'SUPERVISOR'] }
+      }).select('employeeName email phone Department EmployeeType Role region lab isActive profile');
 
     if (!salesPerson) {
       return sendErrorResponse(res, 404, "NOT_FOUND", "Sales person not found");

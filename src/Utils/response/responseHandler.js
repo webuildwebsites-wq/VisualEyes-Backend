@@ -25,9 +25,9 @@ export const sendErrorResponse = (res, statusCode = 500, code = 'INTERNAL_ERROR'
 };
 
 export const sendTokenResponse = (user, statusCode, res, AccountType = 'EMPLOYEE', generateToken, generateRefreshToken) => {
-  const UserType = AccountType === 'CUSTOMER' ? 'CUSTOMER' : user.UserType;
-  const token = generateToken(user._id, UserType, AccountType);
-  const refreshToken = generateRefreshToken(user._id, UserType, AccountType);
+  const EmployeeType = AccountType === 'CUSTOMER' ? 'CUSTOMER' : user.EmployeeType;
+  const token = generateToken(user._id, EmployeeType, AccountType);
+  const refreshToken = generateRefreshToken(user._id, EmployeeType, AccountType);
 
   const options = {
     expires: new Date(Date.now() + (process.env.JWT_COOKIE_EXPIRE || 24) * 60 * 60 * 1000),
@@ -51,7 +51,7 @@ export const sendTokenResponse = (user, statusCode, res, AccountType = 'EMPLOYEE
       data: {
         user: {
           ...userObj,
-          UserType,
+          EmployeeType,
           AccountType
         },
         tokens: {

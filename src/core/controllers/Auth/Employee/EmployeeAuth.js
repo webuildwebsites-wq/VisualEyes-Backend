@@ -7,15 +7,15 @@ dotenv.config();
 
 export const employeeLogin = async (req, res) => {
   try {
-    const { username, password } = req.body;
-    if (!username || !password) {
-      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Please provide username/email and password');
+    const { employeeName, password } = req.body;
+    if (!employeeName || !password) {
+      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Please provide employee name/email and password');
     }
 
     const user = await employeeSchema.findOne({ 
-      $or: [{ username }, { email: username }],
+      $or: [{ employeeName }, { email: employeeName }],
       isActive: true 
-    }).select('+password').populate('createdBy supervisor', 'firstName lastName UserType');
+    }).select('+password').populate('createdBy supervisor', 'firstName lastName EmployeeType');
 
     if (!user) {
       return sendErrorResponse(res, 401, 'INVALID_CREDENTIALS', 'Invalid credentials');
@@ -145,7 +145,7 @@ export const employeeUpdatePassword = async (req, res) => {
 export const getEmployeeProfile = async (req, res) => {
   try {
     const user = await employeeSchema.findById(req.user.id)
-      .populate('createdBy supervisor', 'firstName lastName UserType');
+      .populate('createdBy supervisor', 'firstName lastName EmployeeType');
 
     if (!user) {
       return sendErrorResponse(res, 404, 'USER_NOT_FOUND', 'Employee not found');
@@ -154,7 +154,7 @@ export const getEmployeeProfile = async (req, res) => {
     const userData = {
       user: {
         ...user.toObject(),
-        UserType: req.user.UserType,
+        EmployeeType: req.user.EmployeeType,
         AccountType: req.user.AccountType
       }
     };

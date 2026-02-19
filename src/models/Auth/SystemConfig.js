@@ -4,7 +4,7 @@ const systemConfigSchema = new mongoose.Schema({
   configType: {
     type: String,
     required: true,
-    enum: ['UserType', 'Role', 'Department', 'Lab', 'Region'],
+    enum: ['EmployeeType', 'Role', 'Department', 'Lab', 'Region'],
     unique: true 
   },
   values: [{
