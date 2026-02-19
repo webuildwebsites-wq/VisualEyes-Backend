@@ -72,14 +72,15 @@ export const createSupervisorOrEmployee = async (req, res) => {
       aadharCard, panCard, lab, labRefId, role, roleRefId } = req.body;
 
     let assignedSupervisor = null;
+    let assignedRegionManager = null;
 
     if (!employeeType || !employeeName || !country || !email || !password || !phone || !address || !department) {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'All required fields must be provided');
     }
 
-    if (['EMPLOYEE', 'SUPERVISOR'].includes(employeeType.toUpperCase()) && 
+    if (['EMPLOYEE', 'SUPERVISOR', 'REGIONMANAGER'].includes(employeeType.toUpperCase()) && 
       department.toUpperCase() === 'SALES' && !region) {
-      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Region is required for SALES department employees and supervisors');
+      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Region is required for SALES department employees, supervisors, and region managers');
     }
 
     const validDepartments = ['LAB', 'STORE', 'DISPATCH', 'SALES', 'FINANCE', 'CUSTOMER_SUPPORT'];
@@ -99,7 +100,7 @@ export const createSupervisorOrEmployee = async (req, res) => {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Invalid lab value');
     }
 
-    if (!['SUPERVISOR', 'EMPLOYEE'].includes(employeeType.toUpperCase())) {
+    if (!['SUPERVISOR', 'EMPLOYEE', 'REGIONMANAGER'].includes(employeeType.toUpperCase())) {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Employee type must be either SUPERVISOR or EMPLOYEE');
     }
 
@@ -125,6 +126,22 @@ export const createSupervisorOrEmployee = async (req, res) => {
 
       if (req.user.EmployeeType === 'SUPERVISOR' && assignedSupervisor._id.toString() !== req.user.id.toString()) {
         return sendErrorResponse(res, 403, 'FORBIDDEN', 'Supervisors can only assign themselves as supervisor');
+      }
+
+      if (department.toUpperCase() === 'SALES' && region) {
+        const regionManagerQuery = {
+          'EmployeeType.name': 'REGIONMANAGER',
+          'Department.name': 'SALES',
+          'region.name': region,
+          isActive: true
+        };
+
+        assignedRegionManager = await employeeSchema.findOne(regionManagerQuery);
+
+        if (!assignedRegionManager) {
+          return sendErrorResponse(res, 400, 'NO_REGION_MANAGER_FOUND', 
+            'No active region manager found for this region. Please create a region manager first.');
+        }
       }
     }
 
@@ -179,6 +196,13 @@ export const createSupervisorOrEmployee = async (req, res) => {
         name: assignedSupervisor.employeeName,
         refId: assignedSupervisor._id
       };
+
+      if (department.toUpperCase() === 'SALES' && assignedRegionManager) {
+        userData.regionManager = {
+          name: assignedRegionManager.employeeName,
+          refId: assignedRegionManager._id
+        };
+      }
     }
 
     const newUser = new employeeSchema(userData);

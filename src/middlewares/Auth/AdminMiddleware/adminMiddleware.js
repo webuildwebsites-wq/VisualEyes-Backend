@@ -49,11 +49,16 @@ export const ProtectUser = async (req, res, next) => {
         });
       }
 
+      const userObj = user.toObject();
       req.user = {
         id: user._id,
         EmployeeType: decoded.EmployeeType,
         AccountType: decoded.AccountType || 'EMPLOYEE',
-        ...user.toObject()
+        ...userObj,
+        // Override to ensure string values for middleware checks
+        EmployeeType: decoded.EmployeeType,
+        Department: userObj.Department?.name || userObj.Department,
+        region: userObj.region?.name || userObj.region
       };
 
       next();

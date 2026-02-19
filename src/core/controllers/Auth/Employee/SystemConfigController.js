@@ -20,9 +20,7 @@ export const getAllConfigs = async (req, res) => {
       const configs = await SystemConfig.find().lean();
       const filteredConfigs = configs.map(config => ({
       ...config,
-      values: config.values?.filter(
-      value => value !== "SUPERADMIN"
-      ) ?? []
+      values: config.values?.filter(value => value !== "SUPERADMIN") ?? []
     }));
     return sendSuccessResponse(res, 200, filteredConfigs, 'All configurations retrieved successfully');
   } catch (error) {

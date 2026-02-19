@@ -28,12 +28,10 @@ export const customerLogin = async (req, res) => {
     }
 
     const customer = await Customer.findOne({
-      $or: [{ username }, { email: username }],
-      "status.isActive": true,
-    })
-      .select("+password")
+      $or: [{ username : username }, { emailId : username }],    }).select("+password")
       .populate("assignedSalesHead assignedAccountsHead", "firstName lastName");
 
+    console.log("customer : ",customer);
     if (!customer) {
       return sendErrorResponse(
         res,
@@ -52,12 +50,12 @@ export const customerLogin = async (req, res) => {
       );
     }
 
-    if (customer.status.isSuspended) {
+    if (customer.Status.isSuspended) {
       return sendErrorResponse(
         res,
         423,
         "ACCOUNT_SUSPENDED",
-        `Account is suspended: ${customer.status.suspensionReason}`,
+        `Account is suspended: ${customer.Status.suspensionReason}`,
       );
     }
 
@@ -389,7 +387,7 @@ export const customerForgotPassword = async (req, res) => {
       );
     }
 
-    const customer = await Customer.findOne({ email, "status.isActive": true });
+    const customer = await Customer.findOne({ email, "Status.isActive": true });
 
     if (!customer) {
       return sendErrorResponse(
@@ -623,7 +621,7 @@ export const financeApproveCustomer = async (req, res) => {
       customer.approvalStatus = 'FINANCE_APPROVED';
     } else {
       customer.approvalStatus = 'REJECTED';
-      customer.status.isActive = false;
+      customer.Status.isActive = false;
     }
 
     await customer.save();
@@ -701,10 +699,10 @@ export const salesApproveCustomer = async (req, res) => {
 
     if (status === 'APPROVED') {
       customer.approvalStatus = 'SALES_APPROVED';
-      customer.status.isActive = true;
+      customer.Status.isActive = true;
     } else {
       customer.approvalStatus = 'REJECTED';
-      customer.status.isActive = false;
+      customer.Status.isActive = false;
     }
 
     await customer.save();
