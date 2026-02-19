@@ -295,7 +295,17 @@ const customerSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-
+    Status : {
+      isSuspended : {
+        type : Boolean,
+        default : false
+      },
+      isActive : {
+        type : Boolean,
+        default : true,
+      },
+      suspensionReason : String,
+    },
 
     // SYSTEM INTERNAL DETAILS
     createdBy: {

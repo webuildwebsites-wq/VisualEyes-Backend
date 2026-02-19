@@ -4,8 +4,8 @@ import { sendErrorResponse, sendSuccessResponse } from "../../../../Utils/respon
 export const getAllSalesPersons = async (req, res) => {
   try {    
     const filter = {
-      Department: 'SALES',
-      EmployeeType: { $in: ['EMPLOYEE', 'SUPERVISOR'] }
+      'Department.name': 'SALES',
+      'EmployeeType.name': { $in: ['EMPLOYEE', 'SUPERVISOR'] }
     };
     const salesPersons = await employeeSchema.find(filter).select('employeeName email phone Department EmployeeType Role region lab isActive');
     return sendSuccessResponse(res, 200, salesPersons, "Sales persons retrieved successfully");
@@ -21,8 +21,8 @@ export const getSalesPersonById = async (req, res) => {
 
     const salesPerson = await employeeSchema.findOne({ 
         _id: id, 
-        Department: 'SALES',
-        EmployeeType: { $in: ['EMPLOYEE', 'SUPERVISOR'] }
+        'Department.name': 'SALES',
+        'EmployeeType.name': { $in: ['EMPLOYEE', 'SUPERVISOR'] }
       }).select('employeeName email phone Department EmployeeType Role region lab isActive profile');
 
     if (!salesPerson) {

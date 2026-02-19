@@ -8,10 +8,10 @@ const setupProject = async () => {
   try {
     console.log('Starting VisualEyes ERP Setup...\n');
 
-    await mongoose.connect(process.env.MONGO_URI);
+    await mongoose.connect(process.env.MONGODB_URL);
     console.log('Connected to database');
 
-    const existingSuperAdmin = await employeeSchema.findOne({ EmployeeType: 'SUPERADMIN' });
+    const existingSuperAdmin = await employeeSchema.findOne({ 'EmployeeType.name': 'SUPERADMIN' });
 
     if (existingSuperAdmin) {
       console.log('\n✓ SuperAdmin already exists in the system');
@@ -22,15 +22,25 @@ const setupProject = async () => {
 
     // Create default superadmin details
     const superAdminData = {
-      employeeName: 'anish',
-      email: 'anishsinghrawat5@gmail.com',
-      password: 'anish@2026',
+      employeeName: 'siddharth_sharma',
+      email: 'sid@visualeye.com',
+      password: 'visualeyeye@2026',
       phone: '6395607666',
       address: 'Admin Address, Admin City, Admin State',
       country: 'India',
       pincode: '123456',
-      EmployeeType: 'SUPERADMIN',
-      Role: 'SUPERADMIN',
+      EmployeeType: {
+        name: 'SUPERADMIN',
+        refId: null
+      },
+      Role: {
+        name: 'SUPERADMIN',
+        refId: null
+      },
+      Department: {
+        name: 'SUPERADMIN',
+        refId: null
+      },
       isActive: true,
       profile: {
         dateOfJoining: new Date()

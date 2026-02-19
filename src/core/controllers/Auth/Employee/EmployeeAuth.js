@@ -15,7 +15,10 @@ export const employeeLogin = async (req, res) => {
     const user = await employeeSchema.findOne({ 
       $or: [{ employeeName }, { email: employeeName }],
       isActive: true 
-    }).select('+password').populate('createdBy supervisor', 'firstName lastName EmployeeType');
+    })
+    .select('+password')
+    .populate('EmployeeType', 'name')
+    .populate('createdBy supervisor', 'employeeName email');
 
     if (!user) {
       return sendErrorResponse(res, 401, 'INVALID_CREDENTIALS', 'Invalid credentials');
@@ -26,7 +29,6 @@ export const employeeLogin = async (req, res) => {
     }
 
     const isMatch = await user.comparePassword(password);
-    console.log("isMatch : ",isMatch);
 
     if (!isMatch) {
       return sendErrorResponse(res, 401, 'INVALID_CREDENTIALS', 'Invalid credentials');
@@ -144,8 +146,7 @@ export const employeeUpdatePassword = async (req, res) => {
 
 export const getEmployeeProfile = async (req, res) => {
   try {
-    const user = await employeeSchema.findById(req.user.id)
-      .populate('createdBy supervisor', 'firstName lastName EmployeeType');
+    const user = await employeeSchema.findById(req.user.id);
 
     if (!user) {
       return sendErrorResponse(res, 404, 'USER_NOT_FOUND', 'Employee not found');

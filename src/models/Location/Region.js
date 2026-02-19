@@ -36,8 +36,6 @@ const regionSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-regionSchema.index({ name: 1 });
-regionSchema.index({ code: 1 });
 regionSchema.index({ isActive: 1 });
 
 regionSchema.virtual('cities', {

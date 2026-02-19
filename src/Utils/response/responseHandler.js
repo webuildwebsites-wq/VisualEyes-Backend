@@ -25,7 +25,9 @@ export const sendErrorResponse = (res, statusCode = 500, code = 'INTERNAL_ERROR'
 };
 
 export const sendTokenResponse = (user, statusCode, res, AccountType = 'EMPLOYEE', generateToken, generateRefreshToken) => {
-  const EmployeeType = AccountType === 'CUSTOMER' ? 'CUSTOMER' : user.EmployeeType;
+  const EmployeeType = AccountType === 'CUSTOMER' 
+    ? 'CUSTOMER' 
+    : (user.EmployeeType?.name || user.EmployeeType);
   const token = generateToken(user._id, EmployeeType, AccountType);
   const refreshToken = generateRefreshToken(user._id, EmployeeType, AccountType);
 

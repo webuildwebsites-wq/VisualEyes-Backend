@@ -48,7 +48,6 @@ export const getAllRegions = async (req, res) => {
       .populate('createdBy', 'employeeName email')
       .sort({ name: 1 });
 
-    console.log("regions :",regions);
     return sendSuccessResponse(res, 200, regions, 'Regions fetched successfully');
   } catch (error) {
     console.error('Get Regions Error:', error);

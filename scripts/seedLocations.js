@@ -9,13 +9,13 @@ dotenv.config();
 
 const seedLocations = async () => {
   try {
-    await mongoose.connect("mongodb+srv://webuildwebsites_db_user:IyVAzXTxudFDommn@cluster0.yewk4no.mongodb.net/");
+    await mongoose.connect(process.env.MONGODB_URL);
     console.log('✅ Connected to MongoDB');
 
     // Find SuperAdmin to use as createdBy
     const superAdmin = await employeeSchema.findOne({ 
       $or: [
-        { EmployeeType: 'SUPERADMIN' },
+        { 'EmployeeType.name': 'SUPERADMIN' },
         { 'EmployeeType.name': 'SUPERADMIN' }
       ]
     });
