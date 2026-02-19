@@ -32,8 +32,14 @@ const customerSchema = new mongoose.Schema(
       maxlength: 100,
     },
     CustomerType: {
-      type: String,
-      required: true,
+      name: {
+        type: String,
+        required: true,
+      },
+      refId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'CustomerType'
+      }
     },
     orderMode: {
       type: String,
@@ -80,13 +86,27 @@ const customerSchema = new mongoose.Schema(
       minlength: 6,
       select: false,
     },
-    zone: String,
+    zone: {
+      name: {
+        type: String,
+      },
+      refId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Zone'
+      }
+    },
     hasFlatFitting: {
       type: Boolean,
       default: false,
     },
     selectType: {
-      type: [String],
+      type: [{
+        name: String,
+        refId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'FittingCenter'
+        }
+      }],
       required: function () {
         return this.hasFlatFitting === true;
       },
@@ -103,16 +123,46 @@ const customerSchema = new mongoose.Schema(
         return this.hasFlatFitting === true;
       },
     },
-    specificLab: String,
+    specificLab: {
+      name: {
+        type: String,
+      },
+      refId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'SpecificLab'
+      }
+    },
     specificBrand: {
-      type : String,
-      required : true,
+      name: {
+        type: String,
+        required: true,
+      },
+      refId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Brand',
+        required: true
+      }
     },
     specificCategory: {
-      type : String,
-      required : true,
+      name: {
+        type: String,
+        required: true,
+      },
+      refId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Category',
+        required: true
+      }
     },
-    salesPerson : String,
+    salesPerson: {
+      name: {
+        type: String,
+      },
+      refId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'employee'
+      }
+    },
 
 
     // DOCUMENTATION DETAILS
@@ -121,10 +171,16 @@ const customerSchema = new mongoose.Schema(
       required: true,
     },
     gstType: {
-      type: String,
-      required: function () {
-        return this.IsGSTRegistered === true;
+      name: {
+        type: String,
+        required: function () {
+          return this.IsGSTRegistered === true;
+        },
       },
+      refId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'GSTType'
+      }
     },
     GSTNumber: {
       type: String,
@@ -167,13 +223,41 @@ const customerSchema = new mongoose.Schema(
 
 
     // BUSINESS DETAILS
-    plant: String,
-    lab: String,
-    fittingCenter: String,
+    plant: {
+      name: {
+        type: String,
+      },
+      refId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Plant'
+      }
+    },
+    lab: {
+      name: {
+        type: String,
+      },
+      refId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Lab'
+      }
+    },
+    fittingCenter: {
+      name: {
+        type: String,
+      },
+      refId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'FittingCenter'
+      }
+    },
     creditLimit: {
-      type: Number,
-      default: 0,
-      min: 0,
+      name: {
+        type: String,
+      },
+      refId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'CreditDay'
+      }
     },
     creditAmount: {
       type: Number,
@@ -181,11 +265,32 @@ const customerSchema = new mongoose.Schema(
       min: 0,
     },
     creditDays: {
-      type: Number,
-      default: 0,
+      name: {
+        type: String,
+      },
+      refId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'CreditDay'
+      }
     },
-    courierName: String,
-    courierTime: String,
+    courierName: {
+      name: {
+        type: String,
+      },
+      refId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'CourierName'
+      }
+    },
+    courierTime: {
+      name: {
+        type: String,
+      },
+      refId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'CourierTime'
+      }
+    },
     dcWithoutValue: {
       type: Boolean,
       default: false,
