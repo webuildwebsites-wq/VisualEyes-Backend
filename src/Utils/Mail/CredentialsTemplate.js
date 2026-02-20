@@ -1,4 +1,4 @@
-const CredentialsTemplate = (username, email, password) => {
+const CredentialsTemplate = (username, emailId, customerpassword) => {
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -92,8 +92,8 @@ const CredentialsTemplate = (username, email, password) => {
       </p>
 
       <div class="credentials-box">
-        <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Password:</strong> ${password}</p>
+        <p><strong>Email:</strong> ${emailId}</p>
+        <p><strong>Password:</strong> ${customerpassword}</p>
       </div>
 
       <p class="note">

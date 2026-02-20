@@ -43,7 +43,7 @@ import axios from "axios";
 import dotenv from 'dotenv';
 dotenv.config();
 
-async function sendEmail(to, subject, html) {
+async function sendEmail({ to, subject, html }) {
   try {
     console.log("🚀 sendEmail triggered", to);
 
