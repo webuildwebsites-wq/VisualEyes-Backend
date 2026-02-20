@@ -30,9 +30,7 @@ export const customerLogin = async (req, res) => {
 
     const customer = await Customer.findOne({
       $or: [{ username : username }, { emailId : username }],    }).select("+password")
-      .populate("assignedSalesHead assignedAccountsHead", "firstName lastName");
 
-    console.log("customer : ",customer);
     if (!customer) {
       return sendErrorResponse(
         res,
@@ -344,7 +342,7 @@ export const customerRegister = async (req, res) => {
     delete customerObj.mobileOtp;
 
     return sendSuccessResponse(res,201,
-    { customer: customerObj },"Customer registration successful. Verification email will be sent shortly.",);
+    { customer: customerObj },"Customer registration successful. Credentials sent on email successfully.",);
   } catch (error) {
     console.error("Customer registration error:", error);
     if (error.name === "ValidationError") {
@@ -530,10 +528,7 @@ export const customerUpdatePassword = async (req, res) => {
 
 export const getCustomerProfile = async (req, res) => {
   try {
-    const customer = await Customer.findById(req.user.id).populate(
-      "assignedSalesHead assignedAccountsHead",
-      "firstName lastName EmployeeType",
-    );
+    const customer = await Customer.findById(req.user.id);
 
     if (!customer) {
       return sendErrorResponse(
