@@ -9,9 +9,10 @@ import {
   generateToken,
   generateRefreshToken,
 } from "../../../../Utils/Auth/tokenUtils.js";
-import sendOTPEmail from "../../../config/Email/sendEmail.js";
 import VerificationEmail from "../../../../Utils/Mail/verifyEmailTemplate.js";
 import dotenv from "dotenv";
+import { sendEmail } from "../../../config/Email/emailService.js";
+import CredentialsTemplate from "../../../../Utils/Mail/CredentialsTemplate.js";
 dotenv.config();
 
 export const customerLogin = async (req, res) => {
@@ -331,11 +332,10 @@ export const customerRegister = async (req, res) => {
 
     const customer = await Customer.create(customerData);
 
-    sendOTPEmail({
-      sendTo: emailId,
+    sendEmail({
+      to: emailId,
       subject: "Welcome Mail for choosing VISUAL EYES",
-      text: "Register email in the VISUAL EYES server",
-      html: VerificationEmail(username, EmailOtp),
+      html: CredentialsTemplate(username, emailId, customerpassword),
     }).catch(err => console.error("Background email error:", err));
 
     const customerObj = customer.toObject();
