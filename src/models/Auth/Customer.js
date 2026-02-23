@@ -3,15 +3,36 @@ import mongoose from "mongoose";
 
 const addressSchema = new mongoose.Schema(
   {
-    address1: { type: String, required: true, trim: true },
+    branchAddress: { type: String, required: true, trim: true },
     contactPerson: { type: String, required: true, trim: true },
     contactNumber: { type: String, required: true },
     city: { type: String, required: true, trim: true },
     state: { type: String, required: true },
-    zipCode: { type: String, required: true, trim: true },
+    zipCode: { type: String, trim: true },
     country: { type: String, default: "INDIA" },
     billingCurrency: { type: String, required: true },
     billingMode: { type: String, required: true },
+  },
+  { _id: false }
+);
+
+const flatFittingSchema = new mongoose.Schema(
+  {
+    selectType: {
+      name: { type: String, required: true },
+      refId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "FittingCenter",
+      },
+    },
+    index: {
+      name: { type: String, required: true },
+      refId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "FittingIndex",
+      },
+    },
+    price: { type: Number, required: true },
   },
   { _id: false }
 );
@@ -63,6 +84,15 @@ const customerSchema = new mongoose.Schema(
       match: [/^\S+@\S+\.\S+$/, "Invalid email"],
     },
 
+    businessEmail: {
+      type: String,
+      required: false,
+      unique: true,
+      sparse: true,
+      trim: true,
+      lowercase: true,
+      match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid businessEmail']
+    },
 
     // Address details
     address: {
@@ -72,15 +102,6 @@ const customerSchema = new mongoose.Schema(
 
 
     // LOGIN DETAILS
-    username: {
-      type: String,
-      required: true,
-      unique: true,
-      trim: true,
-      lowercase: true,
-      minlength: 3,
-      maxlength: 50,
-    },
     password: {
       type: String,
       minlength: 6,
@@ -99,6 +120,15 @@ const customerSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
+    flatFittingData: {
+      type: [flatFittingSchema],
+      required: function () {
+        return this.hasFlatFitting === true;
+      },
+      default: [],
+    },
+
     selectType: {
       type: [{
         name: String,
@@ -113,12 +143,6 @@ const customerSchema = new mongoose.Schema(
     },
     selectTypeIndex: {
       type: [Number],
-      required: function () {
-        return this.hasFlatFitting === true;
-      },
-    },
-    Price: {
-      type: Number,
       required: function () {
         return this.hasFlatFitting === true;
       },

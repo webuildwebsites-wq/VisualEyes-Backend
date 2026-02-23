@@ -9,7 +9,6 @@ import {
   generateToken,
   generateRefreshToken,
 } from "../../../../Utils/Auth/tokenUtils.js";
-import VerificationEmail from "../../../../Utils/Mail/verifyEmailTemplate.js";
 import dotenv from "dotenv";
 import { sendEmail } from "../../../config/Email/emailService.js";
 import CredentialsTemplate from "../../../../Utils/Mail/CredentialsTemplate.js";
@@ -17,19 +16,18 @@ dotenv.config();
 
 export const customerLogin = async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { emailId, password } = req.body;
 
-    if (!username || !password) {
+    if (!emailId || !password) {
       return sendErrorResponse(
         res,
         400,
         "VALIDATION_ERROR",
-        "Please provide username/email and password",
+        "Please provide email and password",
       );
     }
 
-    const customer = await Customer.findOne({
-      $or: [{ username : username }, { emailId : username }],    }).select("+password")
+    const customer = await Customer.findOne({ emailId }).select("+password")
 
     if (!customer) {
       return sendErrorResponse(
@@ -92,7 +90,6 @@ export const customerLogin = async (req, res) => {
 export const customerRegister = async (req, res) => {
   try {
     const {
-      username,
       CustomerType,
       CustomerTypeRefId,
       zone,
@@ -105,6 +102,7 @@ export const customerRegister = async (req, res) => {
       specificLab,
       specificLabRefId,
       emailId,
+      businessEmail,
       shopName,
       ownerName,
       orderMode,
@@ -115,23 +113,17 @@ export const customerRegister = async (req, res) => {
       gstTypeRefId,
       plant,
       plantRefId,
-      lab,
-      labRefId,
       fittingCenter,
       fittingCenterRefId,
       creditDays,
       creditDaysRefId,
       creditLimit,
-      creditLimitRefId,
       courierName,
       courierNameRefId,
       courierTime,
       courierTimeRefId,
       address,
       IsGSTRegistered,
-      selectType,
-      selectTypeIndex,
-      Price,
       GSTNumber,
       GSTCertificateImg,
       PANCard,
@@ -140,11 +132,13 @@ export const customerRegister = async (req, res) => {
       AadharCardImg,
       salesPerson,
       salesPersonRefId,
+      customerpassword,
+      flatFittingData,
     } = req.body;
 
-    if (!username || !CustomerType || !shopName || !ownerName || !salesPerson || !emailId || !orderMode) {
-      return sendErrorResponse(res,400,
-      "VALIDATION_ERROR","username, CustomerType, shopName, ownerName, salesPerson, emailId and orderMode are required");
+    if (!CustomerType || !shopName || !ownerName || !salesPerson || !emailId || !orderMode) {
+      return sendErrorResponse(res, 400,
+        "VALIDATION_ERROR", "CustomerType, shopName, ownerName, salesPerson, emailId and orderMode are required");
     }
 
     if (!Array.isArray(address) || address.length === 0) {
@@ -152,34 +146,20 @@ export const customerRegister = async (req, res) => {
     }
 
     for (const addr of address) {
-      if (
-        !addr.address1 ||
-        !addr.contactPerson ||
-        !addr.contactNumber ||
-        !addr.country ||
-        !addr.state ||
-        !addr.city ||
-        !addr.zipCode ||
-        !addr.billingCurrency ||
-        !addr.billingMode
-      ) {
-        return sendErrorResponse(
-          res,
-          400,
-          "VALIDATION_ERROR",
-          "All address fields are required"
-        );
+      if (!addr.branchAddress || !addr.contactPerson || !addr.contactNumber || !addr.country || !addr.state || !addr.city || !addr.zipCode || !addr.billingCurrency || !addr.billingMode) {
+        return sendErrorResponse(res, 400, "VALIDATION_ERROR", "All address fields are required");
       }
     }
 
     if (hasFlatFitting === true) {
-      if (!Array.isArray(selectType) || !Array.isArray(selectTypeIndex) || !Price) {
-        return sendErrorResponse(
-          res,
-          400,
-          "VALIDATION_ERROR",
-          "selectType, selectTypeIndex and Price are required when hasFlatFitting is true"
-        );
+      if (!Array.isArray(flatFittingData) || flatFittingData.length === 0) {
+        return sendErrorResponse(res, 400, "VALIDATION_ERROR", "flatFittingData is required when hasFlatFitting is true");
+      }
+
+      for (const item of flatFittingData) {
+        if (!item.selectType || !item.selectType.name || !item.selectType.refId || !item.index || !item.index.name || !item.index.refId || item.price === undefined) {
+          return sendErrorResponse(res, 400, "VALIDATION_ERROR", "Each flatFittingData item must contain selectType, index and price");
+        }
       }
     }
 
@@ -203,27 +183,21 @@ export const customerRegister = async (req, res) => {
       }
     }
 
-    const existingCustomer = await Customer.findOne({
-      $or: [
-        { username: username.toLowerCase() },
-        { emailId: emailId.toLowerCase() }
-      ]
-    });
-    
+    const existingCustomer = await Customer.findOne({ emailId: emailId.toLowerCase() });
     if (existingCustomer) {
       return sendErrorResponse(
         res,
         409,
         "CUSTOMER_EXISTS",
-        "Customer with this username or email already exists",
+        "Customer with this email already exists",
       );
     }
 
     const EmailOtp = Math.floor(100000 + Math.random() * 800000).toString();
     const MobileOtp = Math.floor(100000 + Math.random() * 900000).toString();
-    const customerpassword = crypto.randomBytes(8).toString("hex");
 
     const customerData = {
+      // Customer Info.
       shopName: shopName.trim(),
       ownerName: ownerName.trim(),
       CustomerType: {
@@ -235,48 +209,7 @@ export const customerRegister = async (req, res) => {
       mobileNo2,
       landlineNo,
       emailId: emailId.toLowerCase().trim(),
-      address: address.map((addr) => ({
-        address1: addr.address1.trim(),
-        contactPerson: addr.contactPerson.trim(),
-        contactNumber: addr.contactNumber.trim(),
-        country: addr.country,
-        state: addr.state,
-        city: addr.city.trim(),
-        zipCode: addr.zipCode.trim(),
-        billingCurrency: addr.billingCurrency,
-        billingMode: addr.billingMode,
-      })),
-      
-      
-      // Login details 
-      username: username.toLowerCase().trim(),
-      zone: zone ? {
-        name: zone,
-        refId: zoneRefId
-      } : undefined,
-      hasFlatFitting,
-      selectType: hasFlatFitting ? selectType : undefined,
-      selectTypeIndex: hasFlatFitting ? selectTypeIndex : undefined,
-      Price: hasFlatFitting ? Price : undefined,
-      specificLab: specificLab ? {
-        name: specificLab,
-        refId: specificLabRefId
-      } : undefined,
-      specificBrand: {
-        name: specificBrand,
-        refId: specificBrandRefId
-      },
-      specificCategory: {
-        name: specificCategory,
-        refId: specificCategoryRefId
-      },
-      salesPerson: salesPerson ? {
-        name: salesPerson,
-        refId: salesPersonRefId
-      } : undefined,
-
-
-      // Documentation
+      businessEmail: businessEmail.toLowerCase().trim(),
       IsGSTRegistered,
       GSTNumber: IsGSTRegistered ? GSTNumber : undefined,
       gstType: IsGSTRegistered && gstType ? {
@@ -288,13 +221,60 @@ export const customerRegister = async (req, res) => {
       AadharCard: !IsGSTRegistered ? AadharCard : undefined,
       PANCardImg: !IsGSTRegistered ? PANCardImg : undefined,
       AadharCardImg: !IsGSTRegistered ? AadharCardImg : undefined,
+
+      // Address
+      address: address.map((addr) => ({
+        branchAddress: addr.branchAddress.trim(),
+        contactPerson: addr.contactPerson.trim(),
+        contactNumber: addr.contactNumber.trim(),
+        country: addr.country,
+        state: addr.state,
+        zipCode: addr.zipCode,
+        city: addr.city.trim(),
+        billingCurrency: addr.billingCurrency,
+        billingMode: addr.billingMode,
+      })),
+
+
+      // Customer Regn. 
+      password: customerpassword,
+      zone: zone ? {
+        name: zone,
+        refId: zoneRefId
+      } : undefined,
+      hasFlatFitting,
+      
+      flatFittingData: hasFlatFitting ? flatFittingData.map((item) => ({
+        selectType: {
+          name: item.selectType.name,
+          refId: item.selectType.refId,
+        },
+        index: {
+          name: item.index.name,
+          refId: item.index.refId,
+        },
+        price: item.price,
+      })) : [],
+
+      specificBrand: {
+        name: specificBrand,
+        refId: specificBrandRefId
+      },
+      specificCategory: {
+        name: specificCategory,
+        refId: specificCategoryRefId
+      },
+      specificLab: specificLab ? {
+        name: specificLab,
+        refId: specificLabRefId
+      } : undefined,
+      salesPerson: salesPerson ? {
+        name: salesPerson,
+        refId: salesPersonRefId
+      } : undefined,
       plant: plant ? {
         name: plant,
         refId: plantRefId
-      } : undefined,
-      lab: lab ? {
-        name: lab,
-        refId: labRefId
       } : undefined,
       fittingCenter: fittingCenter ? {
         name: fittingCenter,
@@ -304,10 +284,7 @@ export const customerRegister = async (req, res) => {
         name: creditDays,
         refId: creditDaysRefId
       } : undefined,
-      creditLimit: creditLimit ? {
-        name: creditLimit,
-        refId: creditLimitRefId
-      } : undefined,
+      creditLimit,
       courierName: courierName ? {
         name: courierName,
         refId: courierNameRefId
@@ -316,12 +293,11 @@ export const customerRegister = async (req, res) => {
         name: courierTime,
         refId: courierTimeRefId
       } : undefined,
-      
+
       // System Internall details
       dcWithoutValue: false,
-      password: customerpassword,
-      designation : "Customer",
-      createdBy : req.user.id,
+      designation: "Customer",
+      createdBy: req.user.id,
       emailOtp: EmailOtp,
       emailOtpExpires: new Date(Date.now() + 10 * 60 * 1000),
       mobileOtp: MobileOtp,
@@ -333,7 +309,7 @@ export const customerRegister = async (req, res) => {
     sendEmail({
       to: emailId,
       subject: "Welcome Mail for choosing VISUAL EYES",
-      html: CredentialsTemplate(username, emailId, customerpassword),
+      html: CredentialsTemplate(ownerName, emailId, customerpassword),
     }).catch(err => console.error("Background email error:", err));
 
     const customerObj = customer.toObject();
@@ -341,8 +317,8 @@ export const customerRegister = async (req, res) => {
     delete customerObj.emailOtp;
     delete customerObj.mobileOtp;
 
-    return sendSuccessResponse(res,201,
-    { customer: customerObj },"Customer registration successful. Credentials sent on email successfully.",);
+    return sendSuccessResponse(res, 201,
+      { customer: customerObj }, "Customer registration successful. Credentials sent on email successfully.",);
   } catch (error) {
     console.error("Customer registration error:", error);
     if (error.name === "ValidationError") {
@@ -385,7 +361,7 @@ export const customerForgotPassword = async (req, res) => {
       );
     }
 
-    const customer = await Customer.findOne({ email, "Status.isActive": true });
+    const customer = await Customer.findOne({ emailId: email, "Status.isActive": true });
 
     if (!customer) {
       return sendErrorResponse(
@@ -737,8 +713,8 @@ export const getPendingFinanceApprovals = async (req, res) => {
       approvalStatus: 'PENDING',
       'financeApproval.status': 'PENDING'
     })
-    .populate('createdBy', 'username email Department')
-    .sort({ createdAt: -1 });
+      .populate('createdBy', 'username emailId Department')
+      .sort({ createdAt: -1 });
 
     return sendSuccessResponse(
       res,
@@ -775,9 +751,9 @@ export const getPendingSalesApprovals = async (req, res) => {
       approvalStatus: 'FINANCE_APPROVED',
       'salesApproval.status': 'PENDING'
     })
-    .populate('createdBy', 'username email Department')
-    .populate('financeApproval.approvedBy', 'username email')
-    .sort({ 'financeApproval.approvedAt': -1 });
+      .populate('createdBy', 'username emailId Department')
+      .populate('financeApproval.approvedBy', 'username emailId')
+      .sort({ 'financeApproval.approvedAt': -1 });
 
     return sendSuccessResponse(
       res,
@@ -811,16 +787,16 @@ export const getAllCustomersWithApprovalStatus = async (req, res) => {
     }
 
     const { approvalStatus, page = 1, limit = 10 } = req.query;
-    
+
     const query = {};
     if (approvalStatus) {
       query.approvalStatus = approvalStatus;
     }
 
     const customers = await Customer.find(query)
-      .populate('createdBy', 'username email Department')
-      .populate('financeApproval.approvedBy', 'username email')
-      .populate('salesApproval.approvedBy', 'username email')
+      .populate('createdBy', 'username emailId Department')
+      .populate('financeApproval.approvedBy', 'username emailId')
+      .populate('salesApproval.approvedBy', 'username emailId')
       .sort({ createdAt: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit);
@@ -830,8 +806,8 @@ export const getAllCustomersWithApprovalStatus = async (req, res) => {
     return sendSuccessResponse(
       res,
       200,
-      { 
-        customers, 
+      {
+        customers,
         totalPages: Math.ceil(count / limit),
         currentPage: page,
         totalCustomers: count
@@ -865,8 +841,8 @@ export const getAllCustomers = async (req, res) => {
         .populate('zone', 'name')
         .populate('specificBrand', 'name')
         .populate('specificCategory', 'name')
-        .populate('salesPerson', 'employeeName email')
-        .populate('createdBy', 'employeeName email')
+        .populate('salesPerson', 'employeeName emailId')
+        .populate('createdBy', 'employeeName emailId')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
@@ -926,8 +902,8 @@ export const getFilteredCustomers = async (req, res) => {
         .populate('zone', 'name')
         .populate('specificBrand', 'name')
         .populate('specificCategory', 'name')
-        .populate('salesPerson', 'employeeName email')
-        .populate('createdBy', 'employeeName email')
+        .populate('salesPerson', 'employeeName emailId')
+        .populate('createdBy', 'employeeName emailId')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
@@ -956,14 +932,14 @@ export const getFilteredCustomers = async (req, res) => {
 export const getCustomerDetails = async (req, res) => {
   try {
     const { userId } = req.params;
-    const user = await Customer.findOne({_id: userId})
+    const user = await Customer.findOne({ _id: userId })
       .select('-password -emailOtp -emailOtpExpires -mobileOtp -mobileOtpExpires')
       .populate('CustomerType', 'name')
       .populate('zone', 'name')
       .populate('specificBrand', 'name')
       .populate('specificCategory', 'name')
       .populate('specificLab', 'name')
-      .populate('salesPerson', 'employeeName email')
+      .populate('salesPerson', 'employeeName emailId')
       .populate('gstType', 'name')
       .populate('plant', 'name')
       .populate('lab', 'name')
@@ -973,8 +949,8 @@ export const getCustomerDetails = async (req, res) => {
       .populate('courierName', 'name')
       .populate('courierTime', 'name')
       .populate('selectType', 'name')
-      .populate('createdBy', 'employeeName email');
-      
+      .populate('createdBy', 'employeeName emailId');
+
     if (!user) {
       return sendErrorResponse(res, 404, 'USER_NOT_FOUND', 'Customer not found');
     }
