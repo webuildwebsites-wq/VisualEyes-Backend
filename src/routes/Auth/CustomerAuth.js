@@ -1,5 +1,6 @@
 import express from 'express';
-import { customerForgotPassword, customerLogin,customerResetPassword,customerUpdatePassword, getCustomerProfile,getFilteredCustomers,customerBasicRegistration, financeCompleteCustomer, getPendingFinanceCustomers, getAllCustomers, getCustomerById } from '../../core/controllers/Auth/Customers/CustomerAuth.js';
+import { customerForgotPassword, customerLogin,customerResetPassword,customerUpdatePassword, customerBasicRegistration, financeCompleteCustomer } from '../../core/controllers/Auth/Customers/CustomerAuth.js';
+import { getAllCustomers, getCustomerById, getCustomerProfile, getFilteredCustomers, getPendingFinanceCustomers } from '../../core/controllers/Auth/Customers/customer.get.controller.js';
 import { requireFinanceDepartment, attachDepartmentInfo } from '../../middlewares/Auth/AdminMiddleware/departmentMiddleware.js';
 import { protectCustomer } from '../../middlewares/Auth/CustomerMiddleware/customerMiddleware.js';
 import { verifyCustomerEmail } from '../../core/controllers/Auth/Customers/VarifyAccount.js';
@@ -29,4 +30,5 @@ customerRouter.get('/get-filtered-customers', getFilteredCustomers);
 customerRouter.get('/get-all-customers', ProtectUser, getAllCustomers);
 customerRouter.get('/customers-profile', protectCustomer, getCustomerProfile);
 customerRouter.get('/get-customer/:customerId', getCustomerById);
+
 export default customerRouter;
