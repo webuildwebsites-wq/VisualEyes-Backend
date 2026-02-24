@@ -55,11 +55,12 @@ const customerSchema = new mongoose.Schema(
     CustomerType: {
       name: {
         type: String,
-        required: true,
+        required: false,
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'CustomerType'
+        ref: 'CustomerType',
+        required: false
       }
     },
     orderMode: {
@@ -106,25 +107,37 @@ const customerSchema = new mongoose.Schema(
       type: String,
       minlength: 6,
       select: false,
+      required: function() {
+        return this.createdByDepartment === 'FINANCE' || this.approvalStatus === 'APPROVED';
+      }
     },
     zone: {
       name: {
         type: String,
+        required: function() {
+          return this.createdByDepartment === 'FINANCE' || this.approvalStatus === 'APPROVED';
+        }
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Zone'
+        ref: 'Zone',
+        required: function() {
+          return this.createdByDepartment === 'FINANCE' || this.approvalStatus === 'APPROVED';
+        }
       }
     },
     hasFlatFitting: {
       type: Boolean,
       default: false,
+      required: function() {
+        return this.createdByDepartment === 'FINANCE' || this.approvalStatus === 'APPROVED';
+      }
     },
 
     flatFittingData: {
       type: [flatFittingSchema],
       required: function () {
-        return this.hasFlatFitting === true;
+        return this.hasFlatFitting === true && (this.createdByDepartment === 'FINANCE' || this.approvalStatus === 'APPROVED');
       },
       default: [],
     },
@@ -150,41 +163,61 @@ const customerSchema = new mongoose.Schema(
     specificLab: {
       name: {
         type: String,
+        required: function() {
+          return this.createdByDepartment === 'FINANCE' || this.approvalStatus === 'APPROVED';
+        }
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'SpecificLab'
+        ref: 'SpecificLab',
+        required: function() {
+          return this.createdByDepartment === 'FINANCE' || this.approvalStatus === 'APPROVED';
+        }
       }
     },
     specificBrand: {
       name: {
         type: String,
-        required: true,
+        required: function() {
+          return this.createdByDepartment === 'FINANCE' || this.approvalStatus === 'APPROVED';
+        }
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Brand',
-        required: true
+        required: function() {
+          return this.createdByDepartment === 'FINANCE' || this.approvalStatus === 'APPROVED';
+        }
       }
     },
     specificCategory: {
       name: {
         type: String,
-        required: true,
+        required: function() {
+          return this.createdByDepartment === 'FINANCE' || this.approvalStatus === 'APPROVED';
+        }
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Category',
-        required: true
+        required: function() {
+          return this.createdByDepartment === 'FINANCE' || this.approvalStatus === 'APPROVED';
+        }
       }
     },
     salesPerson: {
       name: {
         type: String,
+        required: function() {
+          return this.createdByDepartment === 'FINANCE' || this.approvalStatus === 'APPROVED';
+        }
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'employee'
+        ref: 'employee',
+        required: function() {
+          return this.createdByDepartment === 'FINANCE' || this.approvalStatus === 'APPROVED';
+        }
       }
     },
 
@@ -250,10 +283,16 @@ const customerSchema = new mongoose.Schema(
     plant: {
       name: {
         type: String,
+        required: function() {
+          return this.createdByDepartment === 'FINANCE' || this.approvalStatus === 'APPROVED';
+        }
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Plant'
+        ref: 'Plant',
+        required: function() {
+          return this.createdByDepartment === 'FINANCE' || this.approvalStatus === 'APPROVED';
+        }
       }
     },
     lab: {
@@ -268,19 +307,31 @@ const customerSchema = new mongoose.Schema(
     fittingCenter: {
       name: {
         type: String,
+        required: function() {
+          return this.createdByDepartment === 'FINANCE' || this.approvalStatus === 'APPROVED';
+        }
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'FittingCenter'
+        ref: 'FittingCenter',
+        required: function() {
+          return this.createdByDepartment === 'FINANCE' || this.approvalStatus === 'APPROVED';
+        }
       }
     },
     creditLimit: {
       name: {
         type: String,
+        required: function() {
+          return this.createdByDepartment === 'FINANCE' || this.approvalStatus === 'APPROVED';
+        }
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'CreditDay'
+        ref: 'CreditDay',
+        required: function() {
+          return this.createdByDepartment === 'FINANCE' || this.approvalStatus === 'APPROVED';
+        }
       }
     },
     creditAmount: {
@@ -291,28 +342,46 @@ const customerSchema = new mongoose.Schema(
     creditDays: {
       name: {
         type: String,
+        required: function() {
+          return this.createdByDepartment === 'FINANCE' || this.approvalStatus === 'APPROVED';
+        }
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'CreditDay'
+        ref: 'CreditDay',
+        required: function() {
+          return this.createdByDepartment === 'FINANCE' || this.approvalStatus === 'APPROVED';
+        }
       }
     },
     courierName: {
       name: {
         type: String,
+        required: function() {
+          return this.createdByDepartment === 'FINANCE' || this.approvalStatus === 'APPROVED';
+        }
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'CourierName'
+        ref: 'CourierName',
+        required: function() {
+          return this.createdByDepartment === 'FINANCE' || this.approvalStatus === 'APPROVED';
+        }
       }
     },
     courierTime: {
       name: {
         type: String,
+        required: function() {
+          return this.createdByDepartment === 'FINANCE' || this.approvalStatus === 'APPROVED';
+        }
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'CourierTime'
+        ref: 'CourierTime',
+        required: function() {
+          return this.createdByDepartment === 'FINANCE' || this.approvalStatus === 'APPROVED';
+        }
       }
     },
     dcWithoutValue: {
@@ -336,6 +405,25 @@ const customerSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "employee",
       required: true,
+    },
+    createdByDepartment: {
+      type: String,
+      enum: ['SALES', 'FINANCE'],
+      required: true,
+    },
+    approvalStatus: {
+      type: String,
+      enum: ['PENDING_FINANCE', 'APPROVED'],
+      default: function() {
+        return this.createdByDepartment === 'SALES' ? 'PENDING_FINANCE' : 'APPROVED';
+      }
+    },
+    financeCompletedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "employee",
+    },
+    financeCompletedAt: {
+      type: Date,
     },
     emailOtp: String,
     emailOtpExpires: Date,

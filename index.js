@@ -81,7 +81,7 @@ try {
     app.use('/api/system/config', systemConfigRouter);
 
    // CUSTOMER ROUTES
-    app.use('/api/customer/auth', customerRouter);
+    app.use('/api/customer/management', customerRouter);
 
    // UPLOAD IMAGE ROUTES
     app.use('/api/bucket/upload-image', imageUploadRouter)

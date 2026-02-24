@@ -87,7 +87,7 @@ export const customerLogin = async (req, res) => {
   }
 };
 
-export const customerRegister = async (req, res) => {
+export const customerBasicRegistration = async (req, res) => {
   try {
     const {
       CustomerType,
@@ -136,9 +136,29 @@ export const customerRegister = async (req, res) => {
       flatFittingData,
     } = req.body;
 
-    if (!CustomerType || !shopName || !ownerName || !salesPerson || !emailId || !orderMode) {
+    const userDepartment = req.user?.Department?.name;
+    const isSalesDepartment = userDepartment === "SALES";
+    const isFinanceDepartment = userDepartment === "FINANCE";
+
+    // Check if user is from Sales or Finance department
+    if (!['SALES', 'FINANCE'].includes(userDepartment)) {
+      return sendErrorResponse(
+        res,
+        403,
+        "FORBIDDEN",
+        "Only Sales or Finance department can register customers"
+      );
+    }
+
+    if (!CustomerType || !shopName || !ownerName || !emailId || !orderMode) {
       return sendErrorResponse(res, 400,
-        "VALIDATION_ERROR", "CustomerType, shopName, ownerName, salesPerson, emailId and orderMode are required");
+        "VALIDATION_ERROR", "CustomerType, shopName, ownerName, emailId and orderMode are required");
+    }
+
+    // salesPerson is only required for Finance department
+    if (isFinanceDepartment && !salesPerson) {
+      return sendErrorResponse(res, 400,
+        "VALIDATION_ERROR", "salesPerson is required for FINANCE department");
     }
 
     if (!Array.isArray(address) || address.length === 0) {
@@ -148,18 +168,6 @@ export const customerRegister = async (req, res) => {
     for (const addr of address) {
       if (!addr.branchAddress || !addr.contactPerson || !addr.contactNumber || !addr.country || !addr.state || !addr.city || !addr.zipCode || !addr.billingCurrency || !addr.billingMode) {
         return sendErrorResponse(res, 400, "VALIDATION_ERROR", "All address fields are required");
-      }
-    }
-
-    if (hasFlatFitting === true) {
-      if (!Array.isArray(flatFittingData) || flatFittingData.length === 0) {
-        return sendErrorResponse(res, 400, "VALIDATION_ERROR", "flatFittingData is required when hasFlatFitting is true");
-      }
-
-      for (const item of flatFittingData) {
-        if (!item.selectType || !item.selectType.name || !item.selectType.refId || !item.index || !item.index.name || !item.index.refId || item.price === undefined) {
-          return sendErrorResponse(res, 400, "VALIDATION_ERROR", "Each flatFittingData item must contain selectType, index and price");
-        }
       }
     }
 
@@ -183,6 +191,82 @@ export const customerRegister = async (req, res) => {
       }
     }
 
+    if (isFinanceDepartment) {
+      const isValidObjectId = (id) => /^[0-9a-fA-F]{24}$/.test(id);
+
+      const requiredRefIds = [
+        { name: 'CustomerTypeRefId', value: CustomerTypeRefId },
+        { name: 'specificBrandRefId', value: specificBrandRefId },
+        { name: 'specificCategoryRefId', value: specificCategoryRefId },
+        { name: 'salesPersonRefId', value: salesPersonRefId },
+      ];
+
+      for (const field of requiredRefIds) {
+        if (!field.value) {
+          return sendErrorResponse(res, 400, "VALIDATION_ERROR", `${field.name} is required for FINANCE department`);
+        }
+        if (!isValidObjectId(field.value)) {
+          return sendErrorResponse(res, 400, "VALIDATION_ERROR",
+            `${field.name} must be a valid ObjectId (24 hex characters)`);
+        }
+      }
+
+      const optionalRefIds = [
+        { name: 'zoneRefId', value: zoneRefId },
+        { name: 'specificLabRefId', value: specificLabRefId },
+        { name: 'gstTypeRefId', value: gstTypeRefId },
+        { name: 'plantRefId', value: plantRefId },
+        { name: 'fittingCenterRefId', value: fittingCenterRefId },
+        { name: 'creditDaysRefId', value: creditDaysRefId },
+        { name: 'courierNameRefId', value: courierNameRefId },
+        { name: 'courierTimeRefId', value: courierTimeRefId },
+      ];
+
+      for (const field of optionalRefIds) {
+        if (field.value && !isValidObjectId(field.value)) {
+          return sendErrorResponse(res, 400, "VALIDATION_ERROR",
+            `${field.name} must be a valid ObjectId (24 hex characters)`);
+        }
+      }
+
+      if (!customerpassword) {
+        return sendErrorResponse(res, 400, "VALIDATION_ERROR", "Password is required for FINANCE department");
+      }
+
+      if (!specificBrand || !specificBrandRefId) {
+        return sendErrorResponse(res, 400, "VALIDATION_ERROR", "specificBrand and specificBrandRefId are required for FINANCE department");
+      }
+
+      if (!specificCategory || !specificCategoryRefId) {
+        return sendErrorResponse(res, 400, "VALIDATION_ERROR", "specificCategory and specificCategoryRefId are required for FINANCE department");
+      }
+
+      if (!salesPerson || !salesPersonRefId) {
+        return sendErrorResponse(res, 400, "VALIDATION_ERROR", "salesPerson and salesPersonRefId are required for FINANCE department");
+      }
+
+      if (hasFlatFitting === true) {
+        if (!Array.isArray(flatFittingData) || flatFittingData.length === 0) {
+          return sendErrorResponse(res, 400, "VALIDATION_ERROR", "flatFittingData is required when hasFlatFitting is true");
+        }
+
+        for (const item of flatFittingData) {
+          if (!item.selectType || !item.selectType.name || !item.selectType.refId || !item.index || !item.index.name || !item.index.refId || item.price === undefined) {
+            return sendErrorResponse(res, 400, "VALIDATION_ERROR", "Each flatFittingData item must contain selectType, index and price");
+          }
+        }
+      }
+    }
+
+    if (isSalesDepartment) {
+      const isValidObjectId = (id) => /^[0-9a-fA-F]{24}$/.test(id);
+
+      if (CustomerTypeRefId && !isValidObjectId(CustomerTypeRefId)) {
+        return sendErrorResponse(res, 400, "VALIDATION_ERROR",
+          `CustomerTypeRefId must be a valid ObjectId (24 hex characters)`);
+      }
+    }
+
     const existingCustomer = await Customer.findOne({ emailId: emailId.toLowerCase() });
     if (existingCustomer) {
       return sendErrorResponse(
@@ -200,16 +284,16 @@ export const customerRegister = async (req, res) => {
       // Customer Info.
       shopName: shopName.trim(),
       ownerName: ownerName.trim(),
-      CustomerType: {
+      CustomerType: CustomerTypeRefId ? {
         name: CustomerType,
         refId: CustomerTypeRefId
-      },
+      } : undefined,
       orderMode,
       mobileNo1,
       mobileNo2,
       landlineNo,
       emailId: emailId.toLowerCase().trim(),
-      businessEmail: businessEmail.toLowerCase().trim(),
+      businessEmail: businessEmail ? businessEmail.toLowerCase().trim() : undefined,
       IsGSTRegistered,
       GSTNumber: IsGSTRegistered ? GSTNumber : undefined,
       gstType: IsGSTRegistered && gstType ? {
@@ -236,15 +320,18 @@ export const customerRegister = async (req, res) => {
       })),
 
 
-      // Customer Regn. 
-      password: customerpassword,
-      zone: zone ? {
+
+      // Customer Registration - Only for FINANCE department
+      password: isFinanceDepartment ? customerpassword : undefined,
+
+      zone: isFinanceDepartment && zone && zoneRefId ? {
         name: zone,
         refId: zoneRefId
       } : undefined,
-      hasFlatFitting,
-      
-      flatFittingData: hasFlatFitting ? flatFittingData.map((item) => ({
+
+      hasFlatFitting: isFinanceDepartment ? hasFlatFitting : undefined,
+
+      flatFittingData: isFinanceDepartment && hasFlatFitting ? flatFittingData.map((item) => ({
         selectType: {
           name: item.selectType.name,
           refId: item.selectType.refId,
@@ -256,48 +343,53 @@ export const customerRegister = async (req, res) => {
         price: item.price,
       })) : [],
 
-      specificBrand: {
+      Price: isFinanceDepartment && hasFlatFitting && flatFittingData && flatFittingData.length > 0 ? flatFittingData[0].price : undefined,
+
+      specificBrand: isFinanceDepartment && specificBrand && specificBrandRefId ? {
         name: specificBrand,
         refId: specificBrandRefId
-      },
-      specificCategory: {
+      } : undefined,
+
+      specificCategory: isFinanceDepartment && specificCategory && specificCategoryRefId ? {
         name: specificCategory,
         refId: specificCategoryRefId
-      },
-      specificLab: specificLab ? {
+      } : undefined,
+      specificLab: isFinanceDepartment && specificLab && specificLabRefId ? {
         name: specificLab,
         refId: specificLabRefId
       } : undefined,
-      salesPerson: salesPerson ? {
+      salesPerson: isFinanceDepartment && salesPerson && salesPersonRefId ? {
         name: salesPerson,
         refId: salesPersonRefId
       } : undefined,
-      plant: plant ? {
+      plant: isFinanceDepartment && plant && plantRefId ? {
         name: plant,
         refId: plantRefId
       } : undefined,
-      fittingCenter: fittingCenter ? {
+      fittingCenter: isFinanceDepartment && fittingCenter && fittingCenterRefId ? {
         name: fittingCenter,
         refId: fittingCenterRefId
       } : undefined,
-      creditDays: creditDays ? {
+      creditDays: isFinanceDepartment && creditDays && creditDaysRefId ? {
         name: creditDays,
         refId: creditDaysRefId
       } : undefined,
-      creditLimit,
-      courierName: courierName ? {
+      creditLimit: isFinanceDepartment ? creditLimit : undefined,
+      courierName: isFinanceDepartment && courierName && courierNameRefId ? {
         name: courierName,
         refId: courierNameRefId
       } : undefined,
-      courierTime: courierTime ? {
+      courierTime: isFinanceDepartment && courierTime && courierTimeRefId ? {
         name: courierTime,
         refId: courierTimeRefId
       } : undefined,
 
-      // System Internall details
+      // System Internal details
       dcWithoutValue: false,
       designation: "Customer",
       createdBy: req.user.id,
+      createdByDepartment: userDepartment,
+      approvalStatus: isSalesDepartment ? 'PENDING_FINANCE' : 'APPROVED',
       emailOtp: EmailOtp,
       emailOtpExpires: new Date(Date.now() + 10 * 60 * 1000),
       mobileOtp: MobileOtp,
@@ -306,19 +398,25 @@ export const customerRegister = async (req, res) => {
 
     const customer = await Customer.create(customerData);
 
-    sendEmail({
-      to: emailId,
-      subject: "Welcome Mail for choosing VISUAL EYES",
-      html: CredentialsTemplate(ownerName, emailId, customerpassword),
-    }).catch(err => console.error("Background email error:", err));
+    // Only send credentials email if password was set (FINANCE department)
+    if (isFinanceDepartment && customerpassword) {
+      sendEmail({
+        to: emailId,
+        subject: "Welcome Mail for choosing VISUAL EYES",
+        html: CredentialsTemplate(ownerName, emailId, customerpassword),
+      }).catch(err => console.error("Background email error:", err));
+    }
 
     const customerObj = customer.toObject();
     delete customerObj.password;
     delete customerObj.emailOtp;
     delete customerObj.mobileOtp;
 
-    return sendSuccessResponse(res, 201,
-      { customer: customerObj }, "Customer registration successful. Credentials sent on email successfully.",);
+    const message = isSalesDepartment
+      ? "Customer registered successfully. Pending Finance approval."
+      : "Customer registered and approved successfully.";
+
+    return sendSuccessResponse(res, 201, { customer: customerObj }, message);
   } catch (error) {
     console.error("Customer registration error:", error);
     if (error.name === "ValidationError") {
@@ -353,12 +451,10 @@ export const customerForgotPassword = async (req, res) => {
     const { email } = req.body;
 
     if (!email) {
-      return sendErrorResponse(
-        res,
+      return sendErrorResponse(res,
         400,
         "VALIDATION_ERROR",
-        "Please provide email address",
-      );
+        "Please provide email address",);
     }
 
     const customer = await Customer.findOne({ emailId: email, "Status.isActive": true });
@@ -515,15 +611,7 @@ export const getCustomerProfile = async (req, res) => {
       );
     }
 
-    const customerData = {
-      user: {
-        ...customer.toObject(),
-        CustomerType: req.user.CustomerType,
-        AccountType: req.user.AccountType,
-      },
-    };
-
-    return sendSuccessResponse(res, 200, customerData);
+    return sendSuccessResponse(res, 200, customer, "customer profile fetch successfully");
   } catch (error) {
     console.error("Get customer profile error:", error);
     return sendErrorResponse(
@@ -535,335 +623,24 @@ export const getCustomerProfile = async (req, res) => {
   }
 };
 
-// Finance Department Approval
-export const financeApproveCustomer = async (req, res) => {
+export const getCustomerById = async (req, res) => {
   try {
     const { customerId } = req.params;
-    const { status, remarks } = req.body;
-
-    // Check if user is from Finance department
-    const employee = await employeeSchema.findById(req.user.id);
-    if (!employee || !['F&A', 'F&A CFO', 'ACCOUNTING MODULE'].includes(employee.Department?.name)) {
-      return sendErrorResponse(
-        res,
-        403,
-        "UNAUTHORIZED",
-        "Only Finance/Accounts department can perform this action",
-      );
-    }
-
-    if (!['APPROVED', 'REJECTED'].includes(status)) {
-      return sendErrorResponse(
-        res,
-        400,
-        "VALIDATION_ERROR",
-        "Status must be either APPROVED or REJECTED",
-      );
-    }
-
     const customer = await Customer.findById(customerId);
+
     if (!customer) {
-      return sendErrorResponse(
-        res,
-        404,
-        "CUSTOMER_NOT_FOUND",
-        "Customer not found",
-      );
+      return sendErrorResponse( res, 404, "USER_NOT_FOUND", "Customer not found");
     }
 
-    if (customer.approvalStatus !== 'PENDING') {
-      return sendErrorResponse(
-        res,
-        400,
-        "INVALID_STATUS",
-        `Customer is already ${customer.approvalStatus}`,
-      );
-    }
-
-    // Update finance approval
-    customer.financeApproval = {
-      status: status,
-      approvedBy: req.user.id,
-      approvedAt: new Date(),
-      remarks: remarks || ''
-    };
-
-    if (status === 'APPROVED') {
-      customer.approvalStatus = 'FINANCE_APPROVED';
-    } else {
-      customer.approvalStatus = 'REJECTED';
-      customer.Status.isActive = false;
-    }
-
-    await customer.save();
-
-    return sendSuccessResponse(
-      res,
-      200,
-      { customer },
-      `Customer ${status.toLowerCase()} by Finance department`,
-    );
-
+    return sendSuccessResponse(res, 200, customer, "customer profile fetch successfully");
   } catch (error) {
-    console.error("Finance approval error:", error);
+    console.error("Get customer profile error:", error);
     return sendErrorResponse(
       res,
       500,
       "INTERNAL_ERROR",
-      "Finance approval failed",
+      "Internal server error",
     );
-  }
-};
-
-// Sales Head Final Approval
-export const salesApproveCustomer = async (req, res) => {
-  try {
-    const { customerId } = req.params;
-    const { status, remarks } = req.body;
-
-    // Check if user is from Sales department with appropriate role
-    const employee = await employeeSchema.findById(req.user.id);
-    if (!employee || !['SALES HEAD', 'SALES EXECUTIVE'].includes(employee.Department?.name)) {
-      return sendErrorResponse(
-        res,
-        403,
-        "UNAUTHORIZED",
-        "Only Sales Head/Executive can perform this action",
-      );
-    }
-
-    if (!['APPROVED', 'REJECTED'].includes(status)) {
-      return sendErrorResponse(
-        res,
-        400,
-        "VALIDATION_ERROR",
-        "Status must be either APPROVED or REJECTED",
-      );
-    }
-
-    const customer = await Customer.findById(customerId);
-    if (!customer) {
-      return sendErrorResponse(
-        res,
-        404,
-        "CUSTOMER_NOT_FOUND",
-        "Customer not found",
-      );
-    }
-
-    if (customer.approvalStatus !== 'FINANCE_APPROVED') {
-      return sendErrorResponse(
-        res,
-        400,
-        "INVALID_STATUS",
-        "Customer must be approved by Finance department first",
-      );
-    }
-
-    // Update sales approval
-    customer.salesApproval = {
-      status: status,
-      approvedBy: req.user.id,
-      approvedAt: new Date(),
-      remarks: remarks || ''
-    };
-
-    if (status === 'APPROVED') {
-      customer.approvalStatus = 'SALES_APPROVED';
-      customer.Status.isActive = true;
-    } else {
-      customer.approvalStatus = 'REJECTED';
-      customer.Status.isActive = false;
-    }
-
-    await customer.save();
-
-    return sendSuccessResponse(
-      res,
-      200,
-      { customer },
-      `Customer ${status.toLowerCase()} by Sales Head`,
-    );
-
-  } catch (error) {
-    console.error("Sales approval error:", error);
-    return sendErrorResponse(
-      res,
-      500,
-      "INTERNAL_ERROR",
-      "Sales approval failed",
-    );
-  }
-};
-
-// Get Pending Approvals for Finance
-export const getPendingFinanceApprovals = async (req, res) => {
-  try {
-    const employee = await employeeSchema.findById(req.user.id);
-    if (!employee || !['F&A', 'F&A CFO', 'ACCOUNTING MODULE'].includes(employee.Department?.name)) {
-      return sendErrorResponse(
-        res,
-        403,
-        "UNAUTHORIZED",
-        "Only Finance/Accounts department can view this",
-      );
-    }
-
-    const customers = await Customer.find({
-      approvalStatus: 'PENDING',
-      'financeApproval.status': 'PENDING'
-    })
-      .populate('createdBy', 'username emailId Department')
-      .sort({ createdAt: -1 });
-
-    return sendSuccessResponse(
-      res,
-      200,
-      { customers, count: customers.length },
-      "Pending finance approvals retrieved successfully",
-    );
-
-  } catch (error) {
-    console.error("Get pending finance approvals error:", error);
-    return sendErrorResponse(
-      res,
-      500,
-      "INTERNAL_ERROR",
-      "Failed to retrieve pending approvals",
-    );
-  }
-};
-
-// Get Pending Approvals for Sales
-export const getPendingSalesApprovals = async (req, res) => {
-  try {
-    const employee = await employeeSchema.findById(req.user.id);
-    if (!employee || !['SALES HEAD', 'SALES EXECUTIVE'].includes(employee.Department?.name)) {
-      return sendErrorResponse(
-        res,
-        403,
-        "UNAUTHORIZED",
-        "Only Sales Head/Executive can view this",
-      );
-    }
-
-    const customers = await Customer.find({
-      approvalStatus: 'FINANCE_APPROVED',
-      'salesApproval.status': 'PENDING'
-    })
-      .populate('createdBy', 'username emailId Department')
-      .populate('financeApproval.approvedBy', 'username emailId')
-      .sort({ 'financeApproval.approvedAt': -1 });
-
-    return sendSuccessResponse(
-      res,
-      200,
-      { customers, count: customers.length },
-      "Pending sales approvals retrieved successfully",
-    );
-
-  } catch (error) {
-    console.error("Get pending sales approvals error:", error);
-    return sendErrorResponse(
-      res,
-      500,
-      "INTERNAL_ERROR",
-      "Failed to retrieve pending approvals",
-    );
-  }
-};
-
-// Get All Customers with Approval Status (for Admin/SuperAdmin)
-export const getAllCustomersWithApprovalStatus = async (req, res) => {
-  try {
-    const employee = await employeeSchema.findById(req.user.id);
-    if (!employee || !['SUPERADMIN', 'ADMIN'].includes(employee.EmployeeType?.name)) {
-      return sendErrorResponse(
-        res,
-        403,
-        "UNAUTHORIZED",
-        "Only Admin/SuperAdmin can view all customers",
-      );
-    }
-
-    const { approvalStatus, page = 1, limit = 10 } = req.query;
-
-    const query = {};
-    if (approvalStatus) {
-      query.approvalStatus = approvalStatus;
-    }
-
-    const customers = await Customer.find(query)
-      .populate('createdBy', 'username emailId Department')
-      .populate('financeApproval.approvedBy', 'username emailId')
-      .populate('salesApproval.approvedBy', 'username emailId')
-      .sort({ createdAt: -1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit);
-
-    const count = await Customer.countDocuments(query);
-
-    return sendSuccessResponse(
-      res,
-      200,
-      {
-        customers,
-        totalPages: Math.ceil(count / limit),
-        currentPage: page,
-        totalCustomers: count
-      },
-      "Customers retrieved successfully",
-    );
-
-  } catch (error) {
-    console.error("Get all customers error:", error);
-    return sendErrorResponse(
-      res,
-      500,
-      "INTERNAL_ERROR",
-      "Failed to retrieve customers",
-    );
-  }
-};
-
-export const getAllCustomers = async (req, res) => {
-  try {
-    const page = Math.max(parseInt(req.query.page) || 1, 1);
-    const limit = Math.min(parseInt(req.query.limit) || 10, 100);
-    const skip = (page - 1) * limit;
-    const query = {};
-
-    const [customers, total] = await Promise.all([
-      Customer
-        .find(query)
-        .select('-password -emailOtp -emailOtpExpires -mobileOtp -mobileOtpExpires')
-        .populate('CustomerType', 'name')
-        .populate('zone', 'name')
-        .populate('specificBrand', 'name')
-        .populate('specificCategory', 'name')
-        .populate('salesPerson', 'employeeName emailId')
-        .populate('createdBy', 'employeeName emailId')
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-      Customer.countDocuments(query)
-    ]);
-
-    const totalPages = Math.ceil(total / limit);
-    const pagination = {
-      currentPage: page,
-      totalPages,
-      totalCustomers: total,
-      hasNext: page < totalPages,
-      hasPrev: page > 1
-    };
-
-    return sendSuccessResponse(res, 200, { customers, pagination }, 'Customers retrieved successfully');
-
-  } catch (error) {
-    console.error('Get all customers error:', error);
-    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to retrieve customers');
   }
 };
 
@@ -929,36 +706,143 @@ export const getFilteredCustomers = async (req, res) => {
   }
 };
 
-export const getCustomerDetails = async (req, res) => {
+export const financeCompleteCustomer = async (req, res) => {
   try {
-    const { userId } = req.params;
-    const user = await Customer.findOne({ _id: userId })
-      .select('-password -emailOtp -emailOtpExpires -mobileOtp -mobileOtpExpires')
-      .populate('CustomerType', 'name')
-      .populate('zone', 'name')
-      .populate('specificBrand', 'name')
-      .populate('specificCategory', 'name')
-      .populate('specificLab', 'name')
-      .populate('salesPerson', 'employeeName emailId')
-      .populate('gstType', 'name')
-      .populate('plant', 'name')
-      .populate('lab', 'name')
-      .populate('fittingCenter', 'name')
-      .populate('creditLimit', 'name')
-      .populate('creditDays', 'name')
-      .populate('courierName', 'name')
-      .populate('courierTime', 'name')
-      .populate('selectType', 'name')
-      .populate('createdBy', 'employeeName emailId');
-
-    if (!user) {
-      return sendErrorResponse(res, 404, 'USER_NOT_FOUND', 'Customer not found');
+    const { customerId } = req.params;
+    const userDepartment = req.user.Department?.name || req.user.Department;
+    if (userDepartment !== 'FINANCE') {
+      return sendErrorResponse(res, 403, "FORBIDDEN", "Only Finance department can complete customer registration");
     }
 
-    return sendSuccessResponse(res, 200, { user }, 'Customer details retrieved successfully');
+    const customer = await Customer.findById(customerId);
 
+    if (!customer) {
+      return sendErrorResponse(res, 404, "NOT_FOUND", "Customer not found");
+    }
+
+    if (customer.approvalStatus === 'APPROVED') {
+      return sendErrorResponse(res, 400, "ALREADY_APPROVED", "Customer is already approved. Cannot update.");
+    }
+
+    const requiredFinanceFields = [
+      'password', 'zone', 'plant', 'fittingCenter',
+      'creditDays', 'courierName', 'courierTime',
+      'specificBrand', 'specificCategory', 'specificLab', 'salesPerson'
+    ];
+
+    const missingFields = requiredFinanceFields.filter(field => !req.body[field]);
+
+    if (missingFields.length > 0) {
+      return sendErrorResponse(res, 400, "VALIDATION_ERROR", `Missing required fields: ${missingFields.join(', ')}`);
+    }
+
+    const updateData = {
+      password: req.body.password,
+      zone: req.body.zone,
+      hasFlatFitting: req.body.hasFlatFitting || false,
+      flatFittingData: req.body.flatFittingData || [],
+      specificBrand: req.body.specificBrand,
+      specificCategory: req.body.specificCategory,
+      specificLab: req.body.specificLab,
+      salesPerson: req.body.salesPerson,
+      plant: req.body.plant,
+      fittingCenter: req.body.fittingCenter,
+      creditDays: req.body.creditDays,
+      creditLimit: req.body.creditLimit,
+      courierName: req.body.courierName,
+      courierTime: req.body.courierTime,
+      approvalStatus: 'APPROVED',
+      financeCompletedBy: req.user._id,
+      financeCompletedAt: new Date(),
+    };
+
+    Object.assign(customer, updateData);
+    await customer.save();
+
+    return sendSuccessResponse(res, 200, customer, "Customer completed and approved by Finance successfully");
   } catch (error) {
-    console.error('Get customer details error:', error);
-    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to retrieve customer details');
+    console.error("Finance complete customer error:", error);
+
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(err => err.message);
+      return sendErrorResponse(
+        res,
+        400,
+        "VALIDATION_ERROR",
+        messages.join(', ')
+      );
+    }
+
+    return sendErrorResponse(
+      res,
+      500,
+      "INTERNAL_ERROR",
+      "Internal server error during customer completion"
+    );
+  }
+};
+
+export const getAllCustomers = async (req, res) => {
+  try {
+    const { status } = req.query;
+
+    let filter = {};
+    if (status && ['PENDING_FINANCE', 'APPROVED'].includes(status)) {
+      filter.approvalStatus = status;
+    }
+
+    const customers = await Customer.find(filter)
+      .populate('createdBy', 'employeeName email Department')
+      .populate('financeCompletedBy', 'employeeName email')
+      .populate('zone.refId')
+      .populate('salesPerson.refId', 'employeeName email')
+      .sort({ createdAt: -1 });
+
+    return sendSuccessResponse(
+      res,
+      200,
+      {
+        count: customers.length,
+        customers
+      },
+      "Customers retrieved successfully"
+    );
+  } catch (error) {
+    console.error("Get all customers error:", error);
+    return sendErrorResponse(
+      res,
+      500,
+      "INTERNAL_ERROR",
+      "Internal server error while fetching customers"
+    );
+  }
+};
+
+export const getPendingFinanceCustomers = async (req, res) => {
+  try {
+    const customers = await Customer.find({
+      approvalStatus: 'PENDING_FINANCE',
+      createdByDepartment: 'SALES'
+    })
+      .populate('createdBy', 'employeeName email Department')
+      .sort({ createdAt: -1 });
+
+    return sendSuccessResponse(
+      res,
+      200,
+      {
+        count: customers.length,
+        customers
+      },
+      "Pending Finance approval customers retrieved successfully"
+    );
+  } catch (error) {
+    console.error("Get pending finance customers error:", error);
+    return sendErrorResponse(
+      res,
+      500,
+      "INTERNAL_ERROR",
+      "Internal server error while fetching pending customers"
+    );
   }
 };
