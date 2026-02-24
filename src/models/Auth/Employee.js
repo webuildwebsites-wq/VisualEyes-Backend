@@ -76,14 +76,27 @@ const employee = new mongoose.Schema({
       trim: true,
       required: function() {
         const empType = this.EmployeeType?.name || this.EmployeeType;
-        return !['SUPERADMIN', 'ADMIN'].includes(empType);
+        return empType !== 'SUPERADMIN';
       }
     },
     refId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Department'
+      ref: 'Department',
+      required: function() {
+        const empType = this.EmployeeType?.name || this.EmployeeType;
+        return empType !== 'SUPERADMIN';
+      }
     }
   },
+  subRoles: [{
+    name: {
+      type: String,
+      trim: true
+    },
+    refId: {
+      type: mongoose.Schema.Types.ObjectId
+    }
+  }],
   lab: {
     name: {
       type: String,
@@ -160,6 +173,16 @@ const employee = new mongoose.Schema({
         const empType = this.EmployeeType?.name || this.EmployeeType;
         return empType === 'EMPLOYEE';
       }
+    }
+  },
+  teamLead: {
+    name: {
+      type: String,
+      trim: true
+    },
+    refId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'employee'
     }
   },
   isActive: {

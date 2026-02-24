@@ -10,6 +10,7 @@ import customerRouter from './src/routes/Auth/CustomerAuth.js';
 import employeeRouter from './src/routes/Auth/EmployeeAuth.js';
 import employeeManagementRouter from './src/routes/Auth/EmployeeManagement.js';
 import systemConfigRouter from './src/routes/Auth/SystemConfig.js';
+import departmentRouter from './src/routes/Auth/Department.js';
 import connectDB from './src/core/config/DB/connectDb.js';
 import imageUploadRouter from './src/routes/uploads/upload.js';
 import dropdownRouter from './src/routes/Product/Dropdown.js';
@@ -79,6 +80,9 @@ try {
     
     // SYSTEM CONFIGURATION ROUTES (SuperAdmin/Admin only)
     app.use('/api/system/config', systemConfigRouter);
+
+    // DEPARTMENT & SUB-ROLE ROUTES
+    app.use('/api/departments', departmentRouter);
 
    // CUSTOMER ROUTES
     app.use('/api/customer/management', customerRouter);

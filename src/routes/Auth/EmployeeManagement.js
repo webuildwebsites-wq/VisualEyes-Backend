@@ -1,14 +1,13 @@
 import express from 'express';
 import { ProtectUser } from '../../middlewares/Auth/AdminMiddleware/adminMiddleware.js';
-import { createSubAdmin,  updateEmployeeDetails, deactivateEmployee, getEmployeeDetails, getSupervisorsByDepartment, createSupervisorOrEmployee, getAllEmployees, getFilteredEmployees } from '../../core/controllers/Auth/Employee/EmployeeManagement.js';
-import { requireSuperAdmin, requireSubAdminOrHigher, canManageEmployee } from '../../middlewares/Auth/AdminMiddleware/roleMiddleware.js';
+import { updateEmployeeDetails, deactivateEmployee, getEmployeeDetails, getSupervisorsByDepartment, getAllEmployees, getFilteredEmployees, createEmployee } from '../../core/controllers/Auth/Employee/EmployeeManagement.js';
+import { requireSubAdminOrHigher, canManageEmployee } from '../../middlewares/Auth/AdminMiddleware/roleMiddleware.js';
 
 const employeeManagementRouter = express.Router();
 
 employeeManagementRouter.use(ProtectUser);
 
-employeeManagementRouter.post('/create-admin', requireSuperAdmin, createSubAdmin);
-employeeManagementRouter.post('/create-supervisor-employee', requireSubAdminOrHigher, createSupervisorOrEmployee);
+employeeManagementRouter.post('/create-employee', requireSubAdminOrHigher, createEmployee);
 
 employeeManagementRouter.get('/get-all-employees', canManageEmployee, getAllEmployees);
 employeeManagementRouter.get('/get-filtered-employees', canManageEmployee, getFilteredEmployees);

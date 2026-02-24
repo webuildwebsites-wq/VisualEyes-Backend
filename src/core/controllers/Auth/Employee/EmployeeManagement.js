@@ -1,108 +1,95 @@
 import { sendSuccessResponse, sendErrorResponse } from '../../../../Utils/response/responseHandler.js';
 import employeeSchema from '../../../../models/Auth/Employee.js';
+import Department from '../../../../models/Auth/Department.js';
+import SystemConfig from '../../../../models/Auth/SystemConfig.js';
 
-export const createSubAdmin = async (req, res) => {
+export const createEmployee = async (req, res) => {
   try {
-    const { employeeName, email, password, phone, address, country, pincode, aadharCard, panCard, expiry } = req.body;
-    
-    if (!employeeName || !email || !password || !phone || !address || !country) {
-      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'All required fields must be provided');
-    }
-
-    if (req.user.EmployeeType !== 'SUPERADMIN') {
-      return sendErrorResponse(res, 403, 'FORBIDDEN', 'Only SuperAdmin can create Admin');
-    }
-
-    const existingUser = await employeeSchema.findOne({
-      $or: [{ email }, { employeeName }]
-    });
-
-    if (existingUser) {
-      return sendErrorResponse(res, 409, 'USER_EXISTS', 'Employee with this email or employee name already exists');
-    }
-    
-    const subAdmin = new employeeSchema({
-      employeeName,
-      email,
-      password, 
-      phone,
-      address,
-      country,
-      pincode,
-      aadharCard,
-      panCard,
-      expiry,
-      EmployeeType: {
-        name: 'ADMIN',
-        refId: null
-      },
-      Role: {
-        name: 'ADMIN',
-        refId: null
-      },
-      Department: {
-        name: 'ALL',
-        refId: null
-      },
-      createdBy: req.user.id,
-      isActive: true
-    });
-
-    await subAdmin.save();
-
-    const subAdminResponse = subAdmin.toObject();
-    delete subAdminResponse.password;
-
-    return sendSuccessResponse(res, 201, { admin: subAdminResponse }, 'Admin created successfully');
-
-  } catch (error) {
-    console.error('Create Admin error:', error);
-    if (error.name === 'ValidationError') {
-      const messages = Object.values(error.errors).map(err => err.message);
-      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', messages.join(', '));
-    }
-    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to create Admin');
-  }
-};
-
-export const createSupervisorOrEmployee = async (req, res) => {
-  try {
-    const { employeeType, employeeName, email, password, phone, address, 
-      department, departmentRefId, country, pincode, expiry, region, regionRefId, 
-      aadharCard, panCard, lab, labRefId, role, roleRefId } = req.body;
+    const { employeeType, employeeName, email, password, phone, address, department, departmentRefId, country, pincode, expiry, region, regionRefId, aadharCard, panCard, lab, labRefId, role, roleRefId, subRoles } = req.body;
 
     let assignedSupervisor = null;
     let assignedRegionManager = null;
 
-    if (!employeeType || !employeeName || !country || !email || !password || !phone || !address || !department) {
+    if (!employeeType || !employeeName || !country || !email || !password || !phone || !address) {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'All required fields must be provided');
     }
 
-    if (['EMPLOYEE', 'SUPERVISOR', 'REGIONMANAGER'].includes(employeeType.toUpperCase()) && 
-      department.toUpperCase() === 'SALES' && !region) {
-      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Region is required for SALES department employees, supervisors, and region managers');
+    const validEmployeeTypes = ['ADMIN', 'SUPERVISOR', 'TEAMLEAD', 'REGIONMANAGER', 'EMPLOYEE'];
+    if (!validEmployeeTypes.includes(employeeType.toUpperCase())) {
+      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Invalid employee type. Must be ADMIN, SUPERVISOR, TEAMLEAD, REGIONMANAGER, or EMPLOYEE');
     }
 
-    const validDepartments = ['LAB', 'STORE', 'DISPATCH', 'SALES', 'FINANCE', 'CUSTOMER_SUPPORT'];
-
-    const validLabs = [
-      'KOLKATA STOCK', 'STOCK ORDER', 'VISUAL EYES LAB', 'VE AHMEDABAD LAB',
-      'VE CHENNAI LAB', 'VE KOCHI LAB', 'VE GURGAON LAB', 'VE MUMBAI LAB',
-      'VE TRIVANDRUM LAB', 'SERVICE', 'VE GLASS ORDER', 'VE PUNE LAB',
-      'VE NAGPUR LAB', 'VE BENGALURU LAB', 'VE HYDERBAD LAB', 'VE KOLKATTA LAB'
-    ];
-
-    if (!validDepartments.includes(department.toUpperCase())) {
-      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Invalid department value');
+    if (employeeType.toUpperCase() === 'ADMIN' && req.user.EmployeeType !== 'SUPERADMIN') {
+      return sendErrorResponse(res, 403, 'FORBIDDEN', 'Only SuperAdmin can create Admin');
     }
 
-    if (lab && !validLabs.includes(lab.toUpperCase())) {
-      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Invalid lab value');
+    if (employeeType.toUpperCase() !== 'SUPERADMIN') {
+      if (!department && employeeType.toUpperCase() !== 'ADMIN') {
+        return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Department is required');
+      }
+
+      if (department && departmentRefId) {
+        const departmentDoc = await Department.findById(departmentRefId);
+        if (!departmentDoc) {
+          return sendErrorResponse(res, 404, 'DEPARTMENT_NOT_FOUND', 'Department not found');
+        }
+        if (departmentDoc.name !== department.toUpperCase()) {
+          return sendErrorResponse(res, 400, 'DEPARTMENT_MISMATCH', 'Department name does not match the provided ID');
+        }
+      }
+
+      if ((req.user.EmployeeType === 'SUPERADMIN' || req.user.EmployeeType === 'ADMIN' ) && employeeType.toUpperCase() !== 'ADMIN') {
+        const userDepartmentId = req.user.Department?.refId?.toString();
+        if (userDepartmentId && departmentRefId && userDepartmentId !== departmentRefId) {
+          return sendErrorResponse(res, 403, 'FORBIDDEN', 'Admin can only create employees in their own department');
+        }
+      }
     }
 
-    if (!['SUPERVISOR', 'EMPLOYEE', 'REGIONMANAGER'].includes(employeeType.toUpperCase())) {
-      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Employee type must be either SUPERVISOR or EMPLOYEE');
+    if (subRoles && Array.isArray(subRoles) && subRoles.length > 0) {
+      if (!departmentRefId) {
+        return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Department reference ID is required when assigning sub-roles');
+      }
+
+      const departmentDoc = await Department.findById(departmentRefId);
+      if (!departmentDoc) {
+        return sendErrorResponse(res, 404, 'DEPARTMENT_NOT_FOUND', 'Department not found');
+      }
+
+      for (const subRole of subRoles) {
+        if (!subRole.refId) {
+          return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Sub-role refId is required');
+        }
+
+        const subRoleExists = departmentDoc.subRoles.id(subRole.refId);
+        if (!subRoleExists) {
+          return sendErrorResponse(res, 400, 'INVALID_SUBROLE', `Sub-role ${subRole.name} does not belong to department ${department}`);
+        }
+
+        if (!subRoleExists.isActive) {
+          return sendErrorResponse(res, 400, 'INACTIVE_SUBROLE', `Sub-role ${subRole.name} is not active`);
+        }
+      }
     }
+
+    if (['EMPLOYEE', 'SUPERVISOR', 'REGIONMANAGER', 'TEAMLEAD'].includes(employeeType.toUpperCase()) && 
+      department && department.toUpperCase() === 'SALES' && !region) {
+      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Region is required for SALES department employees, supervisors, team leads, and region managers');
+    }
+
+    if (lab) {
+      const labConfig = await SystemConfig.findOne({ configType: 'Lab' });
+      if (!labConfig) {
+        return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Lab configuration not found in system');
+      }
+
+      const validLabs = labConfig.values;
+      if (!validLabs.includes(lab.toUpperCase())) {
+        return sendErrorResponse(res, 400, 'VALIDATION_ERROR', `Invalid lab value. Valid labs: ${validLabs.join(', ')}`);
+      }
+    }
+
+    let assignedTeamLead = null;
 
     if (employeeType.toUpperCase() === 'EMPLOYEE') {
       const supervisorQuery = {
@@ -127,6 +114,20 @@ export const createSupervisorOrEmployee = async (req, res) => {
       if (req.user.EmployeeType === 'SUPERVISOR' && assignedSupervisor._id.toString() !== req.user.id.toString()) {
         return sendErrorResponse(res, 403, 'FORBIDDEN', 'Supervisors can only assign themselves as supervisor');
       }
+
+      const teamLeadQuery = {
+        'EmployeeType.name': 'TEAMLEAD',
+        'Department.name': department.toUpperCase(),
+        'Role.name' : '',
+        isActive: true
+      };
+
+      if (region) {
+        teamLeadQuery['region.name'] = region;
+      }
+
+      assignedTeamLead = await employeeSchema.findOne(teamLeadQuery);
+
 
       if (department.toUpperCase() === 'SALES' && region) {
         const regionManagerQuery = {
@@ -161,14 +162,6 @@ export const createSupervisorOrEmployee = async (req, res) => {
       address,
       country,
       pincode,
-      Department: {
-        name: department.toUpperCase(),
-        refId: departmentRefId
-      },
-      lab: lab ? {
-        name: lab.toUpperCase(),
-        refId: labRefId
-      } : undefined,
       aadharCard,
       panCard,
       expiry,
@@ -178,26 +171,59 @@ export const createSupervisorOrEmployee = async (req, res) => {
       },
       createdBy: req.user.id,
       isActive: true,
-      Role: {
+      Role: role ? {
         name: role,
         refId: roleRefId
+      } : {
+        name: employeeType.toUpperCase(),
+        refId: null
       }
     };
 
-    if (region) {
+    if (employeeType.toUpperCase() !== 'SUPERADMIN') {
+      if (department && departmentRefId) {
+        userData.Department = {
+          name: department.toUpperCase(),
+          refId: departmentRefId
+        };
+      } else if (employeeType.toUpperCase() === 'ADMIN') {
+        userData.Department = {
+          name: 'ALL',
+          refId: null
+        };
+      }
+    }
+
+    userData.subRoles = subRoles || [];
+
+    if (lab && labRefId) {
+      userData.lab = {
+        name: lab.toUpperCase(),
+        refId: labRefId
+      };
+    }
+
+    if (region && regionRefId) {
       userData.region = {
         name: region,
         refId: regionRefId
       };
     }
 
-    if (employeeType.toUpperCase() === 'EMPLOYEE') {
+    if (employeeType.toUpperCase() === 'EMPLOYEE' && assignedSupervisor) {
       userData.supervisor = {
         name: assignedSupervisor.employeeName,
         refId: assignedSupervisor._id
       };
 
-      if (department.toUpperCase() === 'SALES' && assignedRegionManager) {
+      if (assignedTeamLead) {
+        userData.teamLead = {
+          name: assignedTeamLead.employeeName,
+          refId: assignedTeamLead._id
+        };
+      }
+
+      if (assignedRegionManager) {
         userData.regionManager = {
           name: assignedRegionManager.employeeName,
           refId: assignedRegionManager._id
@@ -211,15 +237,15 @@ export const createSupervisorOrEmployee = async (req, res) => {
     const userResponse = newUser.toObject();
     delete userResponse.password;
 
-    return sendSuccessResponse(res, 201, { user: userResponse }, `${employeeType.charAt(0).toUpperCase() + employeeType.slice(1)} created successfully`);
+    return sendSuccessResponse(res, 201, { employee: userResponse }, `${employeeType.charAt(0).toUpperCase() + employeeType.slice(1).toLowerCase()} created successfully`);
 
   } catch (error) {
-    console.error('Create Supervisor/Employee error:', error);
+    console.error('Create employee error:', error);
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(err => err.message);
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', messages.join(', '));
     }
-    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to create user');
+    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to create employee');
   }
 };
 

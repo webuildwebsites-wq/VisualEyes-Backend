@@ -1,0 +1,74 @@
+import mongoose from 'mongoose';
+
+const subRoleSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  code: {
+    type: String,
+    required: true,
+    uppercase: true,
+    trim: true
+  },
+  description: {
+    type: String,
+    trim: true
+  },
+  isActive: {
+    type: Boolean,
+    default: true
+  }
+}, { _id: true });
+
+const departmentSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: [true, 'Department name is required'],
+    unique: true,
+    uppercase: true,
+    trim: true,
+    enum: [
+      'ACCOUNT & FINANCE',
+      'LAB',
+      'DISPATCH',
+      'SALES',
+      'STORE',
+      'CUSTOMER SUPPORT TEAM'
+    ]
+  },
+  code: {
+    type: String,
+    required: true,
+    unique: true,
+    uppercase: true,
+    trim: true
+  },
+  description: {
+    type: String,
+    trim: true
+  },
+  subRoles: [subRoleSchema],
+  isActive: {
+    type: Boolean,
+    default: true
+  },
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'employee',
+    required: true
+  },
+  updatedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'employee'
+  }
+}, {
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+});
+
+departmentSchema.index({ isActive: 1 });
+
+export default mongoose.model('Department', departmentSchema);
