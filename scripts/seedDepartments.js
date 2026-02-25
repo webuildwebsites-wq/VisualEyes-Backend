@@ -150,7 +150,7 @@ const seedDepartments = async () => {
       process.exit(1);
     }
 
-    console.log('Found SuperAdmin:', superAdmin.employeeName);
+    console.log('Found SuperAdmin:', superAdmin.username, '-', superAdmin.employeeName);
 
     // Clear existing departments
     await Department.deleteMany({});

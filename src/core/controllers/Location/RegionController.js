@@ -45,7 +45,7 @@ export const getAllRegions = async (req, res) => {
     }
 
     const regions = await Region.find(filter)
-      .populate('createdBy', 'employeeName email')
+      .populate('createdBy', 'username employeeName email')
       .sort({ name: 1 });
 
     return sendSuccessResponse(res, 200, regions, 'Regions fetched successfully');
@@ -60,7 +60,7 @@ export const getRegionById = async (req, res) => {
     const { id } = req.params;
 
     const region = await Region.findById(id)
-      .populate('createdBy', 'employeeName email')
+      .populate('createdBy', 'username employeeName email')
       .populate({
         path: 'cities',
         match: { isActive: true }

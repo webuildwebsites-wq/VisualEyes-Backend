@@ -15,7 +15,8 @@ const setupProject = async () => {
 
     // Create default superadmin details
     const superAdminData = {
-      employeeName: 'anish singh rawat',
+      username: 'superadmin',
+      employeeName: 'Anish Singh Rawat',
       email: 'anishsinghrawat5@gmail.com',
       password: 'anishsinghrawat5@gmail.com',
       phone: '6395607666',
@@ -58,8 +59,9 @@ const setupProject = async () => {
 
     console.log('\n✓ Project setup completed successfully!');
     console.log('\nSuperAdmin Account Created:');
+    console.log('Username:', superAdmin.username);
     console.log('Email:', superAdmin.email);
-    console.log('Employee Name:', superAdmin.employeeName);
+    console.log('Full Name:', superAdmin.employeeName);
     console.log('Phone:', superAdmin.phone);
     console.log('Password: anish@2026');
 
@@ -71,7 +73,7 @@ const setupProject = async () => {
     }
 
     if (error.code === 11000) {
-      console.error('✗ Duplicate key error: Employee with this email or employee name already exists');
+      console.error('✗ Duplicate key error: Employee with this email or username already exists');
     }
     process.exit(1);
   } finally {

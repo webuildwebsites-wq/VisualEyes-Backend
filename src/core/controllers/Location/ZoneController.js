@@ -64,7 +64,7 @@ export const getAllZones = async (req, res) => {
           select: 'name code'
         }
       })
-      .populate('createdBy', 'employeeName email')
+      .populate('createdBy', 'username employeeName email')
       .sort({ name: 1 });
 
     return sendSuccessResponse(res, 200, zones, 'Zones fetched successfully');
@@ -84,7 +84,7 @@ export const getZonesByCity = async (req, res) => {
     }
 
     const zones = await Zone.find({ cityId, isActive: true })
-      .populate('createdBy', 'employeeName email')
+      .populate('createdBy', 'username employeeName email')
       .sort({ name: 1 });
 
     return sendSuccessResponse(res, 200, zones, 'Zones fetched successfully');
@@ -107,7 +107,7 @@ export const getZoneById = async (req, res) => {
           select: 'name code'
         }
       })
-      .populate('createdBy', 'employeeName email');
+      .populate('createdBy', 'username employeeName email');
 
     if (!zone) {
       return sendErrorResponse(res, 404, 'ZONE_NOT_FOUND', 'Zone not found');

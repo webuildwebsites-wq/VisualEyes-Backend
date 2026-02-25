@@ -66,6 +66,7 @@ Authorization: Bearer <token>
       "isActive": true,
       "createdBy": {
         "_id": "employeeId",
+        "username": "admin",
         "employeeName": "Admin",
         "email": "admin@example.com"
       }
@@ -336,6 +337,7 @@ Authorization: Bearer <token> (Admin+)
 Content-Type: application/json
 
 {
+  "username": "johndoe",
   "employeeName": "John Doe",
   "email": "john@example.com",
   "password": "password123",
@@ -362,6 +364,7 @@ Content-Type: application/json
   "data": {
     "employee": {
       "_id": "employeeId",
+      "username": "johndoe",
       "employeeName": "John Doe",
       "email": "john@example.com",
       "EmployeeType": {
@@ -401,6 +404,7 @@ Authorization: Bearer <token>
     "regionManagers": [
       {
         "_id": "managerId",
+        "username": "regionmgr",
         "employeeName": "Region Manager",
         "email": "manager@example.com",
         "phone": "9876543210",
@@ -433,6 +437,7 @@ Authorization: Bearer <token>
     "supervisors": [
       {
         "_id": "supervisorId",
+        "username": "supervisor",
         "employeeName": "Supervisor Name",
         "email": "supervisor@example.com",
         "phone": "9876543210",
@@ -603,6 +608,7 @@ Authorization: Bearer <token>
 ```typescript
 {
   _id: ObjectId,
+  username: string,
   employeeName: string,
   email: string,
   EmployeeType: {

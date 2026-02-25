@@ -58,7 +58,7 @@ export const getAllCities = async (req, res) => {
 
     const cities = await City.find(filter)
       .populate('regionId', 'name code')
-      .populate('createdBy', 'employeeName email')
+      .populate('createdBy', 'username employeeName email')
       .sort({ name: 1 });
 
     return sendSuccessResponse(res, 200, cities, 'Cities fetched successfully');
@@ -78,7 +78,7 @@ export const getCitiesByRegion = async (req, res) => {
     }
 
     const cities = await City.find({ regionId, isActive: true })
-      .populate('createdBy', 'employeeName email')
+      .populate('createdBy', 'username employeeName email')
       .sort({ name: 1 });
 
     return sendSuccessResponse(res, 200, cities, 'Cities fetched successfully');
@@ -94,7 +94,7 @@ export const getCityById = async (req, res) => {
 
     const city = await City.findById(id)
       .populate('regionId', 'name code')
-      .populate('createdBy', 'employeeName email')
+      .populate('createdBy', 'username employeeName email')
       .populate({
         path: 'zones',
         match: { isActive: true }

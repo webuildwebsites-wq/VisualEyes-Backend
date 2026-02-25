@@ -48,7 +48,7 @@ const seedSystemConfig = async () => {
       process.exit(1);
     }
 
-    console.log(`Using SUPERADMIN: ${superAdmin.employeeName} (${superAdmin._id})`);
+    console.log(`Using SUPERADMIN: ${superAdmin.username} - ${superAdmin.employeeName} (${superAdmin._id})`);
 
     await SystemConfig.deleteMany({});
     console.log('Cleared existing system configurations');

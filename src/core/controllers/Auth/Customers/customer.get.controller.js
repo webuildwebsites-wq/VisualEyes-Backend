@@ -59,10 +59,10 @@ export const getAllCustomers = async (req, res) => {
     }
 
     const customers = await Customer.find(filter)
-      .populate('createdBy', 'employeeName email Department')
-      .populate('financeCompletedBy', 'employeeName email')
+      .populate('createdBy', 'username employeeName email Department')
+      .populate('financeCompletedBy', 'username employeeName email')
       .populate('zone.refId')
-      .populate('salesPerson.refId', 'employeeName email')
+      .populate('salesPerson.refId', 'username employeeName email')
       .sort({ createdAt: -1 });
 
     return sendSuccessResponse(
@@ -120,8 +120,8 @@ export const getFilteredCustomers = async (req, res) => {
         .populate('zone', 'name')
         .populate('specificBrand', 'name')
         .populate('specificCategory', 'name')
-        .populate('salesPerson', 'employeeName emailId')
-        .populate('createdBy', 'employeeName emailId')
+        .populate('salesPerson', 'username employeeName emailId')
+        .populate('createdBy', 'username employeeName emailId')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
@@ -153,7 +153,7 @@ export const getPendingFinanceCustomers = async (req, res) => {
       approvalStatus: 'PENDING_FINANCE',
       createdByDepartment: 'SALES'
     })
-      .populate('createdBy', 'employeeName email Department')
+      .populate('createdBy', 'username employeeName employeeName email Department')
       .sort({ createdAt: -1 });
 
     return sendSuccessResponse(

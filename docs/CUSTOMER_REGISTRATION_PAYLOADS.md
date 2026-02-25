@@ -357,7 +357,7 @@ db.couriertimes.find({}, { _id: 1, name: 1 })
 db.specificlabs.find({}, { _id: 1, name: 1 })
 
 // Get Sales Persons (Employees)
-db.employees.find({ "Department.name": "SALES" }, { _id: 1, employeeName: 1 })
+db.employees.find({ "Department.name": "SALES" }, { _id: 1, username: 1, employeeName: 1 })
 ```
 
 ---

@@ -5,10 +5,17 @@ const employee = new mongoose.Schema({
   employeeName: {
     type: String,
     required: [true, 'Employee name is required'],
-    unique: true,
     trim: true,
     minlength: [3, 'Employee name must be at least 3 characters'],
     maxlength: [50, 'Employee name cannot exceed 50 characters']
+  },
+  username: {
+    type: String,
+    required: [true, 'Username is required'],
+    unique: true,
+    trim: true,
+    minlength: [3, 'Username must be at least 3 characters'],
+    maxlength: [10, 'Username cannot exceed 10 characters']
   },
   email: {
     type: String,

@@ -5,12 +5,12 @@ import SystemConfig from '../../../../models/Auth/SystemConfig.js';
 
 export const createEmployee = async (req, res) => {
   try {
-    const { employeeType, employeeName, email, password, phone, address, department, departmentRefId, country, pincode, expiry, region, regionRefId, aadharCard, panCard, lab, labRefId, subRoles, aadharCardImg, panCardImg } = req.body;
+    const { employeeType, username, employeeName, email, password, phone, address, department, departmentRefId, country, pincode, expiry, region, regionRefId, aadharCard, panCard, lab, labRefId, subRoles, aadharCardImg, panCardImg } = req.body;
 
     let assignedSupervisor = null;
     let assignedRegionManager = null;
 
-    if (!employeeType || !employeeName || !country || !email || !password || !phone || !address) {
+    if (!employeeType || !username  || !employeeName || !country || !email || !password || !phone || !address) {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'All required fields must be provided');
     }
 
@@ -156,14 +156,15 @@ export const createEmployee = async (req, res) => {
     }
 
     const existingUser = await employeeSchema.findOne({
-      $or: [{ email }, { employeeName }]
+      $or: [{ email }, { username }]
     });
 
     if (existingUser) {
-      return sendErrorResponse(res, 409, 'USER_EXISTS', 'Employee with this email or employee name already exists');
+      return sendErrorResponse(res, 409, 'USER_EXISTS', 'Employee with this email or username already exists');
     }
 
     const userData = {
+      username,
       employeeName,
       email,
       password, 
@@ -334,6 +335,7 @@ export const getFilteredEmployees = async (req, res) => {
     if (search) {
       const searchQuery = {
         $or: [
+          { username: { $regex: search, $options: 'i' } },
           { employeeName: { $regex: search, $options: 'i' } },
           { email: { $regex: search, $options: 'i' } }
         ]
@@ -523,7 +525,7 @@ export const getSupervisorsByDepartment = async (req, res) => {
     }
 
     const supervisors = await employeeSchema.find(query)
-      .select('employeeName email Department region')
+      .select('username employeeName email Department region')
       .sort({ employeeName: 1 });
 
     return sendSuccessResponse(res, 200, { supervisors }, 'Supervisors retrieved successfully');

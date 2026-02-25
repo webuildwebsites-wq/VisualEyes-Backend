@@ -28,6 +28,7 @@ Before registering employees, ensure:
 ```json
 {
   "employeeType": "ADMIN",
+  "username": "johnadmin",
   "employeeName": "John Finance Admin",
   "email": "john.finance@company.com",
   "password": "SecurePass123!",
@@ -65,6 +66,7 @@ Before registering employees, ensure:
 ```json
 {
   "employeeType": "SUPERVISOR",
+  "username": "sarahsup",
   "employeeName": "Sarah Account Supervisor",
   "email": "sarah.supervisor@company.com",
   "password": "SecurePass123!",
@@ -108,6 +110,7 @@ Before registering employees, ensure:
 ```json
 {
   "employeeType": "TEAMLEAD",
+  "username": "michaeltl",
   "employeeName": "Michael Account TeamLead",
   "email": "michael.teamlead@company.com",
   "password": "SecurePass123!",
@@ -151,6 +154,7 @@ Before registering employees, ensure:
 ```json
 {
   "employeeType": "EMPLOYEE",
+  "username": "emilyemp",
   "employeeName": "Emily Account Employee",
   "email": "emily.employee@company.com",
   "password": "SecurePass123!",
@@ -187,6 +191,7 @@ Before registering employees, ensure:
 ```json
 {
   "employeeType": "SUPERVISOR",
+  "username": "davidsup",
   "employeeName": "David Multi Supervisor",
   "email": "david.supervisor@company.com",
   "password": "SecurePass123!",
@@ -216,6 +221,7 @@ Before registering employees, ensure:
 ```json
 {
   "employeeType": "EMPLOYEE",
+  "username": "lisaemp",
   "employeeName": "Lisa Multi Employee",
   "email": "lisa.employee@company.com",
   "password": "SecurePass123!",
@@ -251,6 +257,7 @@ Before registering employees, ensure:
 ```json
 {
   "employeeType": "ADMIN",
+  "username": "robertadm",
   "employeeName": "Robert Sales Admin",
   "email": "robert.sales@company.com",
   "password": "SecurePass123!",
@@ -270,6 +277,7 @@ Before registering employees, ensure:
 ```json
 {
   "employeeType": "REGIONMANAGER",
+  "username": "patriciarm",
   "employeeName": "Patricia Region Manager",
   "email": "patricia.rm@company.com",
   "password": "SecurePass123!",
@@ -291,6 +299,7 @@ Before registering employees, ensure:
 ```json
 {
   "employeeType": "SUPERVISOR",
+  "username": "jamessup",
   "employeeName": "James Sales Supervisor",
   "email": "james.supervisor@company.com",
   "password": "SecurePass123!",
@@ -312,6 +321,7 @@ Before registering employees, ensure:
 ```json
 {
   "employeeType": "EMPLOYEE",
+  "username": "jenniferemp",
   "employeeName": "Jennifer Sales Employee",
   "email": "jennifer.employee@company.com",
   "password": "SecurePass123!",
@@ -358,7 +368,7 @@ GET /api/departments
 
 ## Validation Rules Summary
 
-1. **Required Fields (All):** employeeType, employeeName, email, password, phone, address, country
+1. **Required Fields (All):** employeeType, username, employeeName, email, password, phone, address, country
 2. **Department Required:** For all except SUPERADMIN
 3. **Sub-Roles:** Optional but recommended for proper hierarchy
 4. **Region Required:** For SALES department employees (EMPLOYEE, SUPERVISOR, TEAMLEAD, REGIONMANAGER)

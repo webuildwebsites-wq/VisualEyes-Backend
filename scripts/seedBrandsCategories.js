@@ -30,7 +30,7 @@ async function seedBrandsAndCategories() {
     console.log('Connected to MongoDB');
 
     const adminUser = await Employee.findOne({ 
-      $or: [{ email: 'anishsinghrawat5@gmail.com' }, { employeeName: 'anish' }] 
+      $or: [{ email: 'anishsinghrawat5@gmail.com' }, { username: 'superadmin' }] 
     });
 
     if (!adminUser) {
@@ -38,7 +38,7 @@ async function seedBrandsAndCategories() {
       process.exit(1);
     }
 
-    console.log(`Using admin user: ${adminUser.employeeName} as creator`);
+    console.log(`Using admin user: ${adminUser.username} - ${adminUser.employeeName} as creator`);
 
     console.log('Clearing existing brands and categories...');
     await Category.deleteMany({});

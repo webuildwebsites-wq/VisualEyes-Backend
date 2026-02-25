@@ -7,18 +7,18 @@ dotenv.config();
 
 export const employeeLogin = async (req, res) => {
   try {
-    const { employeeName, password } = req.body;
-    if (!employeeName || !password) {
-      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Please provide employee name/email and password');
+    const { username, password } = req.body;
+    if (!username || !password) {
+      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Please provide username/email and password');
     }
 
     const user = await employeeSchema.findOne({ 
-      $or: [{ employeeName }, { email: employeeName }],
+      $or: [{ username }, { email: username }],
       isActive: true 
     })
     .select('+password')
     .populate('EmployeeType', 'name')
-    .populate('createdBy supervisor', 'employeeName email');
+    .populate('createdBy supervisor', 'username employeeName email');
 
     if (!user) {
       return sendErrorResponse(res, 401, 'INVALID_CREDENTIALS', 'Invalid credentials');

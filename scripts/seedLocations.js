@@ -22,7 +22,7 @@ const seedLocations = async () => {
       process.exit(1);
     }
 
-    console.log('✅ Found SuperAdmin:', superAdmin.employeeName);
+    console.log('✅ Found SuperAdmin:', superAdmin.username, '-', superAdmin.employeeName);
 
     // Define location data structure
     const locationData = [
