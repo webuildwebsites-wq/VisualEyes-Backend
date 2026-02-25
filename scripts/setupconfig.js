@@ -8,45 +8,6 @@ dotenv.config();
 const seedData = {
   EmployeeType: ['SUPERADMIN', 'ADMIN', 'SUPERVISOR', 'REGON_MANGER', 'EMPLOYEE'],
   
-  Role: [
-    'ADMIN',
-    'BRANCH USER',
-    'PRIORITY ORDER',
-    'CUSTOMER',
-    'ACCOUNTING MODULE',
-    'SALES EXECUTIVE',
-    'OTHER ADMIN',
-    'STOCK POINT USER',
-    'CUSTOMER CARE',
-    'STORES',
-    'PRODUCTION',
-    'SUPERVISOR',
-    'FITTING CENTER',
-    'F&A',
-    'DISTRIBUTOR',
-    'DISPATCH',
-    'STORES ADMIN',
-    'BELOW ADMIN',
-    'INVESTOR PROFILE',
-    'AUDITOR',
-    'CUSTOMER CARE (DB)',
-    'BELOW ADMIN (FITTING CENTER)',
-    'FITTING CENTER-V2',
-    'DISPATCH-KOLKATTA',
-    'SALES HEAD',
-    'CUSTOM PROFILE',
-    'F&A CFO'
-  ],
-  
-  Department: [
-    'LAB',
-    'STORE',
-    'DISPATCH',
-    'SALES',
-    'FINANCE',
-    'CUSTOMER_SUPPORT'
-  ],
-  
   Lab: [
     'KOLKATA STOCK',
     'STOCK ORDER',

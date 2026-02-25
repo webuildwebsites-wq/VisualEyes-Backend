@@ -15,7 +15,7 @@ import { isSuperAdmin } from '../../middlewares/Auth/AdminMiddleware/superAdminM
 const router = express.Router();
 
 // Public routes (authenticated users)
-router.get('/', ProtectUser, getAllDepartments);
+router.get('/get-all-departments', ProtectUser, getAllDepartments);
 router.get('/:id', ProtectUser, getDepartmentById);
 router.get('/:departmentId/sub-roles', ProtectUser, getSubRolesByDepartment);
 

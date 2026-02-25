@@ -102,12 +102,18 @@ export const createEmployee = async (req, res) => {
         supervisorQuery['region.name'] = region;
       }
 
+      if (subRoles && subRoles.length > 0) {
+        supervisorQuery['subRoles.refId'] = { $in: subRoles.map(sr => sr.refId) };
+      }
+
       assignedSupervisor = await employeeSchema.findOne(supervisorQuery);
 
       if (!assignedSupervisor) {
-        const errorMsg = region 
-          ? 'No active supervisor found for this department and region'
-          : 'No active supervisor found for this department';
+        const errorMsg = subRoles && subRoles.length > 0
+          ? 'No active supervisor found for this department and sub-role(s)'
+          : region 
+            ? 'No active supervisor found for this department and region'
+            : 'No active supervisor found for this department';
         return sendErrorResponse(res, 400, 'NO_SUPERVISOR_FOUND', errorMsg);
       }
 
@@ -118,12 +124,15 @@ export const createEmployee = async (req, res) => {
       const teamLeadQuery = {
         'EmployeeType.name': 'TEAMLEAD',
         'Department.name': department.toUpperCase(),
-        'Role.name' : '',
         isActive: true
       };
 
       if (region) {
         teamLeadQuery['region.name'] = region;
+      }
+
+      if (subRoles && subRoles.length > 0) {
+        teamLeadQuery['subRoles.refId'] = { $in: subRoles.map(sr => sr.refId) };
       }
 
       assignedTeamLead = await employeeSchema.findOne(teamLeadQuery);
