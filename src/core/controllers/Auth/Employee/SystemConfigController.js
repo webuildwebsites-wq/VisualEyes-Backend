@@ -5,11 +5,10 @@ export const getConfigsByType = async (req, res) => {
   try {
     const { configType } = req.params;
     const config = await SystemConfig.findOne({ configType });
-    const filteredValues = config.values.filter(value => value !== "SUPERADMIN");
-    if (!filteredValues) {
+    if (!config) {
       return sendErrorResponse(res, 404, 'CONFIG_NOT_FOUND', 'Configuration not found');
     }
-    return sendSuccessResponse(res, 200, filteredValues, 'Configurations retrieved successfully');
+    return sendSuccessResponse(res, 200, config, 'Configurations retrieved successfully');
   } catch (error) {
     return sendErrorResponse(res, 500, 'INTERNAL_ERROR', error.message);
   }
@@ -18,11 +17,7 @@ export const getConfigsByType = async (req, res) => {
 export const getAllConfigs = async (req, res) => {
   try {
       const configs = await SystemConfig.find().lean();
-      const filteredConfigs = configs.map(config => ({
-      ...config,
-      values: config.values?.filter(value => value !== "SUPERADMIN") ?? []
-    }));
-    return sendSuccessResponse(res, 200, filteredConfigs, 'All configurations retrieved successfully');
+    return sendSuccessResponse(res, 200, configs, 'All configurations retrieved successfully');
   } catch (error) {
     return sendErrorResponse(res, 500, 'INTERNAL_ERROR', error.message);
   }
@@ -44,7 +39,7 @@ export const createConfig = async (req, res) => {
       config = await SystemConfig.create({
         configType,
         values: [formattedValue],
-        createdBy: req.employee._id
+        createdBy: req.user.id
       });
 
       return sendSuccessResponse(res, 201, config, 'Configuration created successfully');
@@ -55,7 +50,7 @@ export const createConfig = async (req, res) => {
     }
 
     config.values.push(formattedValue);
-    config.updatedBy = req.employee._id;
+    config.updatedBy = req.user.id;
 
     await config.save();
 

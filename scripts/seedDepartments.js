@@ -143,7 +143,7 @@ const seedDepartments = async () => {
     console.log('Connected to MongoDB');
 
     // Find SuperAdmin to use as createdBy
-    const superAdmin = await employeeSchema.findOne({ 'EmployeeType.name': 'SUPERADMIN' });
+    const superAdmin = await employeeSchema.findOne({ EmployeeType: 'SUPERADMIN' });
     
     if (!superAdmin) {
       console.error('SuperAdmin not found. Please create a SuperAdmin first.');

@@ -11,32 +11,18 @@ const setupProject = async () => {
     await mongoose.connect(process.env.MONGODB_URL);
     console.log('Connected to database');
 
-    const existingSuperAdmin = await employeeSchema.findOne({ 'EmployeeType.name': 'SUPERADMIN' });
-
-    if (existingSuperAdmin) {
-      console.log('\n✓ SuperAdmin already exists in the system');
-      console.log('Email:', existingSuperAdmin.email);
-      console.log('Employee Name:', existingSuperAdmin.employeeName);
-      return;
-    }
+    const existingSuperAdmin = await employeeSchema.findOne({ EmployeeType: 'SUPERADMIN' });
 
     // Create default superadmin details
     const superAdminData = {
-      employeeName: 'siddharth_sharma',
-      email: 'sid@visualeye.com',
-      password: 'visualeyeye@2026',
+      employeeName: 'anish singh rawat',
+      email: 'anishsinghrawat5@gmail.com',
+      password: 'anishsinghrawat5@gmail.com',
       phone: '6395607666',
       address: 'Admin Address, Admin City, Admin State',
       country: 'India',
       pincode: '123456',
-      EmployeeType: {
-        name: 'SUPERADMIN',
-        refId: null
-      },
-      Role: {
-        name: 'SUPERADMIN',
-        refId: null
-      },
+      EmployeeType: 'SUPERADMIN',
       Department: {
         name: 'SUPERADMIN',
         refId: null
