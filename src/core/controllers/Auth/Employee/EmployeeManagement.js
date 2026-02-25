@@ -5,7 +5,7 @@ import SystemConfig from '../../../../models/Auth/SystemConfig.js';
 
 export const createEmployee = async (req, res) => {
   try {
-    const { employeeType, employeeName, email, password, phone, address, department, departmentRefId, country, pincode, expiry, region, regionRefId, aadharCard, panCard, lab, labRefId, subRoles } = req.body;
+    const { employeeType, employeeName, email, password, phone, address, department, departmentRefId, country, pincode, expiry, region, regionRefId, aadharCard, panCard, lab, labRefId, subRoles, aadharCardImg, panCardImg } = req.body;
 
     let assignedSupervisor = null;
     let assignedRegionManager = null;
@@ -176,7 +176,9 @@ export const createEmployee = async (req, res) => {
       expiry,
       EmployeeType: employeeType.toUpperCase(),
       createdBy: req.user.id,
-      isActive: true
+      isActive: true,
+      aadharCardImg, 
+      panCardImg
     };
 
     if (employeeType.toUpperCase() !== 'SUPERADMIN') {

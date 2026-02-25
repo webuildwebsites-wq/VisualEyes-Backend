@@ -128,6 +128,14 @@ const employee = new mongoose.Schema({
     type: String,
     trim: true
   },
+  aadharCardImg: {
+    type: String,
+    trim: true
+  },
+  panCardImg: {
+    type: String,
+    trim: true
+  },
   expiry: {
     type: Date
   },
