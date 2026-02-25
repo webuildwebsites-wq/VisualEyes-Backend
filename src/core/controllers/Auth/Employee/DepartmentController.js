@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Department from '../../../../models/Auth/Department.js';
 import { sendSuccessResponse, sendErrorResponse } from '../../../../Utils/response/responseHandler.js';
 
@@ -192,36 +193,38 @@ export const updateSubRole = async (req, res) => {
 export const deleteSubRole = async (req, res) => {
   try {
     const { departmentId, subRoleId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(departmentId) ||!mongoose.Types.ObjectId.isValid(subRoleId)) {
+      return sendErrorResponse(res,400,"INVALID_ID","Invalid department or sub-role id");
+    }
 
     const department = await Department.findById(departmentId);
 
     if (!department) {
-      return sendErrorResponse(res, 404, 'DEPARTMENT_NOT_FOUND', 'Department not found');
+      return sendErrorResponse(res,404,"DEPARTMENT_NOT_FOUND","Department not found");
     }
 
-    // Check permissions
-    const userEmployeeType = req.user.EmployeeType?.name || req.user.EmployeeType;
+    const userEmployeeType = req.user.EmployeeType;
     const userDepartmentId = req.user.Department?.refId?.toString();
 
-    if (userEmployeeType !== 'SUPERADMIN' && 
-        (userEmployeeType !== 'ADMIN' || userDepartmentId !== departmentId)) {
-      return sendErrorResponse(res, 403, 'FORBIDDEN', 'You do not have permission to delete sub-roles in this department');
+    const isSuperAdmin = userEmployeeType === "SUPERADMIN";
+    const isDepartmentAdmin = userEmployeeType === "ADMIN" &&  userDepartmentId === departmentId;
+    if (!isSuperAdmin && !isDepartmentAdmin) {
+      return sendErrorResponse(res,403,"FORBIDDEN","You do not have permission to delete sub-role");
     }
 
     const subRole = department.subRoles.id(subRoleId);
 
     if (!subRole) {
-      return sendErrorResponse(res, 404, 'SUBROLE_NOT_FOUND', 'Sub-role not found');
+      return sendErrorResponse(res,404,"SUBROLE_NOT_FOUND","Sub-role not found");
     }
-
-    subRole.isActive = false;
+    subRole.deleteOne();
     department.updatedBy = req.user.id;
     await department.save();
 
-    return sendSuccessResponse(res, 200, null, 'Sub-role deleted successfully');
+    return sendSuccessResponse(res, 200, null, "Sub-role deleted successfully");
   } catch (error) {
-    console.error('Delete sub-role error:', error);
-    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', error.message);
+    console.error("Delete sub-role error:", error);
+    return sendErrorResponse(res, 500, "INTERNAL_ERROR", error.message);
   }
 };
 
