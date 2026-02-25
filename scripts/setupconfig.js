@@ -41,7 +41,7 @@ const seedSystemConfig = async () => {
     await mongoose.connect(process.env.MONGODB_URL);
     console.log('Connected to MongoDB');
 
-    const superAdmin = await Employee.findOne({ "EmployeeType.name" : "SUPERADMIN" });
+    const superAdmin = await Employee.findOne({ EmployeeType: "SUPERADMIN" });
     
     if (!superAdmin) {
       console.log('No SUPERADMIN found. Please create a SUPERADMIN first.');

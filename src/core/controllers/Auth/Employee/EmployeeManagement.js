@@ -5,7 +5,7 @@ import SystemConfig from '../../../../models/Auth/SystemConfig.js';
 
 export const createEmployee = async (req, res) => {
   try {
-    const { employeeType, employeeName, email, password, phone, address, department, departmentRefId, country, pincode, expiry, region, regionRefId, aadharCard, panCard, lab, labRefId, role, roleRefId, subRoles } = req.body;
+    const { employeeType, employeeName, email, password, phone, address, department, departmentRefId, country, pincode, expiry, region, regionRefId, aadharCard, panCard, lab, labRefId, subRoles } = req.body;
 
     let assignedSupervisor = null;
     let assignedRegionManager = null;
@@ -93,7 +93,7 @@ export const createEmployee = async (req, res) => {
 
     if (employeeType.toUpperCase() === 'EMPLOYEE') {
       const supervisorQuery = {
-        'EmployeeType.name': 'SUPERVISOR',
+        EmployeeType: 'SUPERVISOR',
         'Department.name': department.toUpperCase(),
         isActive: true
       };
@@ -122,7 +122,7 @@ export const createEmployee = async (req, res) => {
       }
 
       const teamLeadQuery = {
-        'EmployeeType.name': 'TEAMLEAD',
+        EmployeeType: 'TEAMLEAD',
         'Department.name': department.toUpperCase(),
         isActive: true
       };
@@ -140,7 +140,7 @@ export const createEmployee = async (req, res) => {
 
       if (department.toUpperCase() === 'SALES' && region) {
         const regionManagerQuery = {
-          'EmployeeType.name': 'REGIONMANAGER',
+          EmployeeType: 'REGIONMANAGER',
           'Department.name': 'SALES',
           'region.name': region,
           isActive: true
@@ -174,19 +174,9 @@ export const createEmployee = async (req, res) => {
       aadharCard,
       panCard,
       expiry,
-      EmployeeType: {
-        name: employeeType.toUpperCase(),
-        refId: null
-      },
+      EmployeeType: employeeType.toUpperCase(),
       createdBy: req.user.id,
-      isActive: true,
-      Role: role ? {
-        name: role,
-        refId: roleRefId
-      } : {
-        name: employeeType.toUpperCase(),
-        refId: null
-      }
+      isActive: true
     };
 
     if (employeeType.toUpperCase() !== 'SUPERADMIN') {
@@ -305,15 +295,15 @@ export const getFilteredEmployees = async (req, res) => {
     let query = { isActive: true };
 
      if (req.user.EmployeeType === 'SUPERADMIN') {
-      if (EmployeeType) query['EmployeeType.name'] = EmployeeType.toUpperCase();
+      if (EmployeeType) query.EmployeeType = EmployeeType.toUpperCase();
       if (department) query['Department.name'] = department.toUpperCase();
       if (region) query['region.name'] = region;
 
     } else if (req.user.EmployeeType === 'ADMIN') {
-      query['EmployeeType.name'] = { $ne: 'SUPERADMIN' };
+      query.EmployeeType = { $ne: 'SUPERADMIN' };
 
       if (EmployeeType && EmployeeType.toUpperCase() !== 'SUPERADMIN') {
-        query['EmployeeType.name'] = EmployeeType.toUpperCase();
+        query.EmployeeType = EmployeeType.toUpperCase();
       }
 
       if (department) query['Department.name'] = department.toUpperCase();
@@ -322,10 +312,10 @@ export const getFilteredEmployees = async (req, res) => {
     } else if (req.user.EmployeeType === 'SUPERVISOR') {
       query['Department.name'] = req.user.Department;
       query['region.name'] = req.user.region;
-      query['EmployeeType.name'] = { $in: ['SUPERVISOR', 'EMPLOYEE'] };
+      query.EmployeeType = { $in: ['SUPERVISOR', 'EMPLOYEE'] };
 
       if (EmployeeType && ['SUPERVISOR', 'EMPLOYEE'].includes(EmployeeType.toUpperCase())) {
-        query['EmployeeType.name'] = EmployeeType.toUpperCase();
+        query.EmployeeType = EmployeeType.toUpperCase();
       }
 
     } else {
@@ -334,7 +324,7 @@ export const getFilteredEmployees = async (req, res) => {
         {
           'Department.name': req.user.Department,
           'region.name': req.user.region,
-          'EmployeeType.name': 'EMPLOYEE'
+          EmployeeType: 'EMPLOYEE'
         }
       ];
     }
@@ -395,13 +385,13 @@ export const updateEmployeeDetails = async (req, res) => {
     if (req.user.EmployeeType === 'SUPERADMIN') {
     } else if (req.user.EmployeeType === 'ADMIN') {
       const targetUser = await employeeSchema.findById(userId);
-      if (targetUser && targetUser.EmployeeType?.name === 'SUPERADMIN') {
+      if (targetUser && targetUser.EmployeeType === 'SUPERADMIN') {
         return sendErrorResponse(res, 403, 'FORBIDDEN', 'Admin cannot update SuperAdmin');
       }
     } else if (req.user.EmployeeType === 'SUPERVISOR') {
       query['Department.name'] = req.user.Department;
       query['region.name'] = req.user.region;
-      query['EmployeeType.name'] = { $in: ['EMPLOYEE'] }; 
+      query.EmployeeType = { $in: ['EMPLOYEE'] }; 
     } else {
       query._id = req.user.id;
     }
@@ -436,18 +426,18 @@ export const deactivateEmployee = async (req, res) => {
     let query = { _id: userId, isActive: true };
     if (req.user.EmployeeType === 'SUPERADMIN') {
       const targetUser = await employeeSchema.findById(userId);
-      if (targetUser && targetUser.EmployeeType?.name === 'SUPERADMIN') {
+      if (targetUser && targetUser.EmployeeType === 'SUPERADMIN') {
         return sendErrorResponse(res, 403, 'FORBIDDEN', 'Cannot deactivate another SuperAdmin');
       }
     } else if (req.user.EmployeeType === 'ADMIN') {
       const targetUser = await employeeSchema.findById(userId);
-      if (targetUser && targetUser.EmployeeType?.name === 'SUPERADMIN') {
+      if (targetUser && targetUser.EmployeeType === 'SUPERADMIN') {
         return sendErrorResponse(res, 403, 'FORBIDDEN', 'Admin cannot deactivate SuperAdmin');
       }
     } else if (req.user.EmployeeType === 'SUPERVISOR') {
       query['Department.name'] = req.user.Department;
       query['region.name'] = req.user.region;
-      query['EmployeeType.name'] = 'EMPLOYEE';
+      query.EmployeeType = 'EMPLOYEE';
     } else {
       return sendErrorResponse(res, 403, 'FORBIDDEN', 'Insufficient privileges to deactivate users');
     }
@@ -475,7 +465,7 @@ export const getEmployeeDetails = async (req, res) => {
     if (req.user.EmployeeType === 'SUPERADMIN') {
     } else if (req.user.EmployeeType === 'ADMIN') {
       const targetUser = await employeeSchema.findById(userId);
-      if (targetUser && targetUser.EmployeeType?.name === 'SUPERADMIN') {
+      if (targetUser && targetUser.EmployeeType === 'SUPERADMIN') {
         return sendErrorResponse(res, 403, 'FORBIDDEN', 'Admin cannot view SuperAdmin details');
       }
     } else if (req.user.EmployeeType === 'SUPERVISOR') {
@@ -487,7 +477,7 @@ export const getEmployeeDetails = async (req, res) => {
           (targetUser._id.toString() !== req.user.id && 
            (targetUser.Department?.name !== req.user.Department || 
             targetUser.region?.name !== req.user.region ||
-            targetUser.EmployeeType?.name !== 'EMPLOYEE'))) {
+            targetUser.EmployeeType !== 'EMPLOYEE'))) {
         return sendErrorResponse(res, 403, 'FORBIDDEN', 'Access denied');
       }
     }
@@ -513,7 +503,7 @@ export const getSupervisorsByDepartment = async (req, res) => {
     const { department, region } = req.query;
 
     let query = { 
-      'EmployeeType.name': 'SUPERVISOR', 
+      EmployeeType: 'SUPERVISOR', 
       isActive: true 
     };
     if (req.user.EmployeeType === 'SUPERADMIN') {

@@ -11,7 +11,7 @@ const setupProject = async () => {
     await mongoose.connect(process.env.MONGODB_URL);
     console.log('Connected to database');
 
-    const existingSuperAdmin = await employeeSchema.findOne({ 'EmployeeType.name': 'SUPERADMIN' });
+    const existingSuperAdmin = await employeeSchema.findOne({ EmployeeType: 'SUPERADMIN' });
 
     if (existingSuperAdmin) {
       console.log('\n✓ SuperAdmin already exists in the system');
@@ -29,14 +29,7 @@ const setupProject = async () => {
       address: 'Admin Address, Admin City, Admin State',
       country: 'India',
       pincode: '123456',
-      EmployeeType: {
-        name: 'SUPERADMIN',
-        refId: null
-      },
-      Role: {
-        name: 'SUPERADMIN',
-        refId: null
-      },
+      EmployeeType: 'SUPERADMIN',
       Department: {
         name: 'SUPERADMIN',
         refId: null

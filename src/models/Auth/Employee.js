@@ -44,26 +44,9 @@ const employee = new mongoose.Schema({
     trim: true,
   },
   EmployeeType: {
-    name: {
       type: String,
       required: [true, 'Employee type is required'],
       trim: true
-    },
-    refId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Role'
-    }
-  },
-  Role: {
-    name: {
-      type: String,
-      required: [true, 'Role type is required'],
-      trim: true
-    },
-    refId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Role'
-    }
   },
   ProfilePicture: {
     type: String,
@@ -75,16 +58,14 @@ const employee = new mongoose.Schema({
       type: String,
       trim: true,
       required: function() {
-        const empType = this.EmployeeType?.name || this.EmployeeType;
-        return empType !== 'SUPERADMIN';
+        return this.EmployeeType !== 'SUPERADMIN';
       }
     },
     refId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Department',
       required: function() {
-        const empType = this.EmployeeType?.name || this.EmployeeType;
-        return empType !== 'SUPERADMIN';
+        return this.EmployeeType !== 'SUPERADMIN';
       }
     }
   },
@@ -111,9 +92,8 @@ const employee = new mongoose.Schema({
     name: {
       type: String,
       required: function() {
-        const empType = this.EmployeeType?.name || this.EmployeeType;
         const dept = this.Department?.name || this.Department;
-        return ['EMPLOYEE', 'SUPERVISOR', 'REGIONMANAGER'].includes(empType) && dept === 'SALES';
+        return ['EMPLOYEE', 'SUPERVISOR', 'REGIONMANAGER'].includes(this.EmployeeType) && dept === 'SALES';
       },
       trim: true
     },
@@ -121,9 +101,8 @@ const employee = new mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Region',
       required: function() {
-        const empType = this.EmployeeType?.name || this.EmployeeType;
         const dept = this.Department?.name || this.Department;
-        return ['EMPLOYEE', 'SUPERVISOR', 'REGIONMANAGER'].includes(empType) && dept === 'SALES';
+        return ['EMPLOYEE', 'SUPERVISOR', 'REGIONMANAGER'].includes(this.EmployeeType) && dept === 'SALES';
       }
     }
   },
@@ -136,9 +115,8 @@ const employee = new mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: 'employee',
       required: function() {
-        const empType = this.EmployeeType?.name || this.EmployeeType;
         const dept = this.Department?.name || this.Department;
-        return empType === 'EMPLOYEE' && dept === 'SALES';
+        return this.EmployeeType === 'EMPLOYEE' && dept === 'SALES';
       }
     }
   },
@@ -157,8 +135,7 @@ const employee = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'employee',
     required: function() {
-      const empType = this.EmployeeType?.name || this.EmployeeType;
-      return !['SUPERADMIN'].includes(empType);
+      return !['SUPERADMIN'].includes(this.EmployeeType);
     }
   },
   supervisor: {
@@ -170,8 +147,7 @@ const employee = new mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: 'employee',
       required: function() {
-        const empType = this.EmployeeType?.name || this.EmployeeType;
-        return empType === 'EMPLOYEE';
+        return this.EmployeeType === 'EMPLOYEE';
       }
     }
   },
@@ -202,29 +178,25 @@ const employee = new mongoose.Schema({
     CanCreateEmployee: {
       type: Boolean,
       default: function() {
-        const empType = this.EmployeeType?.name || this.EmployeeType;
-        return ['SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(empType);
+        return ['SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(this.EmployeeType);
       }
     },
     CanManageEmployee: {
       type: Boolean,
       default: function() {
-        const empType = this.EmployeeType?.name || this.EmployeeType;
-        return ['SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(empType);
+        return ['SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(this.EmployeeType);
       }
     },
     CanManageDepartments: {
       type: Boolean,
       default: function() {
-        const empType = this.EmployeeType?.name || this.EmployeeType;
-        return ['SUPERADMIN', 'ADMIN'].includes(empType);
+        return ['SUPERADMIN', 'ADMIN'].includes(this.EmployeeType);
       }
     },
     CanManageAllDepartments: {
       type: Boolean,
       default: function() {
-        const empType = this.EmployeeType?.name || this.EmployeeType;
-        return empType === 'ADMIN';
+        return this.EmployeeType === 'ADMIN';
       }
     },
     CanCreateOrders: {
@@ -242,8 +214,7 @@ const employee = new mongoose.Schema({
     CanDeleteOrders: {
       type: Boolean,
       default: function() {
-        const empType = this.EmployeeType?.name || this.EmployeeType;
-        return ['SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(empType);
+        return ['SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(this.EmployeeType);
       }
     },
     CanProcessWorkflow: {
@@ -253,8 +224,7 @@ const employee = new mongoose.Schema({
     CanApproveWorkflow: {
       type: Boolean,
       default: function() {
-        const empType = this.EmployeeType?.name || this.EmployeeType;
-        return ['SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(empType);
+        return ['SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(this.EmployeeType);
       }
     },
     CanCreateCustomers: {
@@ -276,29 +246,25 @@ const employee = new mongoose.Schema({
     CanManageFinancials: {
       type: Boolean,
       default: function() {
-        const empType = this.EmployeeType?.name || this.EmployeeType;
-        return ['SUPERADMIN', 'ADMIN'].includes(empType);
+        return ['SUPERADMIN', 'ADMIN'].includes(this.EmployeeType);
       }
     },    
     CanManageSettings: {
       type: Boolean,
       default: function() {
-        const empType = this.EmployeeType?.name || this.EmployeeType;
-        return ['SUPERADMIN', 'ADMIN'].includes(empType);
+        return ['SUPERADMIN', 'ADMIN'].includes(this.EmployeeType);
       }
     },
     CanViewReports: {
       type: Boolean,
       default: function() {
-        const empType = this.EmployeeType?.name || this.EmployeeType;
-        return empType !== 'EMPLOYEE';
+        return this.EmployeeType !== 'EMPLOYEE';
       }
     },
     CanExportReports: {
       type: Boolean,
       default: function() {
-        const empType = this.EmployeeType?.name || this.EmployeeType;
-        return ['SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(empType);
+        return ['SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(this.EmployeeType);
       }
     }
   },
