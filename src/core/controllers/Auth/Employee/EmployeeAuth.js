@@ -35,7 +35,7 @@ export const employeeLogin = async (req, res) => {
     }
 
     user.lastLogin = new Date();
-    await user.save();
+    await user.save({ validateBeforeSave: false });
 
     return sendTokenResponse(user, 200, res, 'EMPLOYEE', generateToken, generateRefreshToken);
 

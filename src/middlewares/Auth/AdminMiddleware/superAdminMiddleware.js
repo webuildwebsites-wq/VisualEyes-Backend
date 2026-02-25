@@ -18,3 +18,22 @@ export const isSuperAdminOrAdmin = (req, res, next) => {
     return sendSuccessResponse(res, 'Authorization failed', 500);
   }
 };
+
+export const isSuperAdmin = (req, res, next) => {
+  try {
+    if (!req.user.EmployeeType) {
+      return sendSuccessResponse(res, 'Authentication required', 401);
+    }
+
+    const allowedEmployeeType = ['SUPERADMIN'];
+    
+    if (!allowedEmployeeType.includes(req.user.EmployeeType)) {
+      return sendSuccessResponse(res, 'Access denied. Only SUPERADMIN or ADMIN can perform this action', 403);
+    }
+
+    next();
+  } catch (error) {
+    console.error('SuperAdmin middleware error:', error);
+    return sendSuccessResponse(res, 'Authorization failed', 500);
+  }
+};
