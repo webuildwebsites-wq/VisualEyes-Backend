@@ -144,16 +144,7 @@ export const createEmployee = async (req, res) => {
 
       assignedSupervisor = await employeeSchema.findOne(supervisorQuery);
 
-      if (!assignedSupervisor) {
-        const errorMsg = isSalesDepartment
-          ? 'No active supervisor found for this zone in SALES department'
-          : subRoles && subRoles.length > 0
-            ? 'No active supervisor found for this department and sub-role(s)'
-            : 'No active supervisor found for this department';
-        return sendErrorResponse(res, 400, 'NO_SUPERVISOR_FOUND', errorMsg);
-      }
-
-      if (req.user.EmployeeType === 'SUPERVISOR' && assignedSupervisor._id.toString() !== req.user.id.toString()) {
+      if (assignedSupervisor && req.user.EmployeeType === 'SUPERVISOR' && assignedSupervisor._id.toString() !== req.user.id.toString()) {
         return sendErrorResponse(res, 403, 'FORBIDDEN', 'Supervisors can only assign themselves as supervisor');
       }
 

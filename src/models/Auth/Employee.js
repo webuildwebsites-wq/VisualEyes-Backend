@@ -147,10 +147,7 @@ const employee = new mongoose.Schema({
     },
     refId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'employee',
-      required: function() {
-        return this.EmployeeType === 'EMPLOYEE';
-      }
+      ref: 'employee'
     }
   },
   teamLead: {
