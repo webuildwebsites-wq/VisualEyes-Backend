@@ -2,6 +2,7 @@ import { sendSuccessResponse, sendErrorResponse } from '../../../../Utils/respon
 import employeeSchema from '../../../../models/Auth/Employee.js';
 import Department from '../../../../models/Auth/Department.js';
 import SystemConfig from '../../../../models/Auth/SystemConfig.js';
+import Location from '../../../../models/Location/Location.js';
 
 export const createEmployee = async (req, res) => {
   try {
@@ -76,6 +77,19 @@ export const createEmployee = async (req, res) => {
     if (['EMPLOYEE', 'SUPERVISOR', 'ZONEMANAGER', 'TEAMLEAD'].includes(employeeType.toUpperCase()) && 
       department && department.toUpperCase() === 'SALES' && !zone) {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Zone is required for SALES department employees, supervisors, team leads, and zone managers');
+    }
+
+    if (zone && zoneRefId) {
+      const locationDoc = await Location.findById(zoneRefId);
+      if (!locationDoc) {
+        return sendErrorResponse(res, 404, 'ZONE_NOT_FOUND', 'Zone not found');
+      }
+      if (!locationDoc.isActive) {
+        return sendErrorResponse(res, 400, 'ZONE_INACTIVE', 'Zone is not active');
+      }
+      if (locationDoc.zone !== zone.toUpperCase()) {
+        return sendErrorResponse(res, 400, 'ZONE_MISMATCH', 'Zone name does not match the provided ID');
+      }
     }
 
     if (lab) {

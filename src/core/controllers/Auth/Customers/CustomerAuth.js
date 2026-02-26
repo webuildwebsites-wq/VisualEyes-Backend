@@ -87,7 +87,6 @@ export const customerBasicRegistration = async (req, res) => {
       CustomerTypeRefId,
       zone,
       zoneRefId,
-      hasFlatFitting,
       specificBrand,
       specificBrandRefId,
       specificCategory,
@@ -126,7 +125,6 @@ export const customerBasicRegistration = async (req, res) => {
       salesPerson,
       salesPersonRefId,
       customerpassword,
-      flatFittingData,
     } = req.body;
 
     const userDepartment = req.user?.Department;
@@ -237,18 +235,6 @@ export const customerBasicRegistration = async (req, res) => {
       if (!salesPerson || !salesPersonRefId) {
         return sendErrorResponse(res, 400, "VALIDATION_ERROR", "salesPerson and salesPersonRefId are required for FINANCE department");
       }
-
-      if (hasFlatFitting === true) {
-        if (!Array.isArray(flatFittingData) || flatFittingData.length === 0) {
-          return sendErrorResponse(res, 400, "VALIDATION_ERROR", "flatFittingData is required when hasFlatFitting is true");
-        }
-
-        for (const item of flatFittingData) {
-          if (!item.selectType || !item.selectType.name || !item.selectType.refId || !item.index || !item.index.name || !item.index.refId || item.price === undefined) {
-            return sendErrorResponse(res, 400, "VALIDATION_ERROR", "Each flatFittingData item must contain selectType, index and price");
-          }
-        }
-      }
     }
 
     if (isSalesDepartment) {
@@ -312,32 +298,8 @@ export const customerBasicRegistration = async (req, res) => {
         billingMode: addr.billingMode,
       })),
 
-
-
       // Customer Registration - Only for FINANCE department
       password: isFinanceDepartment ? customerpassword : undefined,
-
-      zone: isFinanceDepartment && zone && zoneRefId ? {
-        name: zone,
-        refId: zoneRefId
-      } : undefined,
-
-      hasFlatFitting: isFinanceDepartment ? hasFlatFitting : undefined,
-
-      flatFittingData: isFinanceDepartment && hasFlatFitting ? flatFittingData.map((item) => ({
-        selectType: {
-          name: item.selectType.name,
-          refId: item.selectType.refId,
-        },
-        index: {
-          name: item.index.name,
-          refId: item.index.refId,
-        },
-        price: item.price,
-      })) : [],
-
-      Price: isFinanceDepartment && hasFlatFitting && flatFittingData && flatFittingData.length > 0 ? flatFittingData[0].price : undefined,
-
       specificBrand: isFinanceDepartment && specificBrand && specificBrandRefId ? {
         name: specificBrand,
         refId: specificBrandRefId
@@ -347,31 +309,44 @@ export const customerBasicRegistration = async (req, res) => {
         name: specificCategory,
         refId: specificCategoryRefId
       } : undefined,
-      specificLab: isFinanceDepartment && specificLab && specificLabRefId ? {
-        name: specificLab,
-        refId: specificLabRefId
+
+      zone: isFinanceDepartment && zone && zoneRefId ? {
+        name: zone,
+        refId: zoneRefId
       } : undefined,
+      
       salesPerson: isFinanceDepartment && salesPerson && salesPersonRefId ? {
         name: salesPerson,
         refId: salesPersonRefId
       } : undefined,
-      plant: isFinanceDepartment && plant && plantRefId ? {
-        name: plant,
-        refId: plantRefId
+      
+      specificLab: isFinanceDepartment && specificLab && specificLabRefId ? {
+        name: specificLab,
+        refId: specificLabRefId
       } : undefined,
+
       fittingCenter: isFinanceDepartment && fittingCenter && fittingCenterRefId ? {
         name: fittingCenter,
         refId: fittingCenterRefId
       } : undefined,
+
+      plant: isFinanceDepartment && plant && plantRefId ? {
+        name: plant,
+        refId: plantRefId
+      } : undefined,
+
+      creditLimit: isFinanceDepartment ? creditLimit : undefined,
+
       creditDays: isFinanceDepartment && creditDays && creditDaysRefId ? {
         name: creditDays,
         refId: creditDaysRefId
       } : undefined,
-      creditLimit: isFinanceDepartment ? creditLimit : undefined,
+
       courierName: isFinanceDepartment && courierName && courierNameRefId ? {
         name: courierName,
         refId: courierNameRefId
       } : undefined,
+
       courierTime: isFinanceDepartment && courierTime && courierTimeRefId ? {
         name: courierTime,
         refId: courierTimeRefId
@@ -624,8 +599,6 @@ export const financeCompleteCustomer = async (req, res) => {
     const updateData = {
       password: req.body.password,
       zone: req.body.zone,
-      hasFlatFitting: req.body.hasFlatFitting || false,
-      flatFittingData: req.body.flatFittingData || [],
       specificBrand: req.body.specificBrand,
       specificCategory: req.body.specificCategory,
       specificLab: req.body.specificLab,

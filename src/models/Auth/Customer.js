@@ -129,36 +129,11 @@ const customerSchema = new mongoose.Schema(
     hasFlatFitting: {
       type: Boolean,
       default: false,
-      required: function() {
-        return this.createdByDepartment === 'FINANCE' || this.approvalStatus === 'APPROVED';
-      }
     },
 
     flatFittingData: {
       type: [flatFittingSchema],
-      required: function () {
-        return this.hasFlatFitting === true && (this.createdByDepartment === 'FINANCE' || this.approvalStatus === 'APPROVED');
-      },
       default: [],
-    },
-
-    selectType: {
-      type: [{
-        name: String,
-        refId: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: 'FittingCenter'
-        }
-      }],
-      required: function () {
-        return this.hasFlatFitting === true;
-      },
-    },
-    selectTypeIndex: {
-      type: [Number],
-      required: function () {
-        return this.hasFlatFitting === true;
-      },
     },
     specificLab: {
       name: {
