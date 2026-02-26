@@ -2,7 +2,7 @@ import { sendSuccessResponse, sendErrorResponse } from '../../../Utils/response/
 import Location from '../../../models/Location/Location.js';
 
 // Create a new zone with states, cities, and zip codes
-export const createLocation = async (req, res) => {
+export const createZoneLocation = async (req, res) => {
   try {
     const { zone, states, description, regionalManager } = req.body;
 
@@ -60,12 +60,12 @@ export const getAllLocations = async (req, res) => {
   }
 };
 
-// Get location by zone
+// Get location by zone ID
 export const getLocationByZone = async (req, res) => {
   try {
     const { zone } = req.params;
 
-    const location = await Location.findOne({ zone: zone.toUpperCase(), isActive: true })
+    const location = await Location.findOne({ _id: zone, isActive: true })
       .populate('createdBy', 'username employeeName email')
       .populate('regionalManager.refId', 'username employeeName email phone');
 
@@ -90,7 +90,7 @@ export const addState = async (req, res) => {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'State name and code are required');
     }
 
-    const location = await Location.findOne({ zone: zone.toUpperCase(), isActive: true });
+    const location = await Location.findOne({ _id: zone, isActive: true });
     if (!location) {
       return sendErrorResponse(res, 404, 'LOCATION_NOT_FOUND', 'Location not found');
     }
@@ -121,20 +121,20 @@ export const addState = async (req, res) => {
 // Add city to a state
 export const addCity = async (req, res) => {
   try {
-    const { zone, stateName } = req.params;
+    const { zone, stateId } = req.params;
     const { name, code, zipCodes } = req.body;
 
     if (!name || !code) {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'City name and code are required');
     }
 
-    const location = await Location.findOne({ zone: zone.toUpperCase(), isActive: true });
+    const location = await Location.findOne({ _id: zone, isActive: true });
     if (!location) {
       return sendErrorResponse(res, 404, 'LOCATION_NOT_FOUND', 'Location not found');
     }
 
-    const state = location.states.find(s => s.name === stateName && s.isActive);
-    if (!state) {
+    const state = location.states.id(stateId);
+    if (!state || !state.isActive) {
       return sendErrorResponse(res, 404, 'STATE_NOT_FOUND', 'State not found');
     }
 
@@ -164,25 +164,25 @@ export const addCity = async (req, res) => {
 // Add zip code to a city
 export const addZipCode = async (req, res) => {
   try {
-    const { zone, stateName, cityName } = req.params;
+    const { zone, stateId, cityId } = req.params;
     const { code, area } = req.body;
 
     if (!code) {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Zip code is required');
     }
 
-    const location = await Location.findOne({ zone: zone.toUpperCase(), isActive: true });
+    const location = await Location.findOne({ _id: zone, isActive: true });
     if (!location) {
       return sendErrorResponse(res, 404, 'LOCATION_NOT_FOUND', 'Location not found');
     }
 
-    const state = location.states.find(s => s.name === stateName && s.isActive);
-    if (!state) {
+    const state = location.states.id(stateId);
+    if (!state || !state.isActive) {
       return sendErrorResponse(res, 404, 'STATE_NOT_FOUND', 'State not found');
     }
 
-    const city = state.cities.find(c => c.name === cityName && c.isActive);
-    if (!city) {
+    const city = state.cities.id(cityId);
+    if (!city || !city.isActive) {
       return sendErrorResponse(res, 404, 'CITY_NOT_FOUND', 'City not found');
     }
 
@@ -213,7 +213,7 @@ export const getStatesByZone = async (req, res) => {
   try {
     const { zone } = req.params;
 
-    const location = await Location.findOne({ zone: zone.toUpperCase(), isActive: true });
+    const location = await Location.findOne({ _id: zone, isActive: true });
     if (!location) {
       return sendErrorResponse(res, 404, 'LOCATION_NOT_FOUND', 'Location not found');
     }
@@ -229,15 +229,15 @@ export const getStatesByZone = async (req, res) => {
 // Get all cities in a state
 export const getCitiesByState = async (req, res) => {
   try {
-    const { zone, stateName } = req.params;
+    const { zone, stateId } = req.params;
 
-    const location = await Location.findOne({ zone: zone.toUpperCase(), isActive: true });
+    const location = await Location.findOne({ _id: zone, isActive: true });
     if (!location) {
       return sendErrorResponse(res, 404, 'LOCATION_NOT_FOUND', 'Location not found');
     }
 
-    const state = location.states.find(s => s.name === stateName && s.isActive);
-    if (!state) {
+    const state = location.states.id(stateId);
+    if (!state || !state.isActive) {
       return sendErrorResponse(res, 404, 'STATE_NOT_FOUND', 'State not found');
     }
 
@@ -252,20 +252,20 @@ export const getCitiesByState = async (req, res) => {
 // Get all zip codes in a city
 export const getZipCodesByCity = async (req, res) => {
   try {
-    const { zone, stateName, cityName } = req.params;
+    const { zone, stateId, cityId } = req.params;
 
-    const location = await Location.findOne({ zone: zone.toUpperCase(), isActive: true });
+    const location = await Location.findOne({ _id: zone, isActive: true });
     if (!location) {
       return sendErrorResponse(res, 404, 'LOCATION_NOT_FOUND', 'Location not found');
     }
 
-    const state = location.states.find(s => s.name === stateName && s.isActive);
-    if (!state) {
+    const state = location.states.id(stateId);
+    if (!state || !state.isActive) {
       return sendErrorResponse(res, 404, 'STATE_NOT_FOUND', 'State not found');
     }
 
-    const city = state.cities.find(c => c.name === cityName && c.isActive);
-    if (!city) {
+    const city = state.cities.id(cityId);
+    if (!city || !city.isActive) {
       return sendErrorResponse(res, 404, 'CITY_NOT_FOUND', 'City not found');
     }
 
@@ -287,7 +287,7 @@ export const assignRegionalManager = async (req, res) => {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Manager ID is required');
     }
 
-    const location = await Location.findOne({ zone: zone.toUpperCase(), isActive: true });
+    const location = await Location.findOne({ _id: zone, isActive: true });
     if (!location) {
       return sendErrorResponse(res, 404, 'LOCATION_NOT_FOUND', 'Location not found');
     }
@@ -318,7 +318,7 @@ export const updateLocation = async (req, res) => {
     delete updates.createdBy;
     delete updates.zone; // Don't allow zone change
 
-    const location = await Location.findOne({ zone: zone.toUpperCase(), isActive: true });
+    const location = await Location.findOne({ _id: zone, isActive: true });
     if (!location) {
       return sendErrorResponse(res, 404, 'LOCATION_NOT_FOUND', 'Location not found');
     }
@@ -339,7 +339,7 @@ export const deactivateLocation = async (req, res) => {
   try {
     const { zone } = req.params;
 
-    const location = await Location.findOne({ zone: zone.toUpperCase() });
+    const location = await Location.findById(zone);
     if (!location) {
       return sendErrorResponse(res, 404, 'LOCATION_NOT_FOUND', 'Location not found');
     }
