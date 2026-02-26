@@ -2,13 +2,46 @@ import employeeSchema from "../../../../models/Auth/Employee.js";
 import { sendErrorResponse, sendSuccessResponse } from "../../../../Utils/response/responseHandler.js";
 
 export const getAllSalesPersons = async (req, res) => {
-  try {    
+  try {
+    const { isActive, employeeType, zone, page = 1, limit = 100 } = req.query;
+    
     const filter = {
-      'Department.name': 'SALES',
-      EmployeeType: { $in: ['EMPLOYEE', 'SUPERVISOR'] }
+      'Department.name': 'SALES'
     };
-    const salesPersons = await employeeSchema.find(filter).select('username employeeName email phone Department EmployeeType zone lab isActive');
-    return sendSuccessResponse(res, 200, salesPersons, "Sales persons retrieved successfully");
+
+    if (isActive !== undefined) {
+      filter.isActive = isActive === 'true';
+    }
+
+    if (employeeType) {
+      filter.EmployeeType = employeeType.toUpperCase();
+    }
+
+    if (zone) {
+      filter['zone.name'] = zone.toUpperCase();
+    }
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const [salesPersons, total] = await Promise.all([
+      employeeSchema
+        .find(filter)
+        .select('username employeeName email phone Department EmployeeType zone lab isActive subRoles')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit))
+        .lean(),
+      employeeSchema.countDocuments(filter)
+    ]);
+
+    const pagination = {
+      currentPage: parseInt(page),
+      totalPages: Math.ceil(total / parseInt(limit)),
+      totalRecords: total,
+      limit: parseInt(limit)
+    };
+
+    return sendSuccessResponse(res, 200, { salesPersons, pagination }, "Sales persons retrieved successfully");
   } catch (error) {
     console.error("Get All Sales Persons Error:", error);
     return sendErrorResponse(res, 500, "INTERNAL_ERROR", "Failed to retrieve sales persons");
