@@ -59,6 +59,18 @@ export const createEmployee = async (req, res) => {
         if (departmentDoc.name !== department.toUpperCase()) {
           return sendErrorResponse(res, 400, 'DEPARTMENT_MISMATCH', 'Department name does not match the provided ID');
         }
+
+        if (employeeType.toUpperCase() === 'ADMIN') {
+          const existingAdmin = await employeeSchema.findOne({
+            EmployeeType: 'ADMIN',
+            'Department.refId': departmentRefId,
+            isActive: true
+          });
+
+          if (existingAdmin) {
+            return sendErrorResponse(res, 409, 'ADMIN_EXISTS', `An admin already exists for ${department} department`);
+          }
+        }
       }
 
       if ((req.user.EmployeeType === 'SUPERADMIN' || req.user.EmployeeType === 'ADMIN' ) && employeeType.toUpperCase() !== 'ADMIN') {
@@ -260,6 +272,7 @@ export const createEmployee = async (req, res) => {
 
 export const getAllEmployees = async (req, res) => {
   try {
+    
      const page = Math.max(parseInt(req.query.page) || 1, 1);
      const limit = Math.min(parseInt(req.query.limit) || 10, 100); 
      const skip = (page - 1) * limit;
