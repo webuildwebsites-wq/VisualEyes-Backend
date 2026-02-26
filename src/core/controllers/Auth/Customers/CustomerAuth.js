@@ -87,10 +87,7 @@ export const customerBasicRegistration = async (req, res) => {
       CustomerTypeRefId,
       zone,
       zoneRefId,
-      specificBrand,
-      specificBrandRefId,
-      specificCategory,
-      specificCategoryRefId,
+      brandCategories,
       specificLab,
       specificLabRefId,
       emailId,
@@ -188,8 +185,6 @@ export const customerBasicRegistration = async (req, res) => {
 
       const requiredRefIds = [
         { name: 'CustomerTypeRefId', value: CustomerTypeRefId },
-        { name: 'specificBrandRefId', value: specificBrandRefId },
-        { name: 'specificCategoryRefId', value: specificCategoryRefId },
         { name: 'salesPersonRefId', value: salesPersonRefId },
       ];
 
@@ -225,12 +220,30 @@ export const customerBasicRegistration = async (req, res) => {
         return sendErrorResponse(res, 400, "VALIDATION_ERROR", "Password is required for FINANCE department");
       }
 
-      if (!specificBrand || !specificBrandRefId) {
-        return sendErrorResponse(res, 400, "VALIDATION_ERROR", "specificBrand and specificBrandRefId are required for FINANCE department");
+      if (!brandCategories || !Array.isArray(brandCategories) || brandCategories.length === 0) {
+        return sendErrorResponse(res, 400, "VALIDATION_ERROR", "brandCategories array with at least one brand is required for FINANCE department");
       }
 
-      if (!specificCategory || !specificCategoryRefId) {
-        return sendErrorResponse(res, 400, "VALIDATION_ERROR", "specificCategory and specificCategoryRefId are required for FINANCE department");
+      for (let i = 0; i < brandCategories.length; i++) {
+        const brand = brandCategories[i];
+        if (!brand.brandName || !brand.brandId) {
+          return sendErrorResponse(res, 400, "VALIDATION_ERROR", `brandCategories[${i}]: brandName and brandId are required`);
+        }
+        if (!isValidObjectId(brand.brandId)) {
+          return sendErrorResponse(res, 400, "VALIDATION_ERROR", `brandCategories[${i}].brandId must be a valid ObjectId`);
+        }
+        if (!brand.categories || !Array.isArray(brand.categories) || brand.categories.length === 0) {
+          return sendErrorResponse(res, 400, "VALIDATION_ERROR", `brandCategories[${i}]: categories array with at least one category is required`);
+        }
+        for (let j = 0; j < brand.categories.length; j++) {
+          const category = brand.categories[j];
+          if (!category.categoryName || !category.categoryId) {
+            return sendErrorResponse(res, 400, "VALIDATION_ERROR", `brandCategories[${i}].categories[${j}]: categoryName and categoryId are required`);
+          }
+          if (!isValidObjectId(category.categoryId)) {
+            return sendErrorResponse(res, 400, "VALIDATION_ERROR", `brandCategories[${i}].categories[${j}].categoryId must be a valid ObjectId`);
+          }
+        }
       }
 
       if (!salesPerson || !salesPersonRefId) {
@@ -301,15 +314,7 @@ export const customerBasicRegistration = async (req, res) => {
 
       // Customer Registration - Only for FINANCE department or SUPERADMIN
       password: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') ? customerpassword : undefined,
-      specificBrand: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') && specificBrand && specificBrandRefId ? {
-        name: specificBrand,
-        refId: specificBrandRefId
-      } : undefined,
-
-      specificCategory: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') && specificCategory && specificCategoryRefId ? {
-        name: specificCategory,
-        refId: specificCategoryRefId
-      } : undefined,
+      brandCategories: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') && brandCategories ? brandCategories : undefined,
 
       zone: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') && zone && zoneRefId ? {
         name: zone,
@@ -588,7 +593,7 @@ export const financeCompleteCustomer = async (req, res) => {
     const requiredFinanceFields = [
       'password', 'zone', 'plant', 'fittingCenter',
       'creditDays', 'courierName', 'courierTime',
-      'specificBrand', 'specificCategory', 'specificLab', 'salesPerson'
+      'brandCategories', 'specificLab', 'salesPerson'
     ];
 
     const missingFields = requiredFinanceFields.filter(field => !req.body[field]);
@@ -597,11 +602,39 @@ export const financeCompleteCustomer = async (req, res) => {
       return sendErrorResponse(res, 400, "VALIDATION_ERROR", `Missing required fields: ${missingFields.join(', ')}`);
     }
 
+    const { brandCategories } = req.body;
+    const isValidObjectId = (id) => /^[0-9a-fA-F]{24}$/.test(id);
+
+    if (!Array.isArray(brandCategories) || brandCategories.length === 0) {
+      return sendErrorResponse(res, 400, "VALIDATION_ERROR", "brandCategories must be an array with at least one brand");
+    }
+
+    for (let i = 0; i < brandCategories.length; i++) {
+      const brand = brandCategories[i];
+      if (!brand.brandName || !brand.brandId) {
+        return sendErrorResponse(res, 400, "VALIDATION_ERROR", `brandCategories[${i}]: brandName and brandId are required`);
+      }
+      if (!isValidObjectId(brand.brandId)) {
+        return sendErrorResponse(res, 400, "VALIDATION_ERROR", `brandCategories[${i}].brandId must be a valid ObjectId`);
+      }
+      if (!brand.categories || !Array.isArray(brand.categories) || brand.categories.length === 0) {
+        return sendErrorResponse(res, 400, "VALIDATION_ERROR", `brandCategories[${i}]: categories array with at least one category is required`);
+      }
+      for (let j = 0; j < brand.categories.length; j++) {
+        const category = brand.categories[j];
+        if (!category.categoryName || !category.categoryId) {
+          return sendErrorResponse(res, 400, "VALIDATION_ERROR", `brandCategories[${i}].categories[${j}]: categoryName and categoryId are required`);
+        }
+        if (!isValidObjectId(category.categoryId)) {
+          return sendErrorResponse(res, 400, "VALIDATION_ERROR", `brandCategories[${i}].categories[${j}].categoryId must be a valid ObjectId`);
+        }
+      }
+    }
+
     const updateData = {
       password: req.body.password,
       zone: req.body.zone,
-      specificBrand: req.body.specificBrand,
-      specificCategory: req.body.specificCategory,
+      brandCategories: req.body.brandCategories,
       specificLab: req.body.specificLab,
       salesPerson: req.body.salesPerson,
       plant: req.body.plant,

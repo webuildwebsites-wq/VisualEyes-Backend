@@ -150,34 +150,37 @@ const customerSchema = new mongoose.Schema(
         }
       }
     },
-    specificBrand: {
-      name: {
-        type: String,
-        required: function() {
-          return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
-        }
-      },
-      refId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Brand',
-        required: function() {
-          return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
-        }
-      }
-    },
-    specificCategory: {
-      name: {
-        type: String,
-        required: function() {
-          return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
-        }
-      },
-      refId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Category',
-        required: function() {
-          return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
-        }
+    brandCategories: {
+      type: [{
+        brandName: {
+          type: String,
+          required: true
+        },
+        brandId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'Brand',
+          required: true
+        },
+        categories: [{
+          categoryName: {
+            type: String,
+            required: true
+          },
+          categoryId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Category',
+            required: true
+          }
+        }]
+      }],
+      validate: {
+        validator: function(value) {
+          if (['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED') {
+            return value && value.length > 0;
+          }
+          return true;
+        },
+        message: 'At least one brand with categories is required for approved customers'
       }
     },
     salesPerson: {
