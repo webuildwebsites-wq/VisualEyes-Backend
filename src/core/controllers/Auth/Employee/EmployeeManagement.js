@@ -3,6 +3,7 @@ import employeeSchema from '../../../../models/Auth/Employee.js';
 import Department from '../../../../models/Auth/Department.js';
 import SystemConfig from '../../../../models/Auth/SystemConfig.js';
 import Location from '../../../../models/Location/Location.js';
+import mongoose from 'mongoose';
 
 export const createEmployee = async (req, res) => {
   try {
@@ -14,6 +15,27 @@ export const createEmployee = async (req, res) => {
 
     if (!employeeType || !username  || !employeeName || !country || !email || !password || !phone || !address) {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'All required fields must be provided');
+    }
+
+    // Validate ObjectId formats
+    if (departmentRefId && !mongoose.Types.ObjectId.isValid(departmentRefId)) {
+      return sendErrorResponse(res, 400, 'INVALID_ID', 'Invalid department ID format');
+    }
+
+    if (zoneRefId && !mongoose.Types.ObjectId.isValid(zoneRefId)) {
+      return sendErrorResponse(res, 400, 'INVALID_ID', 'Invalid zone ID format');
+    }
+
+    if (labRefId && !mongoose.Types.ObjectId.isValid(labRefId)) {
+      return sendErrorResponse(res, 400, 'INVALID_ID', 'Invalid lab ID format');
+    }
+
+    if (subRoles && Array.isArray(subRoles)) {
+      for (const subRole of subRoles) {
+        if (subRole.refId && !mongoose.Types.ObjectId.isValid(subRole.refId)) {
+          return sendErrorResponse(res, 400, 'INVALID_ID', `Invalid sub-role ID format: ${subRole.name || 'unknown'}`);
+        }
+      }
     }
 
     const validEmployeeTypes = ['ADMIN', 'SUPERVISOR', 'TEAMLEAD', 'ZONEMANAGER', 'EMPLOYEE'];
@@ -162,11 +184,7 @@ export const createEmployee = async (req, res) => {
         };
 
         assignedZoneManager = await employeeSchema.findOne(zoneManagerQuery);
-
-        if (!assignedZoneManager) {
-          return sendErrorResponse(res, 400, 'NO_ZONE_MANAGER_FOUND', 
-            'No active zone manager found for this zone. Please create a zone manager first.');
-        }
+        
       }
     }
 
@@ -258,10 +276,16 @@ export const createEmployee = async (req, res) => {
 
   } catch (error) {
     console.error('Create employee error:', error);
+    
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(err => err.message);
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', messages.join(', '));
     }
+    
+    if (error.name === 'CastError') {
+      return sendErrorResponse(res, 400, 'INVALID_ID', `Invalid ${error.path} format. Please provide a valid MongoDB ObjectId`);
+    }
+    
     return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to create employee');
   }
 };
@@ -394,6 +418,10 @@ export const updateEmployeeDetails = async (req, res) => {
     const { userId } = req.params;
     const updates = req.body;
 
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return sendErrorResponse(res, 400, 'INVALID_ID', 'Invalid user ID format');
+    }
+
     delete updates.password;
     delete updates.EmployeeType;
     delete updates.createdBy;
@@ -431,10 +459,16 @@ export const updateEmployeeDetails = async (req, res) => {
 
   } catch (error) {
     console.error('Update employee error:', error);
+    
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(err => err.message);
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', messages.join(', '));
     }
+    
+    if (error.name === 'CastError') {
+      return sendErrorResponse(res, 400, 'INVALID_ID', `Invalid ${error.path} format. Please provide a valid MongoDB ObjectId`);
+    }
+    
     return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to update user');
   }
 };
@@ -442,6 +476,11 @@ export const updateEmployeeDetails = async (req, res) => {
 export const deactivateEmployee = async (req, res) => {
   try {
     const { userId } = req.params;
+    
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return sendErrorResponse(res, 400, 'INVALID_ID', 'Invalid user ID format');
+    }
+    
     let query = { _id: userId, isActive: true };
     if (req.user.EmployeeType === 'SUPERADMIN') {
       const targetUser = await employeeSchema.findById(userId);
@@ -472,6 +511,11 @@ export const deactivateEmployee = async (req, res) => {
 
   } catch (error) {
     console.error('Deactivate employee error:', error);
+    
+    if (error.name === 'CastError') {
+      return sendErrorResponse(res, 400, 'INVALID_ID', `Invalid ${error.path} format. Please provide a valid MongoDB ObjectId`);
+    }
+    
     return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to deactivate employee');
   }
 };
@@ -479,6 +523,10 @@ export const deactivateEmployee = async (req, res) => {
 export const getEmployeeDetails = async (req, res) => {
   try {
     const { userId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return sendErrorResponse(res, 400, 'INVALID_ID', 'Invalid user ID format');
+    }
 
     let query = { _id: userId, isActive: true };
     if (req.user.EmployeeType === 'SUPERADMIN') {
@@ -513,6 +561,11 @@ export const getEmployeeDetails = async (req, res) => {
 
   } catch (error) {
     console.error('Get employee details error:', error);
+    
+    if (error.name === 'CastError') {
+      return sendErrorResponse(res, 400, 'INVALID_ID', `Invalid ${error.path} format. Please provide a valid MongoDB ObjectId`);
+    }
+    
     return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to retrieve employee details');
   }
 };

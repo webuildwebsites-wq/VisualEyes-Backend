@@ -122,10 +122,6 @@ const employee = new mongoose.Schema({
     refId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'employee',
-      required: function() {
-        const dept = this.Department?.name || this.Department;
-        return this.EmployeeType === 'EMPLOYEE' && dept === 'SALES';
-      }
     }
   },
   aadharCard: {
