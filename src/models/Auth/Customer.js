@@ -120,10 +120,10 @@ const customerSchema = new mongoose.Schema(
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Zone',
-        required: function() {
-          return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
-        }
+        ref: 'Location',
+        // required: function() {
+        //   return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
+        // }
       }
     },
     hasFlatFitting: {
