@@ -42,9 +42,9 @@ export const createEmployee = async (req, res) => {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Invalid employee type. Must be ADMIN, SUPERVISOR, TEAMLEAD, or EMPLOYEE');
     }
 
-    if (employeeType.toUpperCase() === 'ADMIN' && req.user.EmployeeType !== 'SUPERADMIN') {
-      return sendErrorResponse(res, 403, 'FORBIDDEN', 'Only SuperAdmin can create Admin');
-    }
+    // if (employeeType.toUpperCase() === 'ADMIN' && req.user.EmployeeType !== 'SUPERADMIN') {
+    //   return sendErrorResponse(res, 403, 'FORBIDDEN', 'Only SuperAdmin can create Admin');
+    // }
 
     if (employeeType.toUpperCase() !== 'SUPERADMIN') {
       if (!department && employeeType.toUpperCase() !== 'ADMIN') {
@@ -73,12 +73,12 @@ export const createEmployee = async (req, res) => {
         }
       }
 
-      if ((req.user.EmployeeType === 'SUPERADMIN' || req.user.EmployeeType === 'ADMIN' ) && employeeType.toUpperCase() !== 'ADMIN') {
-        const userDepartmentId = req.user.Department?.refId?.toString();
-        if (userDepartmentId && departmentRefId && userDepartmentId !== departmentRefId) {
-          return sendErrorResponse(res, 403, 'FORBIDDEN', 'Admin can only create employees in their own department');
-        }
-      }
+      // if ((req.user.EmployeeType === 'SUPERADMIN' || req.user.EmployeeType === 'ADMIN' ) && employeeType.toUpperCase() !== 'ADMIN') {
+      //   const userDepartmentId = req.user.Department?.refId?.toString();
+      //   if (userDepartmentId && departmentRefId && userDepartmentId !== departmentRefId) {
+      //     return sendErrorResponse(res, 403, 'FORBIDDEN', 'Admin can only create employees in their own department');
+      //   }
+      // }
     }
 
     if (subRoles && Array.isArray(subRoles) && subRoles.length > 0) {
@@ -156,9 +156,9 @@ export const createEmployee = async (req, res) => {
 
       assignedSupervisor = await employeeSchema.findOne(supervisorQuery);
 
-      if (assignedSupervisor && req.user.EmployeeType === 'SUPERVISOR' && assignedSupervisor._id.toString() !== req.user.id.toString()) {
-        return sendErrorResponse(res, 403, 'FORBIDDEN', 'Supervisors can only assign themselves as supervisor');
-      }
+      // if (assignedSupervisor && req.user.EmployeeType === 'SUPERVISOR' && assignedSupervisor._id.toString() !== req.user.id.toString()) {
+      //   return sendErrorResponse(res, 403, 'FORBIDDEN', 'Supervisors can only assign themselves as supervisor');
+      // }
 
       const teamLeadQuery = {
         EmployeeType: 'TEAMLEAD',
