@@ -127,9 +127,10 @@ export const customerBasicRegistration = async (req, res) => {
       customerpassword,
     } = req.body;
 
-    const userDepartment = req.user?.Department;
+    const userEmployeeType = req.user?.EmployeeType;
+    const userDepartment = userEmployeeType === 'SUPERADMIN' ? 'SUPERADMIN' : req.user?.Department?.name || req.user?.Department;
     const isSalesDepartment = userDepartment === "SALES";
-    const isFinanceDepartment = userDepartment === "FINANCE";
+    const isFinanceDepartment = userDepartment === "FINANCE" || userEmployeeType === "SUPERADMIN";
 
     // Check if user is from Sales or Finance department
     // if (!['SALES', 'FINANCE'].includes(userDepartment)) {
@@ -146,10 +147,10 @@ export const customerBasicRegistration = async (req, res) => {
         "VALIDATION_ERROR", "CustomerType, shopName, ownerName, emailId and orderMode are required");
     }
 
-    // salesPerson is only required for Finance department
-    if (isFinanceDepartment && !salesPerson) {
+    // salesPerson is only required for Finance department and SUPERADMIN
+    if ((isFinanceDepartment || userEmployeeType === 'SUPERADMIN') && !salesPerson) {
       return sendErrorResponse(res, 400,
-        "VALIDATION_ERROR", "salesPerson is required for FINANCE department");
+        "VALIDATION_ERROR", "salesPerson is required for FINANCE department and SUPERADMIN");
     }
 
     if (!Array.isArray(address) || address.length === 0) {
@@ -182,7 +183,7 @@ export const customerBasicRegistration = async (req, res) => {
       }
     }
 
-    if (isFinanceDepartment) {
+    if (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') {
       const isValidObjectId = (id) => /^[0-9a-fA-F]{24}$/.test(id);
 
       const requiredRefIds = [
@@ -298,56 +299,56 @@ export const customerBasicRegistration = async (req, res) => {
         billingMode: addr.billingMode,
       })),
 
-      // Customer Registration - Only for FINANCE department
-      password: isFinanceDepartment ? customerpassword : undefined,
-      specificBrand: isFinanceDepartment && specificBrand && specificBrandRefId ? {
+      // Customer Registration - Only for FINANCE department or SUPERADMIN
+      password: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') ? customerpassword : undefined,
+      specificBrand: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') && specificBrand && specificBrandRefId ? {
         name: specificBrand,
         refId: specificBrandRefId
       } : undefined,
 
-      specificCategory: isFinanceDepartment && specificCategory && specificCategoryRefId ? {
+      specificCategory: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') && specificCategory && specificCategoryRefId ? {
         name: specificCategory,
         refId: specificCategoryRefId
       } : undefined,
 
-      zone: isFinanceDepartment && zone && zoneRefId ? {
+      zone: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') && zone && zoneRefId ? {
         name: zone,
         refId: zoneRefId
       } : undefined,
       
-      salesPerson: isFinanceDepartment && salesPerson && salesPersonRefId ? {
+      salesPerson: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') && salesPerson && salesPersonRefId ? {
         name: salesPerson,
         refId: salesPersonRefId
       } : undefined,
       
-      specificLab: isFinanceDepartment && specificLab && specificLabRefId ? {
+      specificLab: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') && specificLab && specificLabRefId ? {
         name: specificLab,
         refId: specificLabRefId
       } : undefined,
 
-      fittingCenter: isFinanceDepartment && fittingCenter && fittingCenterRefId ? {
+      fittingCenter: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') && fittingCenter && fittingCenterRefId ? {
         name: fittingCenter,
         refId: fittingCenterRefId
       } : undefined,
 
-      plant: isFinanceDepartment && plant && plantRefId ? {
+      plant: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') && plant && plantRefId ? {
         name: plant,
         refId: plantRefId
       } : undefined,
 
-      creditLimit: isFinanceDepartment ? creditLimit : undefined,
+      creditLimit: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') ? creditLimit : null,
 
-      creditDays: isFinanceDepartment && creditDays && creditDaysRefId ? {
+      creditDays: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') && creditDays && creditDaysRefId ? {
         name: creditDays,
         refId: creditDaysRefId
       } : undefined,
 
-      courierName: isFinanceDepartment && courierName && courierNameRefId ? {
+      courierName: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') && courierName && courierNameRefId ? {
         name: courierName,
         refId: courierNameRefId
       } : undefined,
 
-      courierTime: isFinanceDepartment && courierTime && courierTimeRefId ? {
+      courierTime: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') && courierTime && courierTimeRefId ? {
         name: courierTime,
         refId: courierTimeRefId
       } : undefined,
@@ -366,8 +367,8 @@ export const customerBasicRegistration = async (req, res) => {
 
     const customer = await Customer.create(customerData);
 
-    // Only send credentials email if password was set (FINANCE department)
-    if (isFinanceDepartment && customerpassword) {
+    // Only send credentials email if password was set (FINANCE department or SUPERADMIN)
+    if ((isFinanceDepartment || userEmployeeType === 'SUPERADMIN') && customerpassword) {
       sendEmail({
         to: emailId,
         subject: "Welcome Mail for choosing VISUAL EYES",

@@ -195,10 +195,7 @@ This document contains sample payloads for testing customer registration across 
   "fittingCenterRefId": "507f1f77bcf86cd799439026",
   "creditDays": "30 Days",
   "creditDaysRefId": "507f1f77bcf86cd799439027",
-  "creditLimit": {
-    "name": "500000",
-    "refId": "507f1f77bcf86cd799439028"
-  },
+  "creditLimit": 1000,
   "courierName": "Blue Dart",
   "courierNameRefId": "507f1f77bcf86cd799439029",
   "courierTime": "2-3 Days",
@@ -274,10 +271,7 @@ This document contains sample payloads for testing customer registration across 
   "fittingCenterRefId": "507f1f77bcf86cd799439038",
   "creditDays": "45 Days",
   "creditDaysRefId": "507f1f77bcf86cd799439039",
-  "creditLimit": {
-    "name": "300000",
-    "refId": "507f1f77bcf86cd799439040"
-  },
+  "creditLimit": 100,
   "courierName": "DTDC",
   "courierNameRefId": "507f1f77bcf86cd799439041",
   "courierTime": "3-4 Days",

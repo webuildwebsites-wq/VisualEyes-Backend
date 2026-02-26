@@ -30,7 +30,7 @@ const departmentSchema = new mongoose.Schema({
     uppercase: true,
     trim: true,
     enum: [
-      'ACCOUNT & FINANCE',
+      'FINANCE',
       'LAB',
       'DISPATCH',
       'SALES',

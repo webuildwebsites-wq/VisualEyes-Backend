@@ -1,7 +1,7 @@
 import express from 'express';
 import { customerForgotPassword, customerLogin,customerResetPassword,customerUpdatePassword, customerBasicRegistration, financeCompleteCustomer } from '../../core/controllers/Auth/Customers/CustomerAuth.js';
 import { getAllCustomers, getCustomerById, getCustomerProfile, getFilteredCustomers, getPendingFinanceCustomers } from '../../core/controllers/Auth/Customers/customer.get.controller.js';
-import { requireFinanceDepartment, attachDepartmentInfo } from '../../middlewares/Auth/AdminMiddleware/departmentMiddleware.js';
+import { requireSalesFinanceOrSuperAdmin, attachDepartmentInfo } from '../../middlewares/Auth/AdminMiddleware/departmentMiddleware.js';
 import { protectCustomer } from '../../middlewares/Auth/CustomerMiddleware/customerMiddleware.js';
 import { verifyCustomerEmail } from '../../core/controllers/Auth/Customers/VarifyAccount.js';
 import { ProtectUser } from '../../middlewares/Auth/AdminMiddleware/adminMiddleware.js';
@@ -11,7 +11,7 @@ const customerRouter = express.Router();
 
 // Authentication routes
 customerRouter.post('/login',  customerLogin);
-customerRouter.post('/register', ProtectUser, attachDepartmentInfo, customerBasicRegistration);
+customerRouter.post('/register', ProtectUser, attachDepartmentInfo, requireSalesFinanceOrSuperAdmin, customerBasicRegistration);
 customerRouter.put('/:customerId/finance-update', ProtectUser, attachDepartmentInfo, financeCompleteCustomer);
 
 // FORGOT PASSWORD

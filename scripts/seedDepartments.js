@@ -7,8 +7,8 @@ dotenv.config();
 
 const departmentsData = [
   {
-    name: 'ACCOUNT & FINANCE',
-    code: 'ACC_FIN',
+    name: 'FINANCE',
+    code: 'FINANCE',
     description: 'Handles accounting, finance, and credit management',
     subRoles: [
       {
