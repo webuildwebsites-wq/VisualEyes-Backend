@@ -25,8 +25,20 @@ const countrySchema = new mongoose.Schema(
   },
   { 
     timestamps: true,
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true }
+    toJSON: { 
+      virtuals: true,
+      transform: function(doc, ret) {
+        delete ret.id;
+        return ret;
+      }
+    },
+    toObject: { 
+      virtuals: true,
+      transform: function(doc, ret) {
+        delete ret.id;
+        return ret;
+      }
+    }
   }
 );
 
