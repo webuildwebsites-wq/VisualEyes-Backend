@@ -12,7 +12,7 @@ const customerRouter = express.Router();
 // Authentication routes
 customerRouter.post('/login',  customerLogin);
 customerRouter.post('/register', ProtectUser, attachDepartmentInfo, customerBasicRegistration);
-customerRouter.put('/:customerId/finance-update', ProtectUser, attachDepartmentInfo, requireFinanceDepartment, financeCompleteCustomer);
+customerRouter.put('/:customerId/finance-update', ProtectUser, attachDepartmentInfo, financeCompleteCustomer);
 
 // FORGOT PASSWORD
 customerRouter.post('/forgot-password',  customerForgotPassword);

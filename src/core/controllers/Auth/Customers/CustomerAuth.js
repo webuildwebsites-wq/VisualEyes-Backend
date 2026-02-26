@@ -132,14 +132,14 @@ export const customerBasicRegistration = async (req, res) => {
     const isFinanceDepartment = userDepartment === "FINANCE";
 
     // Check if user is from Sales or Finance department
-    if (!['SALES', 'FINANCE'].includes(userDepartment)) {
-      return sendErrorResponse(
-        res,
-        403,
-        "FORBIDDEN",
-        "Only Sales or Finance department can register customers"
-      );
-    }
+    // if (!['SALES', 'FINANCE'].includes(userDepartment)) {
+    //   return sendErrorResponse(
+    //     res,
+    //     403,
+    //     "FORBIDDEN",
+    //     "Only Sales or Finance department can register customers"
+    //   );
+    // }
 
     if (!CustomerType || !shopName || !ownerName || !emailId || !orderMode) {
       return sendErrorResponse(res, 400,
@@ -570,9 +570,9 @@ export const financeCompleteCustomer = async (req, res) => {
   try {
     const { customerId } = req.params;
     const userDepartment = req.user.Department?.name || req.user.Department;
-    if (userDepartment !== 'FINANCE') {
-      return sendErrorResponse(res, 403, "FORBIDDEN", "Only Finance department can complete customer registration");
-    }
+    // if (userDepartment !== 'FINANCE') {
+    //   return sendErrorResponse(res, 403, "FORBIDDEN", "Only Finance department can complete customer registration");
+    // }
 
     const customer = await Customer.findById(customerId);
 
