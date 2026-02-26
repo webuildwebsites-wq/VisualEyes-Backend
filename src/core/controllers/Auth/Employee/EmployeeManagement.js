@@ -37,7 +37,7 @@ export const createEmployee = async (req, res) => {
       }
     }
 
-    const validEmployeeTypes = ['ADMIN', 'SUPERVISOR', 'TEAMLEAD', 'EMPLOYEE'];
+    const validEmployeeTypes = ['SUPERADMIN','ADMIN', 'SUPERVISOR', 'TEAMLEAD', 'EMPLOYEE'];
     if (!validEmployeeTypes.includes(employeeType.toUpperCase())) {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Invalid employee type. Must be ADMIN, SUPERVISOR, TEAMLEAD, or EMPLOYEE');
     }
