@@ -6,7 +6,7 @@ import Employee from '../src/models/Auth/Employee.js';
 dotenv.config();
 
 const seedData = {
-  EmployeeType: ['SUPERADMIN', 'ADMIN', 'SUPERVISOR', 'REGON_MANGER', 'EMPLOYEE'],
+  EmployeeType: ['SUPERADMIN', 'ADMIN', 'SUPERVISOR', 'TEAMLEAD', 'EMPLOYEE'],
   
   Lab: [
     'KOLKATA STOCK',

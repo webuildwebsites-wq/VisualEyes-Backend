@@ -11,7 +11,6 @@ export const createEmployee = async (req, res) => {
     pincode, expiry, zone, zoneRefId, aadharCard, panCard, lab, labRefId, subRoles, aadharCardImg, panCardImg } = req.body;
 
     let assignedSupervisor = null;
-    let assignedZoneManager = null;
 
     if (!employeeType || !username  || !employeeName || !country || !email || !password || !phone || !address) {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'All required fields must be provided');
@@ -38,9 +37,9 @@ export const createEmployee = async (req, res) => {
       }
     }
 
-    const validEmployeeTypes = ['ADMIN', 'SUPERVISOR', 'TEAMLEAD', 'ZONEMANAGER', 'EMPLOYEE'];
+    const validEmployeeTypes = ['ADMIN', 'SUPERVISOR', 'TEAMLEAD', 'EMPLOYEE'];
     if (!validEmployeeTypes.includes(employeeType.toUpperCase())) {
-      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Invalid employee type. Must be ADMIN, SUPERVISOR, TEAMLEAD, ZONEMANAGER, or EMPLOYEE');
+      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Invalid employee type. Must be ADMIN, SUPERVISOR, TEAMLEAD, or EMPLOYEE');
     }
 
     if (employeeType.toUpperCase() === 'ADMIN' && req.user.EmployeeType !== 'SUPERADMIN') {
@@ -96,9 +95,9 @@ export const createEmployee = async (req, res) => {
       }
     }
 
-    if (['EMPLOYEE', 'SUPERVISOR', 'ZONEMANAGER', 'TEAMLEAD'].includes(employeeType.toUpperCase()) && 
+    if (['EMPLOYEE', 'SUPERVISOR', 'TEAMLEAD'].includes(employeeType.toUpperCase()) && 
       department && department.toUpperCase() === 'SALES' && !zone) {
-      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Zone is required for SALES department employees, supervisors, team leads, and zone managers');
+      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Zone is required for SALES department employees, supervisors, and team leads');
     }
 
     if (zone && zoneRefId) {
@@ -129,27 +128,27 @@ export const createEmployee = async (req, res) => {
     let assignedTeamLead = null;
 
     if (employeeType.toUpperCase() === 'EMPLOYEE') {
+      const isSalesDepartment = department.toUpperCase() === 'SALES';
+      
       const supervisorQuery = {
         EmployeeType: 'SUPERVISOR',
         'Department.name': department.toUpperCase(),
         isActive: true
       };
 
-      if (zone) {
+      if (isSalesDepartment && zone) {
         supervisorQuery['zone.name'] = zone.toUpperCase();
-      }
-
-      if (subRoles && subRoles.length > 0) {
+      } else if (!isSalesDepartment && subRoles && subRoles.length > 0) {
         supervisorQuery['subRoles.refId'] = { $in: subRoles.map(sr => sr.refId) };
       }
 
       assignedSupervisor = await employeeSchema.findOne(supervisorQuery);
 
       if (!assignedSupervisor) {
-        const errorMsg = subRoles && subRoles.length > 0
-          ? 'No active supervisor found for this department and sub-role(s)'
-          : zone 
-            ? 'No active supervisor found for this department and zone'
+        const errorMsg = isSalesDepartment
+          ? 'No active supervisor found for this zone in SALES department'
+          : subRoles && subRoles.length > 0
+            ? 'No active supervisor found for this department and sub-role(s)'
             : 'No active supervisor found for this department';
         return sendErrorResponse(res, 400, 'NO_SUPERVISOR_FOUND', errorMsg);
       }
@@ -164,28 +163,13 @@ export const createEmployee = async (req, res) => {
         isActive: true
       };
 
-      if (zone) {
+      if (isSalesDepartment && zone) {
         teamLeadQuery['zone.name'] = zone.toUpperCase();
-      }
-
-      if (subRoles && subRoles.length > 0) {
+      } else if (!isSalesDepartment && subRoles && subRoles.length > 0) {
         teamLeadQuery['subRoles.refId'] = { $in: subRoles.map(sr => sr.refId) };
       }
 
       assignedTeamLead = await employeeSchema.findOne(teamLeadQuery);
-
-
-      if (department.toUpperCase() === 'SALES' && zone) {
-        const zoneManagerQuery = {
-          EmployeeType: 'ZONEMANAGER',
-          'Department.name': 'SALES',
-          'zone.name': zone.toUpperCase(),
-          isActive: true
-        };
-
-        assignedZoneManager = await employeeSchema.findOne(zoneManagerQuery);
-        
-      }
     }
 
     const existingUser = await employeeSchema.findOne({
@@ -255,13 +239,6 @@ export const createEmployee = async (req, res) => {
         userData.teamLead = {
           name: assignedTeamLead.employeeName,
           refId: assignedTeamLead._id
-        };
-      }
-
-      if (assignedZoneManager) {
-        userData.assignedZoneManager = {
-          name: assignedZoneManager.employeeName,
-          refId: assignedZoneManager._id
         };
       }
     }

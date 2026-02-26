@@ -286,20 +286,18 @@ Content-Type: application/json
 {
   "name": "MARKETING",
   "code": "MKT",
-  "requiresRegionManager": false,
   "description": "Marketing Department"
 }
 ```
 
 #### Get All Departments
 ```http
-GET /departments?isActive=true&requiresRegionManager=true
+GET /departments?isActive=true
 Authorization: Bearer <token>
 ```
 
 **Query Parameters**:
 - `isActive` (optional): Filter by active status
-- `requiresRegionManager` (optional): Filter by region manager requirement
 
 #### Get Department by ID
 ```http
@@ -315,7 +313,6 @@ Content-Type: application/json
 
 {
   "name": "MARKETING",
-  "requiresRegionManager": true,
   "isActive": true
 }
 ```
@@ -348,7 +345,7 @@ Content-Type: application/json
   "employeeType": "EMPLOYEE",
   "role": "EMPLOYEE",
   "department": "SALES",
-  "region": "regionObjectId",
+  "zone": "zoneObjectId",
   "supervisor": "supervisorObjectId",
   "lab": "LAB_NAME",
   "aadharCard": "1234-5678-9012",
@@ -375,58 +372,28 @@ Content-Type: application/json
         "name": "SALES",
         "refId": "deptId"
       },
-      "region": {
-        "name": "NCR",
-        "refId": "regionId"
+      "zone": {
+        "name": "NORTH ZONE",
+        "refId": "zoneId"
       },
       "supervisor": {
         "name": "Supervisor Name",
         "refId": "supervisorId"
-      },
-      "regionManager": "regionManagerId"
+      }
     }
   }
 }
 ```
 
-### Get Region Managers by Region
+### Get Supervisors by Department and Zone
 ```http
-GET /employees/enhanced/region-managers/:regionId
-Authorization: Bearer <token>
-```
-
-**Response (200)**:
-```json
-{
-  "success": true,
-  "message": "Region Managers fetched successfully",
-  "data": {
-    "regionManagers": [
-      {
-        "_id": "managerId",
-        "username": "regionmgr",
-        "employeeName": "Region Manager",
-        "email": "manager@example.com",
-        "phone": "9876543210",
-        "region": {
-          "name": "NCR",
-          "refId": "regionId"
-        }
-      }
-    ]
-  }
-}
-```
-
-### Get Supervisors by Department and Region
-```http
-GET /employees/enhanced/supervisors?departmentId=xxx&regionId=yyy
+GET /employees/enhanced/supervisors?departmentId=xxx&zoneId=yyy
 Authorization: Bearer <token>
 ```
 
 **Query Parameters**:
 - `departmentId` (optional): Filter by department
-- `regionId` (optional): Filter by region
+- `zoneId` (optional): Filter by zone
 
 **Response (200)**:
 ```json
@@ -445,9 +412,9 @@ Authorization: Bearer <token>
           "name": "SALES",
           "refId": "deptId"
         },
-        "region": {
-          "name": "NCR",
-          "refId": "regionId"
+        "zone": {
+          "name": "NORTH ZONE",
+          "refId": "zoneId"
         }
       }
     ]
@@ -474,19 +441,13 @@ Authorization: Bearer <token>
         "email": "john@example.com",
         "type": "EMPLOYEE",
         "department": "SALES",
-        "region": "NCR"
+        "zone": "NORTH ZONE"
       },
       "supervisor": {
         "id": "supervisorId",
         "name": "Supervisor Name",
         "email": "supervisor@example.com",
         "type": "SUPERVISOR"
-      },
-      "regionManager": {
-        "id": "managerId",
-        "name": "Region Manager",
-        "email": "manager@example.com",
-        "type": "REGIONMANAGER"
       },
       "createdBy": {
         "id": "adminId",
@@ -623,7 +584,7 @@ Authorization: Bearer <token>
     name: string,
     refId?: ObjectId
   },
-  region: {
+  zone: {
     name: string,
     refId?: ObjectId
   },
@@ -631,7 +592,10 @@ Authorization: Bearer <token>
     name: string,
     refId?: ObjectId
   },
-  regionManager?: ObjectId,
+  teamLead: {
+    name: string,
+    refId?: ObjectId
+  },
   lab: {
     name: string,
     refId?: ObjectId
@@ -678,8 +642,8 @@ Authorization: Bearer <token>
 
 ### Employee Hierarchy
 1. SuperAdmin → Admin → Supervisor → Employee
-2. Sales Department: Supervisor → Region Manager → Employee
-3. Non-Sales: Supervisor → Employee
+2. Sales Department: Zone-based hierarchy where Supervisor manages all employees in their zone
+3. Non-Sales Departments: Sub-role based hierarchy where Supervisor manages employees with matching sub-roles
 4. Region Manager required for Sales employees
 5. Supervisor must be from same department
 
@@ -687,7 +651,7 @@ Authorization: Bearer <token>
 1. All codes are uppercase
 2. Email must be unique
 3. Phone must be 10 digits
-4. Region required for Sales department
+4. Zone required for Sales department (EMPLOYEE, SUPERVISOR, TEAMLEAD)
 5. Supervisor required for all employees (except SuperAdmin)
 
 ---

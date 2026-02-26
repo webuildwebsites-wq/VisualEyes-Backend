@@ -177,8 +177,9 @@ Before registering employees, ensure:
 
 **Notes:**
 - SUPERADMIN, ADMIN, or SUPERVISOR can create EMPLOYEE
-- Supervisor and Team Lead are **automatically assigned** based on matching sub-roles
-- The system will find an active SUPERVISOR with the same department and sub-role
+- For SALES department: Supervisor and Team Lead are **automatically assigned based on zone**
+- For other departments: Supervisor and Team Lead are **automatically assigned based on matching sub-roles**
+- The system will find an active SUPERVISOR with the same department and zone (SALES) or sub-role (other departments)
 - The system will find an active TEAMLEAD with the same department and sub-role
 - If no matching supervisor is found, registration will fail
 
@@ -272,29 +273,7 @@ Before registering employees, ensure:
 }
 ```
 
-### 8. Register Region Manager of Sales Department
-
-```json
-{
-  "employeeType": "REGIONMANAGER",
-  "username": "patriciarm",
-  "employeeName": "Patricia Region Manager",
-  "email": "patricia.rm@company.com",
-  "password": "SecurePass123!",
-  "phone": "9876543217",
-  "address": "888 Regional Office",
-  "country": "India",
-  "pincode": "400008",
-  "department": "SALES",
-  "departmentRefId": "65f1234567890abcdef12349",
-  "region": "North Region",
-  "regionRefId": "65f1234567890abcdef1234a",
-  "aadharCard": "890123456789",
-  "panCard": "HIJKL8901M"
-}
-```
-
-### 9. Register Supervisor of Sales Department (with Region)
+### 8. Register Supervisor of Sales Department (with Zone)
 
 ```json
 {
@@ -309,14 +288,18 @@ Before registering employees, ensure:
   "pincode": "400009",
   "department": "SALES",
   "departmentRefId": "65f1234567890abcdef12349",
-  "region": "North Region",
-  "regionRefId": "65f1234567890abcdef1234a",
+  "zone": "NORTH ZONE",
+  "zoneRefId": "65f1234567890abcdef1234a",
   "aadharCard": "901234567890",
   "panCard": "IJKLM9012N"
 }
 ```
 
-### 10. Register Employee of Sales Department (with Region)
+**Notes:**
+- SUPERVISOR in SALES manages employees within their assigned zone
+- Zone assignment determines their area of responsibility
+
+### 9. Register Employee of Sales Department (with Zone)
 
 ```json
 {
@@ -331,17 +314,19 @@ Before registering employees, ensure:
   "pincode": "400010",
   "department": "SALES",
   "departmentRefId": "65f1234567890abcdef12349",
-  "region": "North Region",
-  "regionRefId": "65f1234567890abcdef1234a",
+  "zone": "NORTH ZONE",
+  "zoneRefId": "65f1234567890abcdef1234a",
   "aadharCard": "012345678901",
   "panCard": "JKLMN0123O"
 }
 ```
 
 **Notes for Sales Department:**
-- Region is **required** for EMPLOYEE, SUPERVISOR, TEAMLEAD, and REGIONMANAGER in SALES department
-- Employee will be automatically assigned to Region Manager if one exists for the region
-- Supervisor and Team Lead assignment follows the same sub-role matching logic
+- Zone is **required** for EMPLOYEE, SUPERVISOR, and TEAMLEAD in SALES department
+- SUPERVISOR and TEAMLEAD are **automatically assigned to employees based on zone ID** (not sub-roles)
+- Each zone should have its own SUPERVISOR who manages all employees in that zone
+- When creating an EMPLOYEE in SALES, the system finds a SUPERVISOR with matching zone
+- This zone-based assignment ensures proper geographical hierarchy
 
 ---
 
@@ -371,21 +356,25 @@ GET /api/departments
 1. **Required Fields (All):** employeeType, username, employeeName, email, password, phone, address, country
 2. **Department Required:** For all except SUPERADMIN
 3. **Sub-Roles:** Optional but recommended for proper hierarchy
-4. **Region Required:** For SALES department employees (EMPLOYEE, SUPERVISOR, TEAMLEAD, REGIONMANAGER)
+4. **Zone Required:** For SALES department employees (EMPLOYEE, SUPERVISOR, TEAMLEAD)
 5. **Auto-Assignment:**
-   - EMPLOYEE → Automatically gets Supervisor and Team Lead based on matching sub-roles
-   - EMPLOYEE in SALES → Also gets Region Manager based on region
+   - SALES Department: EMPLOYEE → Automatically gets Supervisor and Team Lead based on zone ID
+   - Other Departments: EMPLOYEE → Automatically gets Supervisor and Team Lead based on matching sub-roles
+   - SUPERVISOR in SALES → Manages all employees within their assigned zone
 6. **Permissions:**
    - SUPERADMIN → Can create ADMIN
-   - ADMIN → Can create SUPERVISOR, TEAMLEAD, REGIONMANAGER, EMPLOYEE in their department
+   - ADMIN → Can create SUPERVISOR, TEAMLEAD, EMPLOYEE in their department
    - SUPERVISOR → Can create EMPLOYEE (will be assigned to themselves)
 
 ---
 
 ## Common Errors and Solutions
 
+### Error: "No active supervisor found for this zone in SALES department"
+**Solution:** Create a SUPERVISOR with the same zone first before creating EMPLOYEE in SALES department
+
 ### Error: "No active supervisor found for this department and sub-role(s)"
-**Solution:** Create a SUPERVISOR with the same sub-role first before creating EMPLOYEE
+**Solution:** For non-SALES departments, create a SUPERVISOR with the same sub-role first before creating EMPLOYEE
 
 ### Error: "Sub-role does not belong to department"
 **Solution:** Verify the sub-role `refId` exists in the department's `subRoles` array
@@ -393,11 +382,8 @@ GET /api/departments
 ### Error: "Only SuperAdmin can create Admin"
 **Solution:** Use SUPERADMIN token to create ADMIN users
 
-### Error: "Region is required for SALES department"
-**Solution:** Add `region` and `regionRefId` fields for SALES department employees
-
-### Error: "No active region manager found for this region"
-**Solution:** Create a REGIONMANAGER for the region first before creating EMPLOYEE in SALES
+### Error: "Zone is required for SALES department"
+**Solution:** Add `zone` and `zoneRefId` fields for SALES department employees
 
 ---
 

@@ -100,7 +100,7 @@ const employee = new mongoose.Schema({
       type: String,
       required: function() {
         const dept = this.Department?.name || this.Department;
-        return ['EMPLOYEE', 'SUPERVISOR', 'REGIONMANAGER'].includes(this.EmployeeType) && dept === 'SALES';
+        return ['EMPLOYEE', 'SUPERVISOR', 'TEAMLEAD'].includes(this.EmployeeType) && dept === 'SALES';
       },
       trim: true,
       uppercase: true
@@ -110,18 +110,8 @@ const employee = new mongoose.Schema({
       ref: 'Location',
       required: function() {
         const dept = this.Department?.name || this.Department;
-        return ['EMPLOYEE', 'SUPERVISOR', 'REGIONMANAGER'].includes(this.EmployeeType) && dept === 'SALES';
+        return ['EMPLOYEE', 'SUPERVISOR', 'TEAMLEAD'].includes(this.EmployeeType) && dept === 'SALES';
       }
-    }
-  },
-  assignedZoneManager: {
-    name: {
-      type: String,
-      trim: true
-    },
-    refId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'employee',
     }
   },
   aadharCard: {
