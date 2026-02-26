@@ -1,6 +1,16 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
+const subRoleSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    trim: true
+  },
+  refId: {
+    type: mongoose.Schema.Types.ObjectId
+  }
+}, { _id: false });
+
 const employee = new mongoose.Schema({
   employeeName: {
     type: String,
@@ -76,15 +86,7 @@ const employee = new mongoose.Schema({
       }
     }
   },
-  subRoles: [{
-    name: {
-      type: String,
-      trim: true
-    },
-    refId: {
-      type: mongoose.Schema.Types.ObjectId
-    }
-  }],
+  subRoles: [subRoleSchema],
   lab: {
     name: {
       type: String,
