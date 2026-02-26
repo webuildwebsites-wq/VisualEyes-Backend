@@ -95,25 +95,26 @@ const employee = new mongoose.Schema({
       ref: 'Lab'
     }
   },
-  region: {
+  zone: {
     name: {
       type: String,
       required: function() {
         const dept = this.Department?.name || this.Department;
         return ['EMPLOYEE', 'SUPERVISOR', 'REGIONMANAGER'].includes(this.EmployeeType) && dept === 'SALES';
       },
-      trim: true
+      trim: true,
+      uppercase: true
     },
     refId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Region',
+      ref: 'Location',
       required: function() {
         const dept = this.Department?.name || this.Department;
         return ['EMPLOYEE', 'SUPERVISOR', 'REGIONMANAGER'].includes(this.EmployeeType) && dept === 'SALES';
       }
     }
   },
-  regionManager: {
+  assignedZoneManager: {
     name: {
       type: String,
       trim: true

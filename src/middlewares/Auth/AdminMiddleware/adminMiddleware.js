@@ -58,7 +58,7 @@ export const ProtectUser = async (req, res, next) => {
         // Override to ensure string values for middleware checks
         EmployeeType: decoded.EmployeeType,
         Department: userObj.Department?.name || userObj.Department,
-        region: userObj.region?.name || userObj.region
+        zone : userObj.zone?.name || userObj.zone
       };
 
       next();

@@ -5,18 +5,19 @@ import SystemConfig from '../../../../models/Auth/SystemConfig.js';
 
 export const createEmployee = async (req, res) => {
   try {
-    const { employeeType, username, employeeName, email, password, phone, address, department, departmentRefId, country, pincode, expiry, region, regionRefId, aadharCard, panCard, lab, labRefId, subRoles, aadharCardImg, panCardImg } = req.body;
+    const { employeeType, username, employeeName, email, password, phone, address, department, departmentRefId, country, 
+    pincode, expiry, zone, zoneRefId, aadharCard, panCard, lab, labRefId, subRoles, aadharCardImg, panCardImg } = req.body;
 
     let assignedSupervisor = null;
-    let assignedRegionManager = null;
+    let assignedZoneManager = null;
 
     if (!employeeType || !username  || !employeeName || !country || !email || !password || !phone || !address) {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'All required fields must be provided');
     }
 
-    const validEmployeeTypes = ['ADMIN', 'SUPERVISOR', 'TEAMLEAD', 'REGIONMANAGER', 'EMPLOYEE'];
+    const validEmployeeTypes = ['ADMIN', 'SUPERVISOR', 'TEAMLEAD', 'ZONEMANAGER', 'EMPLOYEE'];
     if (!validEmployeeTypes.includes(employeeType.toUpperCase())) {
-      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Invalid employee type. Must be ADMIN, SUPERVISOR, TEAMLEAD, REGIONMANAGER, or EMPLOYEE');
+      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Invalid employee type. Must be ADMIN, SUPERVISOR, TEAMLEAD, ZONEMANAGER, or EMPLOYEE');
     }
 
     if (employeeType.toUpperCase() === 'ADMIN' && req.user.EmployeeType !== 'SUPERADMIN') {
@@ -72,9 +73,9 @@ export const createEmployee = async (req, res) => {
       }
     }
 
-    if (['EMPLOYEE', 'SUPERVISOR', 'REGIONMANAGER', 'TEAMLEAD'].includes(employeeType.toUpperCase()) && 
-      department && department.toUpperCase() === 'SALES' && !region) {
-      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Region is required for SALES department employees, supervisors, team leads, and region managers');
+    if (['EMPLOYEE', 'SUPERVISOR', 'ZONEMANAGER', 'TEAMLEAD'].includes(employeeType.toUpperCase()) && 
+      department && department.toUpperCase() === 'SALES' && !zone) {
+      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Zone is required for SALES department employees, supervisors, team leads, and zone managers');
     }
 
     if (lab) {
@@ -98,8 +99,8 @@ export const createEmployee = async (req, res) => {
         isActive: true
       };
 
-      if (region) {
-        supervisorQuery['region.name'] = region;
+      if (zone) {
+        supervisorQuery['zone.name'] = zone.toUpperCase();
       }
 
       if (subRoles && subRoles.length > 0) {
@@ -111,8 +112,8 @@ export const createEmployee = async (req, res) => {
       if (!assignedSupervisor) {
         const errorMsg = subRoles && subRoles.length > 0
           ? 'No active supervisor found for this department and sub-role(s)'
-          : region 
-            ? 'No active supervisor found for this department and region'
+          : zone 
+            ? 'No active supervisor found for this department and zone'
             : 'No active supervisor found for this department';
         return sendErrorResponse(res, 400, 'NO_SUPERVISOR_FOUND', errorMsg);
       }
@@ -127,8 +128,8 @@ export const createEmployee = async (req, res) => {
         isActive: true
       };
 
-      if (region) {
-        teamLeadQuery['region.name'] = region;
+      if (zone) {
+        teamLeadQuery['zone.name'] = zone.toUpperCase();
       }
 
       if (subRoles && subRoles.length > 0) {
@@ -138,19 +139,19 @@ export const createEmployee = async (req, res) => {
       assignedTeamLead = await employeeSchema.findOne(teamLeadQuery);
 
 
-      if (department.toUpperCase() === 'SALES' && region) {
-        const regionManagerQuery = {
-          EmployeeType: 'REGIONMANAGER',
+      if (department.toUpperCase() === 'SALES' && zone) {
+        const zoneManagerQuery = {
+          EmployeeType: 'ZONEMANAGER',
           'Department.name': 'SALES',
-          'region.name': region,
+          'zone.name': zone.toUpperCase(),
           isActive: true
         };
 
-        assignedRegionManager = await employeeSchema.findOne(regionManagerQuery);
+        assignedZoneManager = await employeeSchema.findOne(zoneManagerQuery);
 
-        if (!assignedRegionManager) {
-          return sendErrorResponse(res, 400, 'NO_REGION_MANAGER_FOUND', 
-            'No active region manager found for this region. Please create a region manager first.');
+        if (!assignedZoneManager) {
+          return sendErrorResponse(res, 400, 'NO_ZONE_MANAGER_FOUND', 
+            'No active zone manager found for this zone. Please create a zone manager first.');
         }
       }
     }
@@ -205,10 +206,10 @@ export const createEmployee = async (req, res) => {
       };
     }
 
-    if (region && regionRefId) {
-      userData.region = {
-        name: region,
-        refId: regionRefId
+    if (zone && zoneRefId) {
+      userData.zone = {
+        name: zone.toUpperCase(),
+        refId: zoneRefId
       };
     }
 
@@ -225,10 +226,10 @@ export const createEmployee = async (req, res) => {
         };
       }
 
-      if (assignedRegionManager) {
-        userData.regionManager = {
-          name: assignedRegionManager.employeeName,
-          refId: assignedRegionManager._id
+      if (assignedZoneManager) {
+        userData.assignedZoneManager = {
+          name: assignedZoneManager.employeeName,
+          refId: assignedZoneManager._id
         };
       }
     }
@@ -293,14 +294,14 @@ export const getFilteredEmployees = async (req, res) => {
     const limit = Math.min(parseInt(req.query.limit) || 10, 100);
     const skip = (page - 1) * limit;
 
-    const { EmployeeType, department, region, search } = req.query;
+    const { EmployeeType, department, zone, search } = req.query;
 
     let query = { isActive: true };
 
      if (req.user.EmployeeType === 'SUPERADMIN') {
       if (EmployeeType) query.EmployeeType = EmployeeType.toUpperCase();
       if (department) query['Department.name'] = department.toUpperCase();
-      if (region) query['region.name'] = region;
+      if (zone) query['zone.name'] = zone.toUpperCase();
 
     } else if (req.user.EmployeeType === 'ADMIN') {
       query.EmployeeType = { $ne: 'SUPERADMIN' };
@@ -310,11 +311,11 @@ export const getFilteredEmployees = async (req, res) => {
       }
 
       if (department) query['Department.name'] = department.toUpperCase();
-      if (region) query['region.name'] = region;
+      if (zone) query['zone.name'] = zone.toUpperCase();
 
     } else if (req.user.EmployeeType === 'SUPERVISOR') {
       query['Department.name'] = req.user.Department;
-      query['region.name'] = req.user.region;
+      query['zone.name'] = req.user.zone?.name;
       query.EmployeeType = { $in: ['SUPERVISOR', 'EMPLOYEE'] };
 
       if (EmployeeType && ['SUPERVISOR', 'EMPLOYEE'].includes(EmployeeType.toUpperCase())) {
@@ -326,7 +327,7 @@ export const getFilteredEmployees = async (req, res) => {
         { _id: req.user.id },
         {
           'Department.name': req.user.Department,
-          'region.name': req.user.region,
+          'zone.name': req.user.zone?.name,
           EmployeeType: 'EMPLOYEE'
         }
       ];
@@ -394,7 +395,7 @@ export const updateEmployeeDetails = async (req, res) => {
       }
     } else if (req.user.EmployeeType === 'SUPERVISOR') {
       query['Department.name'] = req.user.Department;
-      query['region.name'] = req.user.region;
+      query['zone.name'] = req.user.zone?.name;
       query.EmployeeType = { $in: ['EMPLOYEE'] }; 
     } else {
       query._id = req.user.id;
@@ -440,7 +441,7 @@ export const deactivateEmployee = async (req, res) => {
       }
     } else if (req.user.EmployeeType === 'SUPERVISOR') {
       query['Department.name'] = req.user.Department;
-      query['region.name'] = req.user.region;
+      query['zone.name'] = req.user.zone;
       query.EmployeeType = 'EMPLOYEE';
     } else {
       return sendErrorResponse(res, 403, 'FORBIDDEN', 'Insufficient privileges to deactivate users');
@@ -504,7 +505,7 @@ export const getEmployeeDetails = async (req, res) => {
 
 export const getSupervisorsByDepartment = async (req, res) => {
   try {
-    const { department, region } = req.query;
+    const { department, zone } = req.query;
 
     let query = { 
       EmployeeType: 'SUPERVISOR', 
@@ -512,20 +513,20 @@ export const getSupervisorsByDepartment = async (req, res) => {
     };
     if (req.user.EmployeeType === 'SUPERADMIN') {
       if (department) query['Department.name'] = department.toUpperCase();
-      if (region) query['region.name'] = region;
+      if (zone) query['zone.name'] = zone.toUpperCase();
     } else if (req.user.EmployeeType === 'ADMIN') {
       if (department) query['Department.name'] = department.toUpperCase();
-      if (region) query['region.name'] = region;
+      if (zone) query['zone.name'] = zone.toUpperCase();
     } else if (req.user.EmployeeType === 'SUPERVISOR') {
       query['Department.name'] = req.user.Department;
-      query['region.name'] = req.user.region;
+      query['zone.name'] = req.user.zone?.name;
     } else {
       query['Department.name'] = req.user.Department;
-      query['region.name'] = req.user.region;
+      query['zone.name'] = req.user.zone?.name;
     }
 
     const supervisors = await employeeSchema.find(query)
-      .select('username employeeName email Department region')
+      .select('username employeeName email Department zone')
       .sort({ employeeName: 1 });
 
     return sendSuccessResponse(res, 200, { supervisors }, 'Supervisors retrieved successfully');

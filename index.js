@@ -15,7 +15,7 @@ import connectDB from './src/core/config/DB/connectDb.js';
 import imageUploadRouter from './src/routes/uploads/upload.js';
 import dropdownRouter from './src/routes/Product/Dropdown.js';
 import salesPersonRouter from './src/routes/Auth/SalesPerson.js';
-import locationRouter from './src/routes/Location/locationRoutes.js';
+import locationRouter from './src/routes/Location/location.routes.js';
 dotenv.config();
 
 const app = express();
@@ -93,6 +93,7 @@ try {
     // PRODUCT ROUTES (All dropdowns including brands, categories, customer-types)
     app.use('/api/product', dropdownRouter);
 
+    // LOCATION ROUTES (New unified structure)
     app.use('/api/location', locationRouter);
     
 } catch (error) {
