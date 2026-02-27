@@ -91,37 +91,81 @@ export const getFilteredCustomers = async (req, res) => {
     const limit = Math.min(parseInt(req.query.limit) || 10, 100);
     const skip = (page - 1) * limit;
 
-    const { customerType, zone, specificBrand, specificCategory, search } = req.query;
+    const { 
+      shopName, 
+      customerType, 
+      status, 
+      createdByDepartment, 
+      zone, 
+      specificBrand, 
+      specificCategory, 
+      fromDate, 
+      toDate 
+    } = req.query;
 
     let query = {};
 
-    if (customerType) query.CustomerType = customerType;
-    if (zone) query.zone = zone;
-    if (specificBrand) query.specificBrand = specificBrand;
-    if (specificCategory) query.specificCategory = specificCategory;
+    if (shopName) {
+      query.shopName = { $regex: shopName, $options: 'i' };
+    }
 
-    if (search) {
-      const searchQuery = {
-        $or: [
-          { shopName: { $regex: search, $options: 'i' } },
-          { ownerName: { $regex: search, $options: 'i' } },
-          { emailId: { $regex: search, $options: 'i' } },
-          { username: { $regex: search, $options: 'i' } }
-        ]
-      };
-      query = { $and: [query, searchQuery] };
+    if (customerType) {
+      query['CustomerType.refId'] = customerType;
+    }
+
+    if (status) {
+      if (status.toLowerCase() === 'active') {
+        query['Status.isActive'] = true;
+        query['Status.isSuspended'] = false;
+      } else if (status.toLowerCase() === 'suspended') {
+        query['Status.isSuspended'] = true;
+      } else if (status.toLowerCase() === 'inactive') {
+        query['Status.isActive'] = false;
+      }
+    }
+
+    if (createdByDepartment) {
+      query.createdByDepartment = createdByDepartment.toUpperCase();
+    }
+
+    if (zone) {
+      query['zone.refId'] = zone;
+    }
+
+    if (specificBrand) {
+      query['brandCategories.brandId'] = specificBrand;
+    }
+
+    if (specificCategory) {
+      query['brandCategories.categories.categoryId'] = specificCategory;
+    }
+
+    if (fromDate || toDate) {
+      query.createdAt = {};
+      
+      if (fromDate) {
+        const startDate = new Date(fromDate);
+        startDate.setHours(0, 0, 0, 0);
+        query.createdAt.$gte = startDate;
+      }
+      
+      if (toDate) {
+        const endDate = new Date(toDate);
+        endDate.setHours(23, 59, 59, 999);
+        query.createdAt.$lte = endDate;
+      }
     }
 
     const [customers, total] = await Promise.all([
       Customer
         .find(query)
         .select('-password -emailOtp -emailOtpExpires -mobileOtp -mobileOtpExpires')
-        .populate('CustomerType', 'name')
-        .populate('zone', 'name')
-        .populate('specificBrand', 'name')
-        .populate('specificCategory', 'name')
-        .populate('salesPerson', 'username employeeName emailId')
-        .populate('createdBy', 'username employeeName emailId')
+        .populate('CustomerType.refId', 'name')
+        .populate('zone.refId', 'name')
+        .populate('brandCategories.brandId', 'name')
+        .populate('brandCategories.categories.categoryId', 'name')
+        .populate('salesPerson.refId', 'username employeeName emailId')
+        .populate('createdBy', 'username employeeName emailId Department')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
