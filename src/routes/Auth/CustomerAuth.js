@@ -1,6 +1,6 @@
 import express from 'express';
 import { customerForgotPassword, customerLogin,customerResetPassword,customerUpdatePassword, customerBasicRegistration, financeCompleteCustomer } from '../../core/controllers/Auth/Customers/CustomerAuth.js';
-import { getAllCustomers, getCustomerById, getCustomerProfile, getFilteredCustomers, getPendingFinanceCustomers } from '../../core/controllers/Auth/Customers/customer.get.controller.js';
+import { getAllCustomers, getCustomerById, getCustomerProfile, getPendingFinanceCustomers } from '../../core/controllers/Auth/Customers/customer.get.controller.js';
 import { requireSalesFinanceOrSuperAdmin, attachDepartmentInfo } from '../../middlewares/Auth/AdminMiddleware/departmentMiddleware.js';
 import { protectCustomer } from '../../middlewares/Auth/CustomerMiddleware/customerMiddleware.js';
 import { verifyCustomerEmail } from '../../core/controllers/Auth/Customers/VarifyAccount.js';
