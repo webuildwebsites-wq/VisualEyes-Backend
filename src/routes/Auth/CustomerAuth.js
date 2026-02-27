@@ -26,7 +26,6 @@ customerRouter.post('/logout', protectCustomer, logout);
 
 // GET ALL THE REQUIRED DETAILS
 customerRouter.get('/customer/pending-finance', ProtectUser, getPendingFinanceCustomers);
-customerRouter.get('/get-filtered-customers', getFilteredCustomers);
 customerRouter.get('/get-all-customers', ProtectUser, getAllCustomers);
 customerRouter.get('/customers-profile', protectCustomer, getCustomerProfile);
 customerRouter.get('/get-customer/:customerId', getCustomerById);

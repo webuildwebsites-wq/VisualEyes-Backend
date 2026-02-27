@@ -49,43 +49,8 @@ export const getCustomerById = async (req, res) => {
   }
 };
 
+
 export const getAllCustomers = async (req, res) => {
-  try {
-    const { status } = req.query;
-
-    let filter = {};
-    if (status && ['PENDING_FINANCE', 'APPROVED'].includes(status)) {
-      filter.approvalStatus = status;
-    }
-
-    const customers = await Customer.find(filter)
-      .populate('createdBy', 'username employeeName email Department')
-      .populate('financeCompletedBy', 'username employeeName email')
-      .populate('zone.refId')
-      .populate('salesPerson.refId', 'username employeeName email')
-      .sort({ createdAt: -1 });
-
-    return sendSuccessResponse(
-      res,
-      200,
-      {
-        count: customers.length,
-        customers
-      },
-      "Customers retrieved successfully"
-    );
-  } catch (error) {
-    console.error("Get all customers error:", error);
-    return sendErrorResponse(
-      res,
-      500,
-      "INTERNAL_ERROR",
-      "Internal server error while fetching customers"
-    );
-  }
-};
-
-export const getFilteredCustomers = async (req, res) => {
   try {
     const page = Math.max(parseInt(req.query.page) || 1, 1);
     const limit = Math.min(parseInt(req.query.limit) || 10, 100);
