@@ -883,3 +883,53 @@ export const getSupervisorsByDepartment = async (req, res) => {
     return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to retrieve supervisors');
   }
 };
+
+
+export const getDraftEmployeeDetails = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return sendErrorResponse(res, 400, 'INVALID_ID', 'Invalid user ID format');
+    }
+
+    let query = { _id: userId, isActive: true };
+    if (req.user.EmployeeType === 'SUPERADMIN') {
+    } else if (req.user.EmployeeType === 'ADMIN') {
+      const targetUser = await employeeDraftSchema.findById(userId);
+      if (targetUser && targetUser.EmployeeType === 'SUPERADMIN') {
+        return sendErrorResponse(res, 403, 'FORBIDDEN', 'Admin cannot view SuperAdmin details');
+      }
+    } else if (req.user.EmployeeType === 'SUPERVISOR') {
+      query['Department.name'] = req.user.Department;
+      query['region.name'] = req.user.region;
+    } else {
+      const targetUser = await employeeDraftSchema.findById(userId);
+      if (targetUser && 
+          (targetUser._id.toString() !== req.user.id && 
+           (targetUser.Department?.name !== req.user.Department || 
+            targetUser.region?.name !== req.user.region ||
+            targetUser.EmployeeType !== 'EMPLOYEE'))) {
+        return sendErrorResponse(res, 403, 'FORBIDDEN', 'Access denied');
+      }
+    }
+
+    const user = await employeeDraftSchema.findOne(query)
+      .select('-password -passwordResetToken -passwordResetExpires -twoFactorSecret')
+
+    if (!user) {
+      return sendErrorResponse(res, 404, 'USER_NOT_FOUND', 'Employee not found');
+    }
+
+    return sendSuccessResponse(res, 200, { user }, 'Employee details retrieved successfully');
+
+  } catch (error) {
+    console.error('Get employee details error:', error);
+    
+    if (error.name === 'CastError') {
+      return sendErrorResponse(res, 400, 'INVALID_ID', `Invalid ${error.path} format. Please provide a valid MongoDB ObjectId`);
+    }
+    
+    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to retrieve employee details');
+  }
+};
