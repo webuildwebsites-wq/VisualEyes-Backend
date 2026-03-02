@@ -6,12 +6,17 @@ import { protectCustomer } from '../../middlewares/Auth/CustomerMiddleware/custo
 import { verifyCustomerEmail } from '../../core/controllers/Auth/Customers/VarifyAccount.js';
 import { ProtectUser } from '../../middlewares/Auth/AdminMiddleware/adminMiddleware.js';
 import { logout, refreshToken } from '../../Utils/Auth/tokenUtils.js';
+import { customerDraftRegistration, getAllDraftCustomers, getMyDraftCustomers } from '../../core/controllers/Auth/Customers/darft.customers.controller.js';
 
 const customerRouter = express.Router();
 
 // Authentication routes
 customerRouter.post('/login',  customerLogin);
 customerRouter.post('/register', ProtectUser, attachDepartmentInfo, requireSalesFinanceOrSuperAdmin, customerBasicRegistration);
+
+customerRouter.post('/draft-register', ProtectUser, attachDepartmentInfo, requireSalesFinanceOrSuperAdmin, customerDraftRegistration);
+
+
 customerRouter.put('/:customerId/finance-update', ProtectUser, attachDepartmentInfo, financeCompleteCustomer);
 
 // FORGOT PASSWORD
@@ -29,5 +34,12 @@ customerRouter.get('/customer/pending-finance', ProtectUser, getPendingFinanceCu
 customerRouter.get('/get-all-customers', ProtectUser, getAllCustomers);
 customerRouter.get('/customers-profile', protectCustomer, getCustomerProfile);
 customerRouter.get('/get-customer/:customerId', getCustomerById);
+
+
+// GET DRAFT CUSTOMERS
+customerRouter.get('/get-all-draft-customers', ProtectUser, attachDepartmentInfo, requireSalesFinanceOrSuperAdmin, getAllDraftCustomers);
+customerRouter.get('/get-my-draft-customers', ProtectUser, attachDepartmentInfo, requireSalesFinanceOrSuperAdmin, getMyDraftCustomers);
+
+
 
 export default customerRouter;

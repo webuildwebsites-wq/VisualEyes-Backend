@@ -3,6 +3,7 @@ import { generateToken, generateRefreshToken } from "../../../../Utils/Auth/toke
 import CredentialsTemplate from "../../../../Utils/Mail/CredentialsTemplate.js";
 import { sendEmail } from "../../../config/Email/emailService.js";
 import Customer from "../../../../models/Auth/Customer.js";
+import customerDraftSchema from "../../../../models/Auth/CustomerDraft.js";
 import dotenv from "dotenv";
 import crypto from "crypto";
 dotenv.config();

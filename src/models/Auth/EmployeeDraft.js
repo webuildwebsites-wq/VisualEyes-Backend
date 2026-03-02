@@ -1,330 +1,322 @@
-import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
+import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
 
-const subRoleSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    trim: true
-  },
-  refId: {
-    type: mongoose.Schema.Types.ObjectId
-  }
-}, { _id: false });
-
-const employee = new mongoose.Schema({
-  employeeName: {
-    type: String,
-    required: [true, 'Employee name is required'],
-    trim: true,
-    minlength: [3, 'Employee name must be at least 3 characters'],
-    maxlength: [50, 'Employee name cannot exceed 50 characters']
-  },
-  username: {
-    type: String,
-    required: [true, 'Username is required'],
-    unique: true,
-    trim: true,
-    minlength: [3, 'Username must be at least 3 characters'],
-    maxlength: [10, 'Username cannot exceed 10 characters']
-  },
-  email: {
-    type: String,
-    required: [true, 'Email is required'],
-    unique: true,
-    trim: true,
-    lowercase: true,
-    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email']
-  },
-  password: {
-    type: String,
-    required: [true, 'Password is required'],
-    minlength: [8, 'Password must be at least 8 characters'],
-    select: false
-  },
-  phone: {
-    type: String,
-    required: [true, 'Phone number is required'],
-    match: [/^[0-9]{10}$/, 'Please enter a valid 10-digit phone number']
-  },
-  address: {
-    type: String,
-    required: [true, 'Address is required'],
-    trim: true
-  },
-  country: {
-    type: String,
-    required: [true, 'Country is required'],
-    trim: true
-  },
-  pincode: {
-    type: String,
-    trim: true,
-  },
-  EmployeeType: {
-      type: String,
-      required: [true, 'Employee type is required'],
-      trim: true
-  },
-  ProfilePicture: {
-    type: String,
-    trim: true,
-    default: null
-  },
-  Department: {
+const subRoleSchema = new mongoose.Schema(
+  {
     name: {
       type: String,
       trim: true,
-      required: function() {
-        return this.EmployeeType !== 'SUPERADMIN';
-      }
     },
     refId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Department',
-      required: function() {
-        return this.EmployeeType !== 'SUPERADMIN';
-      }
-    }
-  },
-  subRoles: [subRoleSchema],
-  lab: {
-    name: {
-      type: String,
-      trim: true
     },
-    refId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Lab'
-    }
   },
-  zone: {
-    name: {
+  { _id: false },
+);
+
+const employee = new mongoose.Schema(
+  {
+    employeeName: {
       type: String,
-      required: function() {
-        const dept = this.Department?.name || this.Department;
-        return ['EMPLOYEE', 'SUPERVISOR', 'TEAMLEAD'].includes(this.EmployeeType) && dept === 'SALES';
-      },
       trim: true,
-      uppercase: true
+      minlength: [3, "Employee name must be at least 3 characters"],
+      maxlength: [50, "Employee name cannot exceed 50 characters"],
     },
-    refId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Location',
-      required: function() {
-        const dept = this.Department?.name || this.Department;
-        return ['EMPLOYEE', 'SUPERVISOR', 'TEAMLEAD'].includes(this.EmployeeType) && dept === 'SALES';
-      }
-    }
-  },
-  aadharCard: {
-    type: String,
-    trim: true
-  },
-  panCard: {
-    type: String,
-    trim: true
-  },
-  aadharCardImg: {
-    type: String,
-    trim: true
-  },
-  panCardImg: {
-    type: String,
-    trim: true
-  },
-  expiry: {
-    type: Date
-  },
-  createdBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'employee',
-    required: function() {
-      return !['SUPERADMIN'].includes(this.EmployeeType);
-    }
-  },
-  supervisor: {
-    name: {
+    username: {
       type: String,
-      trim: true
+      unique: true,
+      trim: true,
+      minlength: [3, "Username must be at least 3 characters"],
+      maxlength: [10, "Username cannot exceed 10 characters"],
     },
-    refId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'employee'
-    }
-  },
-  teamLead: {
-    name: {
+    email: {
       type: String,
-      trim: true
+      unique: true,
+      trim: true,
+      lowercase: true,
+      match: [
+        /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
+        "Please enter a valid email",
+      ],
     },
-    refId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'employee'
-    }
-  },
-  isActive: {
-    type: Boolean,
-    default: true
-  },
-  twoFactorEnabled: {
-    type: Boolean,
-    default: false
-  },
-  twoFactorSecret: {
-    type: String,
-    select: false
-  },
-  
-  permissions: {
-    CanCreateEmployee: {
-      type: Boolean,
-      default: function() {
-        return ['SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(this.EmployeeType);
-      }
+    password: {
+      type: String,
+      minlength: [8, "Password must be at least 8 characters"],
+      select: false,
     },
-    CanManageEmployee: {
-      type: Boolean,
-      default: function() {
-        return ['SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(this.EmployeeType);
-      }
+    phone: {
+      type: String,
+      match: [/^[0-9]{10}$/, "Please enter a valid 10-digit phone number"],
     },
-    CanManageDepartments: {
-      type: Boolean,
-      default: function() {
-        return ['SUPERADMIN', 'ADMIN'].includes(this.EmployeeType);
-      }
+    address: {
+      type: String,
+      trim: true,
     },
-    CanManageAllDepartments: {
-      type: Boolean,
-      default: function() {
-        return this.EmployeeType === 'ADMIN';
-      }
+    country: {
+      type: String,
+      trim: true,
     },
-    CanCreateOrders: {
-      type: Boolean,
-      default: true
+    pincode: {
+      type: String,
+      trim: true,
     },
-    CanUpdateOrders: {
-      type: Boolean,
-      default: true
+    EmployeeType: {
+      type: String,
+      trim: true,
     },
-    CanViewOrders: {
-      type: Boolean,
-      default: true
+    ProfilePicture: {
+      type: String,
+      trim: true,
+      default: null,
     },
-    CanDeleteOrders: {
-      type: Boolean,
-      default: function() {
-        return ['SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(this.EmployeeType);
-      }
-    },
-    CanProcessWorkflow: {
-      type: Boolean,
-      default: true
-    },
-    CanApproveWorkflow: {
-      type: Boolean,
-      default: function() {
-        return ['SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(this.EmployeeType);
-      }
-    },
-    CanCreateCustomers: {
-      type: Boolean,
-      default: true
-    },
-    CanManageCustomers: {
-      type: Boolean,
-      default: true
-    },
-    CanManageProducts: {
-      type: Boolean,
-      default: true
-    },
-    CanViewFinancials: {
-      type: Boolean,
-      default: true
-    },
-    CanManageFinancials: {
-      type: Boolean,
-      default: function() {
-        return ['SUPERADMIN', 'ADMIN'].includes(this.EmployeeType);
-      }
-    },    
-    CanManageSettings: {
-      type: Boolean,
-      default: function() {
-        return ['SUPERADMIN', 'ADMIN'].includes(this.EmployeeType);
-      }
-    },
-    CanViewReports: {
-      type: Boolean,
-      default: function() {
-        return this.EmployeeType !== 'EMPLOYEE';
-      }
-    },
-    CanExportReports: {
-      type: Boolean,
-      default: function() {
-        return ['SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(this.EmployeeType);
-      }
-    }
-  },
-  profile: {
-    dateOfJoining: {
-      type: Date,
-      default: Date.now
-    },
-    dateOfBirth: {
-      type: Date
-    },
-    emergencyContact: {
-      name: String,
-      phone: {
+    Department: {
+      name: {
         type: String,
-        match: [/^[0-9]{10}$/, 'Invalid phone number format']
+        trim: true,
       },
-      relation: String
+      refId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Department",
+      },
+    },
+    subRoles: [subRoleSchema],
+    lab: {
+      name: {
+        type: String,
+        trim: true,
+      },
+      refId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Lab",
+      },
+    },
+    zone: {
+      name: {
+        type: String,
+        trim: true,
+        uppercase: true,
+      },
+      refId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Location",
+      },
+    },
+    aadharCard: {
+      type: String,
+      trim: true,
+    },
+    panCard: {
+      type: String,
+      trim: true,
+    },
+    aadharCardImg: {
+      type: String,
+      trim: true,
+    },
+    panCardImg: {
+      type: String,
+      trim: true,
+    },
+    expiry: {
+      type: Date,
+    },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "employee",
+    },
+    supervisor: {
+      name: {
+        type: String,
+        trim: true,
+      },
+      refId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "employee",
+      },
+    },
+    teamLead: {
+      name: {
+        type: String,
+        trim: true,
+      },
+      refId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "employee",
+      },
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+    twoFactorEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    twoFactorSecret: {
+      type: String,
+      select: false,
+    },
+    permissions: {
+        CanCreateEmployee: {
+          type: Boolean,
+          default: function () {
+            return ["SUPERADMIN", "ADMIN", "SUPERVISOR"].includes(
+              this.EmployeeType,
+            );
+          },
+        },
+        CanManageEmployee: {
+          type: Boolean,
+          default: function () {
+            return ["SUPERADMIN", "ADMIN", "SUPERVISOR"].includes(
+              this.EmployeeType,
+            );
+          },
+        },
+        CanManageDepartments: {
+          type: Boolean,
+          default: function () {
+            return ["SUPERADMIN", "ADMIN"].includes(this.EmployeeType);
+          },
+        },
+        CanManageAllDepartments: {
+          type: Boolean,
+          default: function () {
+            return this.EmployeeType === "ADMIN";
+          },
+        },
+        CanCreateOrders: {
+          type: Boolean,
+          default: true,
+        },
+        CanUpdateOrders: {
+          type: Boolean,
+          default: true,
+        },
+        CanViewOrders: {
+          type: Boolean,
+          default: true,
+        },
+        CanDeleteOrders: {
+          type: Boolean,
+          default: function () {
+            return ["SUPERADMIN", "ADMIN", "SUPERVISOR"].includes(
+              this.EmployeeType,
+            );
+          },
+        },
+        CanProcessWorkflow: {
+          type: Boolean,
+          default: true,
+        },
+        CanApproveWorkflow: {
+          type: Boolean,
+          default: function () {
+            return ["SUPERADMIN", "ADMIN", "SUPERVISOR"].includes(
+              this.EmployeeType,
+            );
+          },
+        },
+        CanCreateCustomers: {
+          type: Boolean,
+          default: true,
+        },
+        CanManageCustomers: {
+          type: Boolean,
+          default: true,
+        },
+        CanManageProducts: {
+          type: Boolean,
+          default: true,
+        },
+        CanViewFinancials: {
+          type: Boolean,
+          default: true,
+        },
+        CanManageFinancials: {
+          type: Boolean,
+          default: function () {
+            return ["SUPERADMIN", "ADMIN"].includes(this.EmployeeType);
+          },
+        },
+        CanManageSettings: {
+          type: Boolean,
+          default: function () {
+            return ["SUPERADMIN", "ADMIN"].includes(this.EmployeeType);
+          },
+        },
+        CanViewReports: {
+          type: Boolean,
+          default: function () {
+            return this.EmployeeType !== "EMPLOYEE";
+          },
+        },
+        CanExportReports: {
+          type: Boolean,
+          default: function () {
+            return ["SUPERADMIN", "ADMIN", "SUPERVISOR"].includes(
+              this.EmployeeType,
+            );
+          },
+        },
+      },
+    profile: {
+      dateOfJoining: {
+        type: Date,
+        default: Date.now,
+      },
+      dateOfBirth: {
+        type: Date,
+      },
+      emergencyContact: {
+        name: String,
+        phone: {
+          type: String,
+          match: [/^[0-9]{10}$/, "Invalid phone number format"],
+        },
+        relation: String,
+      },
+    },
+    lastLogin: {
+      type: Date,
+    },
+    lockUntil: {
+      type: Date,
+    },
+    passwordResetToken: {
+      type: String,
+      select: false,
+    },
+    passwordResetExpires: {
+      type: Date,
+      select: false,
     },
   },
-  
-  lastLogin: {
-    type: Date
+  {
+    timestamps: true,
+    toJSON: {
+      virtuals: true,
+      transform: function (doc, ret) {
+        delete ret.id;
+        return ret;
+      },
+    },
+    toObject: {
+      virtuals: true,
+      transform: function (doc, ret) {
+        delete ret.id;
+        return ret;
+      },
+    },
   },
-  lockUntil: {
-    type: Date
-  },
-  passwordResetToken: {
-    type: String,
-    select: false
-  },
-  passwordResetExpires: {
-    type: Date,
-    select: false
-  },
-}, {
-  timestamps: true,
-  toJSON: { 
-    virtuals: true,
-    transform: function(doc, ret) {
-      delete ret.id;
-      return ret;
-    }
-  },
-  toObject: { 
-    virtuals: true,
-    transform: function(doc, ret) {
-      delete ret.id;
-      return ret;
-    }
-  }
-});
+);
 
-employee.methods.comparePassword = async function(candidatePassword) {
+employee.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-employee.pre('save', async function () {
-  if (!this.isModified('password') || !this.password) return;
+employee.pre("save", async function () {
+  if (!this.isModified("password") || !this.password) return;
   try {
     const salt = await bcrypt.genSalt(12);
     this.password = await bcrypt.hash(this.password, salt);
@@ -334,6 +326,6 @@ employee.pre('save', async function () {
   }
 });
 
-const employeeDraftSchema = mongoose.model('employeeDraft', employee);
+const employeeDraftSchema = mongoose.model("employeeDraft", employee);
 
 export default employeeDraftSchema;

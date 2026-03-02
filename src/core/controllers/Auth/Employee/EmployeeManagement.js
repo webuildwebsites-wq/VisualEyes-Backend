@@ -278,10 +278,6 @@ export const createDraftEmployee = async (req, res) => {
 
     let assignedSupervisor = null;
 
-    if (!employeeType || !username  || !employeeName || !country || !email || !password || !phone || !address) {
-      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'All required fields must be provided');
-    }
-
     // Validate ObjectId formats
     if (departmentRefId && !mongoose.Types.ObjectId.isValid(departmentRefId)) {
       return sendErrorResponse(res, 400, 'INVALID_ID', 'Invalid department ID format');
@@ -325,18 +321,6 @@ export const createDraftEmployee = async (req, res) => {
         if (departmentDoc.name !== department.toUpperCase()) {
           return sendErrorResponse(res, 400, 'DEPARTMENT_MISMATCH', 'Department name does not match the provided ID');
         }
-
-        if (employeeType.toUpperCase() === 'ADMIN') {
-          const existingAdmin = await employeeDraftSchema.findOne({
-            EmployeeType: 'ADMIN',
-            'Department.refId': departmentRefId,
-            isActive: true
-          });
-
-          if (existingAdmin) {
-            return sendErrorResponse(res, 409, 'ADMIN_EXISTS', `An admin already exists for ${department} department`);
-          }
-        }
       }
 
       if ((req.user.EmployeeType === 'SUPERADMIN' || req.user.EmployeeType === 'ADMIN' ) && employeeType.toUpperCase() !== 'ADMIN') {
@@ -346,63 +330,6 @@ export const createDraftEmployee = async (req, res) => {
         }
       }
     }
-
-    if (subRoles && Array.isArray(subRoles) && subRoles.length > 0) {
-      if (!departmentRefId) {
-        return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Department reference ID is required when assigning sub-roles');
-      }
-
-      const departmentDoc = await Department.findById(departmentRefId);
-      if (!departmentDoc) {
-        return sendErrorResponse(res, 404, 'DEPARTMENT_NOT_FOUND', 'Department not found');
-      }
-
-      for (const subRole of subRoles) {
-        if (!subRole.refId) {
-          return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Sub-role refId is required');
-        }
-
-        const subRoleExists = departmentDoc.subRoles.id(subRole.refId);
-        if (!subRoleExists) {
-          return sendErrorResponse(res, 400, 'INVALID_SUBROLE', `Sub-role ${subRole.name} does not belong to department ${department}`);
-        }
-
-        if (!subRoleExists.isActive) {
-          return sendErrorResponse(res, 400, 'INACTIVE_SUBROLE', `Sub-role ${subRole.name} is not active`);
-        }
-      }
-    }
-
-    if (['EMPLOYEE', 'SUPERVISOR', 'TEAMLEAD'].includes(employeeType.toUpperCase()) && 
-      department && department.toUpperCase() === 'SALES' && !zone) {
-      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Zone is required for SALES department employees, supervisors, and team leads');
-    }
-
-    if (zone && zoneRefId) {
-      const locationDoc = await Location.findById(zoneRefId);
-      if (!locationDoc) {
-        return sendErrorResponse(res, 404, 'ZONE_NOT_FOUND', 'Zone not found');
-      }
-      if (!locationDoc.isActive) {
-        return sendErrorResponse(res, 400, 'ZONE_INACTIVE', 'Zone is not active');
-      }
-      if (locationDoc.zone !== zone.toUpperCase()) {
-        return sendErrorResponse(res, 400, 'ZONE_MISMATCH', 'Zone name does not match the provided ID');
-      }
-    }
-
-    if (lab) {
-      const labConfig = await SystemConfig.findOne({ configType: 'Lab' });
-      if (!labConfig) {
-        return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Lab configuration not found in system');
-      }
-
-      const validLabs = labConfig.values;
-      if (!validLabs.includes(lab.toUpperCase())) {
-        return sendErrorResponse(res, 400, 'VALIDATION_ERROR', `Invalid lab value. Valid labs: ${validLabs.join(', ')}`);
-      }
-    }
-
     let assignedTeamLead = null;
 
     if (employeeType.toUpperCase() === 'EMPLOYEE') {
@@ -420,7 +347,7 @@ export const createDraftEmployee = async (req, res) => {
         supervisorQuery['subRoles.refId'] = { $in: subRoles.map(sr => sr.refId) };
       }
 
-      assignedSupervisor = await employeeDraftSchema.findOne(supervisorQuery);
+      assignedSupervisor = await employeeSchema.findOne(supervisorQuery);
 
       if (assignedSupervisor && req.user.EmployeeType === 'SUPERVISOR' && assignedSupervisor._id.toString() !== req.user.id.toString()) {
         return sendErrorResponse(res, 403, 'FORBIDDEN', 'Supervisors can only assign themselves as supervisor');
@@ -438,15 +365,24 @@ export const createDraftEmployee = async (req, res) => {
         teamLeadQuery['subRoles.refId'] = { $in: subRoles.map(sr => sr.refId) };
       }
 
-      assignedTeamLead = await employeeDraftSchema.findOne(teamLeadQuery);
+      assignedTeamLead = await employeeSchema.findOne(teamLeadQuery);
     }
 
-    const existingUser = await employeeDraftSchema.findOne({
-      $or: [{ email }, { username }]
-    });
+    const [existingUser, existingDraft] = await Promise.all([
+      employeeSchema.findOne({
+        $or: [{ email }, { username }]
+      }),
+      employeeDraftSchema.findOne({
+        $or: [{ email }, { username }]
+      })
+    ]);
 
     if (existingUser) {
       return sendErrorResponse(res, 409, 'USER_EXISTS', 'Employee with this email or username already exists');
+    }
+
+    if (existingDraft) {
+      return sendErrorResponse(res, 409, 'DRAFT_EXISTS', 'Draft employee with this email or username already exists');
     }
 
     const userData = {
@@ -538,95 +474,74 @@ export const createDraftEmployee = async (req, res) => {
 
 export const getAllEmployees = async (req, res) => {
   try {
-    
-     const page = Math.max(parseInt(req.query.page) || 1, 1);
-     const limit = Math.min(parseInt(req.query.limit) || 10, 100); 
-     const skip = (page - 1) * limit;
-     const query = {};
-
-    const [users, total] = await Promise.all([
-      employeeSchema
-        .find(query)
-        .select('-password -passwordResetToken -passwordResetExpires -twoFactorSecret -permissions -profile')
-        .populate('createdBy supervisor', 'firstName lastName EmployeeType')
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-      employeeSchema.countDocuments(query)
-    ]);
-
-    const totalPages = Math.ceil(total / limit);
-      const pagination = {
-      currentPage: page,
-      totalPages,
-      totalUsers: total,
-      hasNext: page < totalPages,
-      hasPrev: page > 1
-    };
-
-    return sendSuccessResponse(res, 200, { users, pagination }, 'Users retrieved successfully');
-
-  } catch (error) {
-    console.error('Get users by hierarchy error:', error);
-    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to retrieve users');
-  }
-};
-
-export const getFilteredEmployees = async (req, res) => {
-  try {
     const page = Math.max(parseInt(req.query.page) || 1, 1);
     const limit = Math.min(parseInt(req.query.limit) || 10, 100);
     const skip = (page - 1) * limit;
 
-    const { EmployeeType, department, zone, search } = req.query;
+    const { 
+      department,
+      type,
+      labs,
+      status,
+      fromDate, 
+      toDate 
+    } = req.query;
 
-    let query = { isActive: true };
+    let query = {};
 
-     if (req.user.EmployeeType === 'SUPERADMIN') {
-      if (EmployeeType) query.EmployeeType = EmployeeType.toUpperCase();
-      if (department) query['Department.name'] = department.toUpperCase();
-      if (zone) query['zone.name'] = zone.toUpperCase();
-
-    } else if (req.user.EmployeeType === 'ADMIN') {
-      query.EmployeeType = { $ne: 'SUPERADMIN' };
-
-      if (EmployeeType && EmployeeType.toUpperCase() !== 'SUPERADMIN') {
-        query.EmployeeType = EmployeeType.toUpperCase();
-      }
-
-      if (department) query['Department.name'] = department.toUpperCase();
-      if (zone) query['zone.name'] = zone.toUpperCase();
-
-    } else if (req.user.EmployeeType === 'SUPERVISOR') {
-      query['Department.name'] = req.user.Department;
-      query['zone.name'] = req.user.zone?.name;
-      query.EmployeeType = { $in: ['SUPERVISOR', 'EMPLOYEE'] };
-
-      if (EmployeeType && ['SUPERVISOR', 'EMPLOYEE'].includes(EmployeeType.toUpperCase())) {
-        query.EmployeeType = EmployeeType.toUpperCase();
-      }
-
-    } else {
-      query.$or = [
-        { _id: req.user.id },
-        {
-          'Department.name': req.user.Department,
-          'zone.name': req.user.zone?.name,
-          EmployeeType: 'EMPLOYEE'
-        }
-      ];
+    if (department) {
+      query['Department.name'] = department.toUpperCase();
     }
 
-    if (search) {
-      const searchQuery = {
-        $or: [
-          { username: { $regex: search, $options: 'i' } },
-          { employeeName: { $regex: search, $options: 'i' } },
-          { email: { $regex: search, $options: 'i' } }
-        ]
-      };
-      query = { $and: [query, searchQuery] };
+    if (type) {
+      query.EmployeeType = type.toUpperCase();
+    }
+
+    if (labs) {
+      query['lab.name'] = labs.toUpperCase();
+    }
+
+    if (fromDate || toDate) {
+      query.createdAt = {};
+      
+      if (fromDate) {
+        const startDate = new Date(fromDate);
+        startDate.setHours(0, 0, 0, 0);
+        query.createdAt.$gte = startDate;
+      }
+      
+      if (toDate) {
+        const endDate = new Date(toDate);
+        endDate.setHours(23, 59, 59, 999);
+        query.createdAt.$lte = endDate;
+      }
+    }
+
+    if (status) {
+      if (status.toLowerCase() === 'active') {
+        query['Status.isActive'] = true;
+        query['Status.isSuspended'] = false;
+      } else if (status.toLowerCase() === 'suspended') {
+        query['Status.isSuspended'] = true;
+      } else if (status.toLowerCase() === 'inactive') {
+        query['Status.isActive'] = false;
+      }
+    }
+
+    if (fromDate || toDate) {
+      query.createdAt = {};
+      
+      if (fromDate) {
+        const startDate = new Date(fromDate);
+        startDate.setHours(0, 0, 0, 0);
+        query.createdAt.$gte = startDate;
+      }
+      
+      if (toDate) {
+        const endDate = new Date(toDate);
+        endDate.setHours(23, 59, 59, 999);
+        query.createdAt.$lte = endDate;
+      }
     }
 
      const [users, total] = await Promise.all([
@@ -651,12 +566,11 @@ export const getFilteredEmployees = async (req, res) => {
       hasPrev: page > 1
     };
 
-
-    return sendSuccessResponse(res, 200, { users, pagination }, 'Users retrieved successfully');
+    return sendSuccessResponse(res, 200, { users, pagination }, 'Employees retrieved successfully');
 
   } catch (error) {
-    console.error('Get users by hierarchy error:', error);
-    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to retrieve users');
+    console.error('Get employees error:', error);
+    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to retrieve employees');
   }
 };
 
@@ -814,6 +728,145 @@ export const getEmployeeDetails = async (req, res) => {
     }
     
     return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to retrieve employee details');
+  }
+};
+
+export const getAllDraftEmployee = async (req, res) => {
+  try {
+    const page = Math.max(parseInt(req.query.page) || 1, 1);
+    const limit = Math.min(parseInt(req.query.limit) || 10, 100);
+    const skip = (page - 1) * limit;
+
+    const { 
+      department,
+      type,
+      labs,
+      status,
+      fromDate, 
+      toDate 
+    } = req.query;
+
+    let query = {};
+
+    if (department) {
+      query['Department.name'] = department.toUpperCase();
+    }
+
+    if (type) {
+      query.EmployeeType = type.toUpperCase();
+    }
+
+    if (labs) {
+      query['lab.name'] = labs.toUpperCase();
+    }
+
+    if (fromDate || toDate) {
+      query.createdAt = {};
+      
+      if (fromDate) {
+        const startDate = new Date(fromDate);
+        startDate.setHours(0, 0, 0, 0);
+        query.createdAt.$gte = startDate;
+      }
+      
+      if (toDate) {
+        const endDate = new Date(toDate);
+        endDate.setHours(23, 59, 59, 999);
+        query.createdAt.$lte = endDate;
+      }
+    }
+
+    if (status) {
+      if (status.toLowerCase() === 'active') {
+        query['Status.isActive'] = true;
+        query['Status.isSuspended'] = false;
+      } else if (status.toLowerCase() === 'suspended') {
+        query['Status.isSuspended'] = true;
+      } else if (status.toLowerCase() === 'inactive') {
+        query['Status.isActive'] = false;
+      }
+    }
+
+    if (fromDate || toDate) {
+      query.createdAt = {};
+      
+      if (fromDate) {
+        const startDate = new Date(fromDate);
+        startDate.setHours(0, 0, 0, 0);
+        query.createdAt.$gte = startDate;
+      }
+      
+      if (toDate) {
+        const endDate = new Date(toDate);
+        endDate.setHours(23, 59, 59, 999);
+        query.createdAt.$lte = endDate;
+      }
+    }
+
+     const [users, total] = await Promise.all([
+      employeeDraftSchema
+        .find(query)
+        .select('-password -passwordResetToken -passwordResetExpires -twoFactorSecret -permissions -profile')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      employeeDraftSchema.countDocuments(query)
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    const pagination = {
+      currentPage: page,
+      totalPages,
+      totalUsers: total,
+      hasNext: page < totalPages,
+      hasPrev: page > 1
+    };
+
+    return sendSuccessResponse(res, 200, { users, pagination }, 'Employees retrieved successfully');
+
+  } catch (error) {
+    console.error('Get employees error:', error);
+    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to retrieve employees');
+  }
+};
+
+export const getMyDraftEmployee = async (req, res) => {
+  try {
+    const page = Math.max(parseInt(req.query.page) || 1, 1);
+    const limit = Math.min(parseInt(req.query.limit) || 10, 100);
+    const skip = (page - 1) * limit;
+    const userId = req.user.id;
+
+    const query = { createdBy: userId };
+
+     const [users, total] = await Promise.all([
+      employeeDraftSchema
+        .find(query)
+        .select('-password -passwordResetToken -passwordResetExpires -twoFactorSecret -permissions -profile')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      employeeDraftSchema.countDocuments(query)
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    const pagination = {
+      currentPage: page,
+      totalPages,
+      totalUsers: total,
+      hasNext: page < totalPages,
+      hasPrev: page > 1
+    };
+
+    return sendSuccessResponse(res, 200, { users, pagination }, 'Draft employees retrieved successfully');
+
+  } catch (error) {
+    console.error('Get draft employees error:', error);
+    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to retrieve draft employees');
   }
 };
 

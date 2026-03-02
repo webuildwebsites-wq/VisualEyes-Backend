@@ -1,6 +1,6 @@
 import express from 'express';
 import { ProtectUser } from '../../middlewares/Auth/AdminMiddleware/adminMiddleware.js';
-import { updateEmployeeDetails, deactivateEmployee, getEmployeeDetails, getSupervisorsByDepartment, getAllEmployees, getFilteredEmployees, createEmployee, createDraftEmployee } from '../../core/controllers/Auth/Employee/EmployeeManagement.js';
+import { updateEmployeeDetails, deactivateEmployee, getEmployeeDetails, getSupervisorsByDepartment, getAllEmployees, createEmployee, createDraftEmployee, getAllDraftEmployee, getMyDraftEmployee } from '../../core/controllers/Auth/Employee/EmployeeManagement.js';
 import { requireSubAdminOrHigher, canManageEmployee } from '../../middlewares/Auth/AdminMiddleware/roleMiddleware.js';
 
 const employeeManagementRouter = express.Router();
@@ -12,7 +12,9 @@ employeeManagementRouter.post('/create-draft-employee', requireSubAdminOrHigher,
 
 
 employeeManagementRouter.get('/get-all-employees', canManageEmployee, getAllEmployees);
-employeeManagementRouter.get('/get-filtered-employees', canManageEmployee, getFilteredEmployees);
+
+employeeManagementRouter.get('/get-all-draft-employee', canManageEmployee, getAllDraftEmployee);
+employeeManagementRouter.get('/get-my-draft-employee', ProtectUser, getMyDraftEmployee);
 
 employeeManagementRouter.get('/get-employee/:userId', canManageEmployee, getEmployeeDetails);
 employeeManagementRouter.put('/update-employee/:userId', canManageEmployee, updateEmployeeDetails);

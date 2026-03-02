@@ -28,6 +28,10 @@ export const employeeLogin = async (req, res) => {
       return sendErrorResponse(res, 423, 'ACCOUNT_LOCKED', 'Account is temporarily locked due to too many failed login attempts');
     }
 
+    if(user.expiry && user.expiry < new Date()) {
+      return sendErrorResponse(res, 403, 'ACCOUNT_EXPIRED', 'Account has expired. Please contact administrator.');
+    }
+
     const isMatch = await user.comparePassword(password);
 
     if (!isMatch) {
