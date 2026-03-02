@@ -894,28 +894,8 @@ export const getDraftEmployeeDetails = async (req, res) => {
     }
 
     let query = { _id: userId, isActive: true };
-    if (req.user.EmployeeType === 'SUPERADMIN') {
-    } else if (req.user.EmployeeType === 'ADMIN') {
-      const targetUser = await employeeDraftSchema.findById(userId);
-      if (targetUser && targetUser.EmployeeType === 'SUPERADMIN') {
-        return sendErrorResponse(res, 403, 'FORBIDDEN', 'Admin cannot view SuperAdmin details');
-      }
-    } else if (req.user.EmployeeType === 'SUPERVISOR') {
-      query['Department.name'] = req.user.Department;
-      query['region.name'] = req.user.region;
-    } else {
-      const targetUser = await employeeDraftSchema.findById(userId);
-      if (targetUser && 
-          (targetUser._id.toString() !== req.user.id && 
-           (targetUser.Department?.name !== req.user.Department || 
-            targetUser.region?.name !== req.user.region ||
-            targetUser.EmployeeType !== 'EMPLOYEE'))) {
-        return sendErrorResponse(res, 403, 'FORBIDDEN', 'Access denied');
-      }
-    }
-
     const user = await employeeDraftSchema.findOne(query)
-      .select('-password -passwordResetToken -passwordResetExpires -twoFactorSecret')
+    .select('-password -passwordResetToken -passwordResetExpires -twoFactorSecret')
 
     if (!user) {
       return sendErrorResponse(res, 404, 'USER_NOT_FOUND', 'Employee not found');

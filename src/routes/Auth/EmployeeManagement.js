@@ -17,7 +17,7 @@ employeeManagementRouter.get('/get-all-draft-employee', canManageEmployee, getAl
 employeeManagementRouter.get('/get-my-draft-employee', ProtectUser, getMyDraftEmployee);
 
 employeeManagementRouter.get('/get-employee/:userId', canManageEmployee, getEmployeeDetails);
-employeeManagementRouter.get('/get-draft-employee/:userId', ProtectUser, getDraftEmployeeDetails);
+employeeManagementRouter.get('/get-draft-employee/:userId',  getDraftEmployeeDetails);
 
 employeeManagementRouter.put('/update-employee/:userId', canManageEmployee, updateEmployeeDetails);
 employeeManagementRouter.delete('/delete-employee/:userId', canManageEmployee, deactivateEmployee);
