@@ -61,17 +61,17 @@ export const createEmployee = async (req, res) => {
           return sendErrorResponse(res, 400, 'DEPARTMENT_MISMATCH', 'Department name does not match the provided ID');
         }
 
-        if (employeeType.toUpperCase() === 'ADMIN') {
-          const existingAdmin = await employeeSchema.findOne({
-            EmployeeType: 'ADMIN',
-            'Department.refId': departmentRefId,
-            isActive: true
-          });
+        // if (employeeType.toUpperCase() === 'ADMIN') {
+        //   const existingAdmin = await employeeSchema.findOne({
+        //     EmployeeType: 'ADMIN',
+        //     'Department.refId': departmentRefId,
+        //     isActive: true
+        //   });
 
-          if (existingAdmin) {
-            return sendErrorResponse(res, 409, 'ADMIN_EXISTS', `An admin already exists for ${department} department`);
-          }
-        }
+        //   if (existingAdmin) {
+        //     return sendErrorResponse(res, 409, 'ADMIN_EXISTS', `An admin already exists for ${department} department`);
+        //   }
+        // }
       }
 
       if ((req.user.EmployeeType === 'SUPERADMIN' || req.user.EmployeeType === 'ADMIN' ) && employeeType.toUpperCase() !== 'ADMIN') {
@@ -522,13 +522,10 @@ export const getAllEmployees = async (req, res) => {
 
     if (status) {
       if (status.toLowerCase() === 'active') {
-        query['Status.isActive'] = true;
-        query['Status.isSuspended'] = false;
-      } else if (status.toLowerCase() === 'suspended') {
-        query['Status.isSuspended'] = true;
+        query.isActive = true;
       } else if (status.toLowerCase() === 'inactive') {
-        query['Status.isActive'] = false;
-      }
+        query.isActive = false;
+      } 
     }
 
     if (fromDate || toDate) {

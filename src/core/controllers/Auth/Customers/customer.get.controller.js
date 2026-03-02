@@ -80,13 +80,10 @@ export const getAllCustomers = async (req, res) => {
 
     if (status) {
       if (status.toLowerCase() === 'active') {
-        query['Status.isActive'] = true;
-        query['Status.isSuspended'] = false;
-      } else if (status.toLowerCase() === 'suspended') {
-        query['Status.isSuspended'] = true;
+        query.isActive = true;
       } else if (status.toLowerCase() === 'inactive') {
-        query['Status.isActive'] = false;
-      }
+        query.isActive = false;
+      } 
     }
 
     if (createdByDepartment) {
