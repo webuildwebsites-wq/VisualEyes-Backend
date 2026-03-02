@@ -102,20 +102,26 @@ export const getAllCustomers = async (req, res) => {
       query['brandCategories.categories.categoryId'] = specificCategory;
     }
 
-    if (fromDate || toDate) {
+    let startDate, endDate;
+    if (fromDate) {
+      startDate = new Date(fromDate);
+      if (isNaN(startDate.valueOf())) {
+        return sendErrorResponse(res, 400, 'INVALID_DATE', 'fromDate is not a valid date');
+      }
+      startDate.setHours(0, 0, 0, 0);
+    }
+    if (toDate) {
+      endDate = new Date(toDate);
+      if (isNaN(endDate.valueOf())) {
+        return sendErrorResponse(res, 400, 'INVALID_DATE', 'toDate is not a valid date');
+      }
+      endDate.setHours(23, 59, 59, 999);
+    }
+
+    if (startDate || endDate) {
       query.createdAt = {};
-      
-      if (fromDate) {
-        const startDate = new Date(fromDate);
-        startDate.setHours(0, 0, 0, 0);
-        query.createdAt.$gte = startDate;
-      }
-      
-      if (toDate) {
-        const endDate = new Date(toDate);
-        endDate.setHours(23, 59, 59, 999);
-        query.createdAt.$lte = endDate;
-      }
+      if (startDate) query.createdAt.$gte = startDate;
+      if (endDate) query.createdAt.$lte = endDate;
     }
 
     const [customers, total] = await Promise.all([

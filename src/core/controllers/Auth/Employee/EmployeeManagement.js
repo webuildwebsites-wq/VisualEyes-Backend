@@ -504,20 +504,26 @@ export const getAllEmployees = async (req, res) => {
       query['lab.name'] = labs.toUpperCase();
     }
 
-    if (fromDate || toDate) {
+    let startDate, endDate;
+    if (fromDate) {
+      startDate = new Date(fromDate);
+      if (isNaN(startDate.valueOf())) {
+        return sendErrorResponse(res, 400, 'INVALID_DATE', 'fromDate is not a valid date');
+      }
+      startDate.setHours(0, 0, 0, 0);
+    }
+    if (toDate) {
+      endDate = new Date(toDate);
+      if (isNaN(endDate.valueOf())) {
+        return sendErrorResponse(res, 400, 'INVALID_DATE', 'toDate is not a valid date');
+      }
+      endDate.setHours(23, 59, 59, 999);
+    }
+
+    if (startDate || endDate) {
       query.createdAt = {};
-      
-      if (fromDate) {
-        const startDate = new Date(fromDate);
-        startDate.setHours(0, 0, 0, 0);
-        query.createdAt.$gte = startDate;
-      }
-      
-      if (toDate) {
-        const endDate = new Date(toDate);
-        endDate.setHours(23, 59, 59, 999);
-        query.createdAt.$lte = endDate;
-      }
+      if (startDate) query.createdAt.$gte = startDate;
+      if (endDate) query.createdAt.$lte = endDate;
     }
 
     if (status) {
@@ -526,22 +532,6 @@ export const getAllEmployees = async (req, res) => {
       } else if (status.toLowerCase() === 'inactive') {
         query.isActive = false;
       } 
-    }
-
-    if (fromDate || toDate) {
-      query.createdAt = {};
-      
-      if (fromDate) {
-        const startDate = new Date(fromDate);
-        startDate.setHours(0, 0, 0, 0);
-        query.createdAt.$gte = startDate;
-      }
-      
-      if (toDate) {
-        const endDate = new Date(toDate);
-        endDate.setHours(23, 59, 59, 999);
-        query.createdAt.$lte = endDate;
-      }
     }
 
      const [users, total] = await Promise.all([
@@ -760,20 +750,26 @@ export const getAllDraftEmployee = async (req, res) => {
       query['lab.name'] = labs.toUpperCase();
     }
 
-    if (fromDate || toDate) {
+    // validate and apply draft date filters
+    let draftStart, draftEnd;
+    if (fromDate) {
+      draftStart = new Date(fromDate);
+      if (isNaN(draftStart.valueOf())) {
+        return sendErrorResponse(res, 400, 'INVALID_DATE', 'fromDate is not a valid date');
+      }
+      draftStart.setHours(0, 0, 0, 0);
+    }
+    if (toDate) {
+      draftEnd = new Date(toDate);
+      if (isNaN(draftEnd.valueOf())) {
+        return sendErrorResponse(res, 400, 'INVALID_DATE', 'toDate is not a valid date');
+      }
+      draftEnd.setHours(23, 59, 59, 999);
+    }
+    if (draftStart || draftEnd) {
       query.createdAt = {};
-      
-      if (fromDate) {
-        const startDate = new Date(fromDate);
-        startDate.setHours(0, 0, 0, 0);
-        query.createdAt.$gte = startDate;
-      }
-      
-      if (toDate) {
-        const endDate = new Date(toDate);
-        endDate.setHours(23, 59, 59, 999);
-        query.createdAt.$lte = endDate;
-      }
+      if (draftStart) query.createdAt.$gte = draftStart;
+      if (draftEnd) query.createdAt.$lte = draftEnd;
     }
 
     if (status) {
@@ -784,22 +780,6 @@ export const getAllDraftEmployee = async (req, res) => {
         query['Status.isSuspended'] = true;
       } else if (status.toLowerCase() === 'inactive') {
         query['Status.isActive'] = false;
-      }
-    }
-
-    if (fromDate || toDate) {
-      query.createdAt = {};
-      
-      if (fromDate) {
-        const startDate = new Date(fromDate);
-        startDate.setHours(0, 0, 0, 0);
-        query.createdAt.$gte = startDate;
-      }
-      
-      if (toDate) {
-        const endDate = new Date(toDate);
-        endDate.setHours(23, 59, 59, 999);
-        query.createdAt.$lte = endDate;
       }
     }
 
