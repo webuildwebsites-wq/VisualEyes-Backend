@@ -370,8 +370,9 @@ export const customerBasicRegistration = async (req, res) => {
       mobileOtp: MobileOtp,
       mobileOtpExpires: new Date(Date.now() + 10 * 60 * 1000),
     };
-
+    
     const customer = await Customer.create(customerData);
+    await customerDraftSchema.findOneAndDelete({ emailId: emailId.toLowerCase() });
 
     // Only send credentials email if password was set (FINANCE department or SUPERADMIN)
     if ((isFinanceDepartment || userEmployeeType === 'SUPERADMIN') && customerpassword) {

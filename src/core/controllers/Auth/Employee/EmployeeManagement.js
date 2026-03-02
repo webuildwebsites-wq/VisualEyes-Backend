@@ -249,6 +249,9 @@ export const createEmployee = async (req, res) => {
 
     const newUser = new employeeSchema(userData);
     await newUser.save();
+    await employeeDraftSchema.findOneAndDelete({
+      $or: [{ email }, { username }]
+    });
 
     const userResponse = newUser.toObject();
     delete userResponse.password;
