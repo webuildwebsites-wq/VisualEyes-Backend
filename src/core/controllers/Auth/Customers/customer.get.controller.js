@@ -50,6 +50,29 @@ export const getCustomerById = async (req, res) => {
 };
 
 
+
+export const getDraftCustomers = async (req, res) => {
+  try {
+    const { customerId } = req.params;
+    const customer = await Customer.findById(customerId);
+
+    if (!customer) {
+      return sendErrorResponse( res, 404, "USER_NOT_FOUND", "Customer not found");
+    }
+
+    return sendSuccessResponse(res, 200, customer, "customer profile fetch successfully");
+  } catch (error) {
+    console.error("Get customer profile error:", error);
+    return sendErrorResponse(
+      res,
+      500,
+      "INTERNAL_ERROR",
+      "Internal server error",
+    );
+  }
+};
+
+
 export const getAllCustomers = async (req, res) => {
   try {
     const page = Math.max(parseInt(req.query.page) || 1, 1);
