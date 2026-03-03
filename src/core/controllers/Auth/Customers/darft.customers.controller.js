@@ -56,31 +56,19 @@ export const customerDraftRegistration = async (req, res) => {
     const isFinanceDepartment = userDepartment === "FINANCE" || userEmployeeType === "SUPERADMIN";
 
 
-     const normalizedEmail = email?.trim().toLowerCase();
-    const normalizedUsername = username?.trim();
+     const normalizedEmail = emailId?.trim().toLowerCase();
 
-    if (normalizedEmail || normalizedUsername) {
+    if (normalizedEmail) {
       const query = [];
 
       if (normalizedEmail) {
-        query.push({ email: normalizedEmail });
+        query.push({ emailId : normalizedEmail });
       }
 
-      if (normalizedUsername) {
-        query.push({ username: normalizedUsername });
-      }
-
-      const existingDraft = await employeeDraftSchema.findOne({
-        $or: query
-      });
+      const existingDraft = await customerDraftSchema.findOne({ $or: query });
 
       if (existingDraft) {
-        return sendErrorResponse(
-          res,
-          409,
-          "DRAFT_EXISTS",
-          "Draft employee with this email or username already exists"
-        );
+        return sendErrorResponse(res,409,"DRAFT_EXISTS","Draft employee with this email or username already exists");
       }
     }
     
