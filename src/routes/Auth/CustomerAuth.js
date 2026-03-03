@@ -6,7 +6,7 @@ import { protectCustomer } from '../../middlewares/Auth/CustomerMiddleware/custo
 import { verifyCustomerEmail } from '../../core/controllers/Auth/Customers/VarifyAccount.js';
 import { ProtectUser } from '../../middlewares/Auth/AdminMiddleware/adminMiddleware.js';
 import { logout, refreshToken } from '../../Utils/Auth/tokenUtils.js';
-import { customerDraftRegistration, getAllDraftCustomers, getMyDraftCustomers } from '../../core/controllers/Auth/Customers/darft.customers.controller.js';
+import { customerDraftRegistration, getAllDraftCustomers, getMyDraftCustomers, updateDraftCustomer } from '../../core/controllers/Auth/Customers/darft.customers.controller.js';
 
 const customerRouter = express.Router();
 
@@ -41,6 +41,7 @@ customerRouter.get('/get-draft-customer/:customerId',  getDraftCustomers);
 customerRouter.get('/get-all-draft-customers', ProtectUser, attachDepartmentInfo, requireSalesFinanceOrSuperAdmin, getAllDraftCustomers);
 customerRouter.get('/get-my-draft-customers', ProtectUser, attachDepartmentInfo, requireSalesFinanceOrSuperAdmin, getMyDraftCustomers);
 
-
+// UPDATE DRAFT CUSTOMER
+customerRouter.put('/update-draft-customer/:draftId', ProtectUser, attachDepartmentInfo, requireSalesFinanceOrSuperAdmin, updateDraftCustomer);
 
 export default customerRouter;

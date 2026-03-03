@@ -19,34 +19,24 @@ const employee = new mongoose.Schema(
     employeeName: {
       type: String,
       trim: true,
-      minlength: [3, "Employee name must be at least 3 characters"],
-      maxlength: [50, "Employee name cannot exceed 50 characters"],
     },
     username: {
       type: String,
       unique: true,
       trim: true,
-      minlength: [3, "Username must be at least 3 characters"],
-      maxlength: [10, "Username cannot exceed 10 characters"],
     },
     email: {
       type: String,
       unique: true,
       trim: true,
       lowercase: true,
-      match: [
-        /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
-        "Please enter a valid email",
-      ],
     },
     password: {
       type: String,
-      minlength: [8, "Password must be at least 8 characters"],
       select: false,
     },
     phone: {
       type: String,
-      match: [/^[0-9]{10}$/, "Please enter a valid 10-digit phone number"],
     },
     address: {
       type: String,
@@ -159,31 +149,17 @@ const employee = new mongoose.Schema(
     permissions: {
         CanCreateEmployee: {
           type: Boolean,
-          default: function () {
-            return ["SUPERADMIN", "ADMIN", "SUPERVISOR"].includes(
-              this.EmployeeType,
-            );
-          },
         },
         CanManageEmployee: {
           type: Boolean,
-          default: function () {
-            return ["SUPERADMIN", "ADMIN", "SUPERVISOR"].includes(
-              this.EmployeeType,
-            );
-          },
         },
         CanManageDepartments: {
           type: Boolean,
-          default: function () {
-            return ["SUPERADMIN", "ADMIN"].includes(this.EmployeeType);
-          },
+         
         },
         CanManageAllDepartments: {
           type: Boolean,
-          default: function () {
-            return this.EmployeeType === "ADMIN";
-          },
+         
         },
         CanCreateOrders: {
           type: Boolean,
@@ -199,11 +175,7 @@ const employee = new mongoose.Schema(
         },
         CanDeleteOrders: {
           type: Boolean,
-          default: function () {
-            return ["SUPERADMIN", "ADMIN", "SUPERVISOR"].includes(
-              this.EmployeeType,
-            );
-          },
+          
         },
         CanProcessWorkflow: {
           type: Boolean,
@@ -211,11 +183,7 @@ const employee = new mongoose.Schema(
         },
         CanApproveWorkflow: {
           type: Boolean,
-          default: function () {
-            return ["SUPERADMIN", "ADMIN", "SUPERVISOR"].includes(
-              this.EmployeeType,
-            );
-          },
+          
         },
         CanCreateCustomers: {
           type: Boolean,
@@ -235,29 +203,19 @@ const employee = new mongoose.Schema(
         },
         CanManageFinancials: {
           type: Boolean,
-          default: function () {
-            return ["SUPERADMIN", "ADMIN"].includes(this.EmployeeType);
-          },
+         
         },
         CanManageSettings: {
           type: Boolean,
-          default: function () {
-            return ["SUPERADMIN", "ADMIN"].includes(this.EmployeeType);
-          },
+         
         },
         CanViewReports: {
           type: Boolean,
-          default: function () {
-            return this.EmployeeType !== "EMPLOYEE";
-          },
+         
         },
         CanExportReports: {
           type: Boolean,
-          default: function () {
-            return ["SUPERADMIN", "ADMIN", "SUPERVISOR"].includes(
-              this.EmployeeType,
-            );
-          },
+          
         },
       },
     profile: {
@@ -272,7 +230,7 @@ const employee = new mongoose.Schema(
         name: String,
         phone: {
           type: String,
-          match: [/^[0-9]{10}$/, "Invalid phone number format"],
+  
         },
         relation: String,
       },

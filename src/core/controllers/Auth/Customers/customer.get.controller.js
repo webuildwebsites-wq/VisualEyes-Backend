@@ -1,6 +1,7 @@
 import { sendErrorResponse,sendSuccessResponse } from "../../../../Utils/response/responseHandler.js";
 import Customer from "../../../../models/Auth/Customer.js";
 import dotenv from "dotenv";
+import CustomerDraft from "../../../../models/Auth/CustomerDraft.js";
 dotenv.config();
 
 export const getCustomerProfile = async (req, res) => {
@@ -54,7 +55,7 @@ export const getCustomerById = async (req, res) => {
 export const getDraftCustomers = async (req, res) => {
   try {
     const { customerId } = req.params;
-    const customer = await Customer.findById(customerId);
+    const customer = await CustomerDraft.findById(customerId);
 
     if (!customer) {
       return sendErrorResponse( res, 404, "USER_NOT_FOUND", "Customer not found");
