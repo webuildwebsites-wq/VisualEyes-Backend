@@ -43,12 +43,12 @@ const customerDraftSchema = new mongoose.Schema(
     shopName: {
       type: String,
       trim: true,
-      maxlength: 100,
+
     },
     ownerName: {
       type: String,
       trim: true,
-      maxlength: 100,
+
     },
     CustomerType: {
       name: {
@@ -66,11 +66,9 @@ const customerDraftSchema = new mongoose.Schema(
     },
     mobileNo1: {
       type: String,
-      match: [/^[0-9]{10}$/, "Invalid mobile number"],
     },
     mobileNo2: {
       type: String,
-      match: [/^[0-9]{10}$/, "Invalid mobile number"],
     },
     landlineNo: String,
     emailId: {
@@ -78,7 +76,6 @@ const customerDraftSchema = new mongoose.Schema(
       unique: true,
       lowercase: true,
       trim: true,
-      match: [/^\S+@\S+\.\S+$/, "Invalid email"],
     },
 
     businessEmail: {
@@ -88,31 +85,23 @@ const customerDraftSchema = new mongoose.Schema(
       sparse: true,
       trim: true,
       lowercase: true,
-      match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid businessEmail']
     },
 
     // Address details
     address: {
       type: [addressDraftSchema],
-      validate: [(val) => val.length > 0, "At least one address is required"],
     },
 
 
     // LOGIN DETAILS
     password: {
       type: String,
-      minlength: 6,
       select: false,
-      required: function() {
-        return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
-      }
     },
     zone: {
       name: {
         type: String,
-        required: function() {
-          return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
-        }
+
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -131,16 +120,12 @@ const customerDraftSchema = new mongoose.Schema(
     specificLab: {
       name: {
         type: String,
-        required: function() {
-          return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
-        }
+
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'SpecificLab',
-        required: function() {
-          return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
-        }
+
       }
     },
     brandCategories: {
@@ -166,29 +151,15 @@ const customerDraftSchema = new mongoose.Schema(
           }
         }]
       }],
-      validate: {
-        validator: function(value) {
-          if (['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED') {
-            return value && value.length > 0;
-          }
-          return true;
-        },
-        message: 'At least one brand with categories is required for approved customers'
-      }
     },
     salesPerson: {
       name: {
         type: String,
-        required: function() {
-          return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
-        }
+
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'employee',
-        required: function() {
-          return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
-        }
       }
     },
 
@@ -200,9 +171,6 @@ const customerDraftSchema = new mongoose.Schema(
     gstType: {
       name: {
         type: String,
-        required: function () {
-          return this.IsGSTRegistered === true;
-        },
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -212,40 +180,22 @@ const customerDraftSchema = new mongoose.Schema(
     GSTNumber: {
       type: String,
       uppercase: true,
-      required: function () {
-        return this.IsGSTRegistered === true;
-      },
     },
     GSTCertificateImg: {
       type: String,
-      required: function () {
-        return this.IsGSTRegistered === true;
-      },
     },
     PANCard: {
       type: String,
-      required: function () {
-        return this.IsGSTRegistered === false;
-      },
     },
     AadharCard: {
       type: String,
-      required: function () {
-        return this.IsGSTRegistered === false;
-      },
     },
     PANCardImg: {
       type: String,
-      required: function () {
-        return this.IsGSTRegistered === false;
-      },
     },
 
     AadharCardImg: {
       type: String,
-      required: function () {
-        return this.IsGSTRegistered === false;
-      },
     },
 
 
@@ -253,16 +203,10 @@ const customerDraftSchema = new mongoose.Schema(
     plant: {
       name: {
         type: String,
-        required: function() {
-          return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
-        }
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Plant',
-        required: function() {
-          return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
-        }
       }
     },
     lab: {
@@ -277,16 +221,10 @@ const customerDraftSchema = new mongoose.Schema(
     fittingCenter: {
       name: {
         type: String,
-        required: function() {
-          return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
-        }
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'FittingCenter',
-        required: function() {
-          return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
-        }
       }
     },
     creditLimit: {
@@ -297,46 +235,32 @@ const customerDraftSchema = new mongoose.Schema(
     creditDays: {
       name: {
         type: String,
-        required: function() {
-          return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
-        }
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'CreditDay',
-        required: function() {
-          return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
-        }
       }
     },
     courierName: {
       name: {
         type: String,
-        required: function() {
-          return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
-        }
+
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'CourierName',
-        required: function() {
-          return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
-        }
+
       }
     },
     courierTime: {
       name: {
         type: String,
-        required: function() {
-          return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
-        }
+
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'CourierTime',
-        required: function() {
-          return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
-        }
+
       }
     },
     dcWithoutValue: {
@@ -362,14 +286,9 @@ const customerDraftSchema = new mongoose.Schema(
     },
     createdByDepartment: {
       type: String,
-      enum: ['SALES', 'FINANCE', 'SUPERADMIN'],
     },
     approvalStatus: {
       type: String,
-      enum: ['PENDING_FINANCE', 'APPROVED'],
-      default: function() {
-        return this.createdByDepartment === 'SALES' ? 'PENDING_FINANCE' : 'APPROVED';
-      }
     },
     financeCompletedBy: {
       type: mongoose.Schema.Types.ObjectId,

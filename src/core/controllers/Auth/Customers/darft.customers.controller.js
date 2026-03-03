@@ -120,7 +120,20 @@ export const customerDraftRegistration = async (req, res) => {
 
       // Customer Registration - Only for FINANCE department or SUPERADMIN
       password: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') ? customerpassword : undefined,
-      brandCategories: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') && brandCategories ? brandCategories : undefined,
+      brandCategories: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') && brandCategories 
+        ? brandCategories
+            .filter(bc => bc.brandId && bc.brandId.trim() !== '')
+            .map(bc => ({
+              brandName: bc.brandName,
+              brandId: bc.brandId,
+              categories: bc.categories
+                .filter(cat => cat.categoryId && cat.categoryId.trim() !== '')
+                .map(cat => ({
+                  categoryName: cat.categoryName,
+                  categoryId: cat.categoryId
+                }))
+            }))
+        : undefined,
 
       zone: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') && zone && zoneRefId ? {
         name: zone,
