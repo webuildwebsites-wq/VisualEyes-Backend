@@ -359,13 +359,13 @@ export const createDraftEmployee = async (req, res) => {
     ]);
 
 
-    if (existingUser) {
-      return sendErrorResponse(res, 409, 'USER_EXISTS', 'Employee with this email or username already exists');
-    }
+    // if (existingUser) {
+    //   return sendErrorResponse(res, 409, 'USER_EXISTS', 'Employee with this email or username already exists');
+    // }
 
-    if (existingDraft) {
-      return sendErrorResponse(res, 409, 'DRAFT_EXISTS', 'Draft employee with this email or username already exists');
-    }
+    // if (existingDraft) {
+    //   return sendErrorResponse(res, 409, 'DRAFT_EXISTS', 'Draft employee with this email or username already exists');
+    // }
 
     const userData = {
       username,

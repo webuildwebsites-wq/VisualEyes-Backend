@@ -14,6 +14,7 @@
     "seed-brands": "node scripts/seedBrandsCategories.js",
     "seed-dropdowns": "node scripts/seedCustomerDropdowns.js",
     "seed-roles-departments": "node scripts/seedRolesAndDepartments.js",
+    "update-employee-type-order": "node scripts/updateEmployeeTypeOrder.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
