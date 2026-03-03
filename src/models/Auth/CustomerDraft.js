@@ -73,7 +73,6 @@ const customerDraftSchema = new mongoose.Schema(
     landlineNo: String,
     emailId: {
       type: String,
-      unique: true,
       sparse: true,
       lowercase: true,
       trim: true,
@@ -82,7 +81,6 @@ const customerDraftSchema = new mongoose.Schema(
     businessEmail: {
       type: String,
       required: false,
-      unique: true,
       sparse: true,
       trim: true,
       lowercase: true,
