@@ -8,12 +8,12 @@ import employeeDraftSchema from '../../../../models/Auth/EmployeeDraft.js';
 
 export const createEmployee = async (req, res) => {
   try {
-    const { employeeType, username, employeeName, email, password, phone, address, department, departmentRefId, country, 
-    pincode, expiry, zone, zoneRefId, aadharCard, panCard, lab, labRefId, subRoles, aadharCardImg, panCardImg } = req.body;
+    const { employeeType, username, employeeName, email, password, phone, address, department, departmentRefId, country,
+      pincode, expiry, zone, zoneRefId, aadharCard, panCard, lab, labRefId, subRoles, aadharCardImg, panCardImg, draftEmployeeId } = req.body;
 
     let assignedSupervisor = null;
 
-    if (!employeeType || !username  || !employeeName || !country || !email || !password || !phone || !address) {
+    if (!employeeType || !username || !employeeName || !country || !email || !password || !phone || !address) {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'All required fields must be provided');
     }
 
@@ -38,7 +38,7 @@ export const createEmployee = async (req, res) => {
       }
     }
 
-    const validEmployeeTypes = ['SUPERADMIN','ADMIN', 'SUPERVISOR', 'TEAMLEAD', 'EMPLOYEE'];
+    const validEmployeeTypes = ['SUPERADMIN', 'ADMIN', 'SUPERVISOR', 'TEAMLEAD', 'EMPLOYEE'];
     if (!validEmployeeTypes.includes(employeeType.toUpperCase())) {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Invalid employee type. Must be ADMIN, SUPERVISOR, TEAMLEAD, or EMPLOYEE');
     }
@@ -61,20 +61,20 @@ export const createEmployee = async (req, res) => {
           return sendErrorResponse(res, 400, 'DEPARTMENT_MISMATCH', 'Department name does not match the provided ID');
         }
 
-        // if (employeeType.toUpperCase() === 'ADMIN') {
-        //   const existingAdmin = await employeeSchema.findOne({
-        //     EmployeeType: 'ADMIN',
-        //     'Department.refId': departmentRefId,
-        //     isActive: true
-        //   });
+        if (employeeType.toUpperCase() === 'ADMIN') {
+          const existingAdmin = await employeeSchema.findOne({
+            EmployeeType: 'ADMIN',
+            'Department.refId': departmentRefId,
+            isActive: true
+          });
 
-        //   if (existingAdmin) {
-        //     return sendErrorResponse(res, 409, 'ADMIN_EXISTS', `An admin already exists for ${department} department`);
-        //   }
-        // }
+          if (existingAdmin) {
+            return sendErrorResponse(res, 409, 'ADMIN_EXISTS', `An admin already exists for ${department} department`);
+          }
+        }
       }
 
-      if ((req.user.EmployeeType === 'SUPERADMIN' || req.user.EmployeeType === 'ADMIN' ) && employeeType.toUpperCase() !== 'ADMIN') {
+      if ((req.user.EmployeeType === 'SUPERADMIN' || req.user.EmployeeType === 'ADMIN') && employeeType.toUpperCase() !== 'ADMIN') {
         const userDepartmentId = req.user.Department?.refId?.toString();
         if (userDepartmentId && departmentRefId && userDepartmentId !== departmentRefId) {
           return sendErrorResponse(res, 403, 'FORBIDDEN', 'Admin can only create employees in their own department');
@@ -108,7 +108,7 @@ export const createEmployee = async (req, res) => {
       }
     }
 
-    if (['EMPLOYEE', 'SUPERVISOR', 'TEAMLEAD'].includes(employeeType.toUpperCase()) && 
+    if (['EMPLOYEE', 'SUPERVISOR', 'TEAMLEAD'].includes(employeeType.toUpperCase()) &&
       department && department.toUpperCase() === 'SALES' && !zone) {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Zone is required for SALES department employees, supervisors, and team leads');
     }
@@ -142,7 +142,7 @@ export const createEmployee = async (req, res) => {
 
     if (employeeType.toUpperCase() === 'EMPLOYEE') {
       const isSalesDepartment = department.toUpperCase() === 'SALES';
-      
+
       const supervisorQuery = {
         EmployeeType: 'SUPERVISOR',
         'Department.name': department.toUpperCase(),
@@ -188,7 +188,7 @@ export const createEmployee = async (req, res) => {
       username,
       employeeName,
       email,
-      password, 
+      password,
       phone,
       address,
       country,
@@ -199,7 +199,7 @@ export const createEmployee = async (req, res) => {
       EmployeeType: employeeType.toUpperCase(),
       createdBy: req.user.id,
       isActive: true,
-      aadharCardImg, 
+      aadharCardImg,
       panCardImg
     };
 
@@ -250,7 +250,7 @@ export const createEmployee = async (req, res) => {
     const newUser = new employeeSchema(userData);
     await newUser.save();
     await employeeDraftSchema.findOneAndDelete({
-      $or: [{ email }, { username }]
+      _id: draftEmployeeId
     });
 
     const userResponse = newUser.toObject();
@@ -260,28 +260,27 @@ export const createEmployee = async (req, res) => {
 
   } catch (error) {
     console.error('Create employee error:', error);
-    
+
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(err => err.message);
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', messages.join(', '));
     }
-    
+
     if (error.name === 'CastError') {
       return sendErrorResponse(res, 400, 'INVALID_ID', `Invalid ${error.path} format. Please provide a valid MongoDB ObjectId`);
     }
-    
+
     return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to create employee');
   }
 };
 
 export const createDraftEmployee = async (req, res) => {
   try {
-    const { employeeType, username, employeeName, email, password, phone, address, department, departmentRefId, country, 
-    pincode, expiry, zone, zoneRefId, aadharCard, panCard, lab, labRefId, subRoles, aadharCardImg, panCardImg } = req.body;
+    const { employeeType, username, employeeName, email, password, phone, address, department, departmentRefId, country,
+      pincode, expiry, zone, zoneRefId, aadharCard, panCard, lab, labRefId, subRoles, aadharCardImg, panCardImg } = req.body;
 
     let assignedSupervisor = null;
 
-    // Validate ObjectId formats
     if (departmentRefId && !mongoose.Types.ObjectId.isValid(departmentRefId)) {
       return sendErrorResponse(res, 400, 'INVALID_ID', 'Invalid department ID format');
     }
@@ -302,7 +301,7 @@ export const createDraftEmployee = async (req, res) => {
       }
     }
 
-    const validEmployeeTypes = ['SUPERADMIN','ADMIN', 'SUPERVISOR', 'TEAMLEAD', 'EMPLOYEE'];
+    const validEmployeeTypes = ['SUPERADMIN', 'ADMIN', 'SUPERVISOR', 'TEAMLEAD', 'EMPLOYEE'];
     if (!validEmployeeTypes.includes(employeeType.toUpperCase())) {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Invalid employee type. Must be ADMIN, SUPERVISOR, TEAMLEAD, or EMPLOYEE');
     }
@@ -315,7 +314,7 @@ export const createDraftEmployee = async (req, res) => {
 
     if (employeeType.toUpperCase() === 'EMPLOYEE') {
       const isSalesDepartment = department.toUpperCase() === 'SALES';
-      
+
       const supervisorQuery = {
         EmployeeType: 'SUPERVISOR',
         'Department.name': department.toUpperCase(),
@@ -349,29 +348,41 @@ export const createDraftEmployee = async (req, res) => {
       assignedTeamLead = await employeeSchema.findOne(teamLeadQuery);
     }
 
-    const [existingUser, existingDraft] = await Promise.all([
-      employeeSchema.findOne({
-        $or: [{ email }, { username }]
-      }),
-      employeeDraftSchema.findOne({
-        $or: [{ email }, { username }]
-      })
-    ]);
 
+    const normalizedEmail = email?.trim().toLowerCase();
+    const normalizedUsername = username?.trim();
 
-    // if (existingUser) {
-    //   return sendErrorResponse(res, 409, 'USER_EXISTS', 'Employee with this email or username already exists');
-    // }
+    if (normalizedEmail || normalizedUsername) {
+      const query = [];
 
-    // if (existingDraft) {
-    //   return sendErrorResponse(res, 409, 'DRAFT_EXISTS', 'Draft employee with this email or username already exists');
-    // }
+      if (normalizedEmail) {
+        query.push({ email: normalizedEmail });
+      }
+
+      if (normalizedUsername) {
+        query.push({ username: normalizedUsername });
+      }
+
+      const existingDraft = await employeeDraftSchema.findOne({
+        $or: query
+      });
+
+      if (existingDraft) {
+        return sendErrorResponse(
+          res,
+          409,
+          "DRAFT_EXISTS",
+          "Draft employee with this email or username already exists"
+        );
+      }
+    }
+
 
     const userData = {
       username,
       employeeName,
       email,
-      password, 
+      password,
       phone,
       address,
       country,
@@ -382,7 +393,7 @@ export const createDraftEmployee = async (req, res) => {
       EmployeeType: employeeType.toUpperCase(),
       createdBy: req.user.id,
       isActive: true,
-      aadharCardImg, 
+      aadharCardImg,
       panCardImg
     };
 
@@ -440,16 +451,16 @@ export const createDraftEmployee = async (req, res) => {
 
   } catch (error) {
     console.error('Create employee error:', error);
-    
+
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(err => err.message);
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', messages.join(', '));
     }
-    
+
     if (error.name === 'CastError') {
       return sendErrorResponse(res, 400, 'INVALID_ID', `Invalid ${error.path} format. Please provide a valid MongoDB ObjectId`);
     }
-    
+
     return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to create employee');
   }
 };
@@ -460,13 +471,13 @@ export const getAllEmployees = async (req, res) => {
     const limit = Math.min(parseInt(req.query.limit) || 10, 100);
     const skip = (page - 1) * limit;
 
-    const { 
+    const {
       department,
       type,
       labs,
       status,
-      fromDate, 
-      toDate 
+      fromDate,
+      toDate
     } = req.query;
 
     let query = {};
@@ -510,10 +521,10 @@ export const getAllEmployees = async (req, res) => {
         query.isActive = true;
       } else if (status.toLowerCase() === 'inactive') {
         query.isActive = false;
-      } 
+      }
     }
 
-     const [users, total] = await Promise.all([
+    const [users, total] = await Promise.all([
       employeeSchema
         .find(query)
         .select('-password -passwordResetToken -passwordResetExpires -twoFactorSecret -permissions -profile')
@@ -568,7 +579,7 @@ export const updateEmployeeDetails = async (req, res) => {
     } else if (req.user.EmployeeType === 'SUPERVISOR') {
       query['Department.name'] = req.user.Department;
       query['zone.name'] = req.user.zone?.name;
-      query.EmployeeType = { $in: ['EMPLOYEE'] }; 
+      query.EmployeeType = { $in: ['EMPLOYEE'] };
     } else {
       query._id = req.user.id;
     }
@@ -589,16 +600,16 @@ export const updateEmployeeDetails = async (req, res) => {
 
   } catch (error) {
     console.error('Update employee error:', error);
-    
+
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(err => err.message);
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', messages.join(', '));
     }
-    
+
     if (error.name === 'CastError') {
       return sendErrorResponse(res, 400, 'INVALID_ID', `Invalid ${error.path} format. Please provide a valid MongoDB ObjectId`);
     }
-    
+
     return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to update user');
   }
 };
@@ -606,11 +617,11 @@ export const updateEmployeeDetails = async (req, res) => {
 export const deactivateEmployee = async (req, res) => {
   try {
     const { userId } = req.params;
-    
+
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       return sendErrorResponse(res, 400, 'INVALID_ID', 'Invalid user ID format');
     }
-    
+
     let query = { _id: userId, isActive: true };
     if (req.user.EmployeeType === 'SUPERADMIN') {
       const targetUser = await employeeSchema.findById(userId);
@@ -641,11 +652,11 @@ export const deactivateEmployee = async (req, res) => {
 
   } catch (error) {
     console.error('Deactivate employee error:', error);
-    
+
     if (error.name === 'CastError') {
       return sendErrorResponse(res, 400, 'INVALID_ID', `Invalid ${error.path} format. Please provide a valid MongoDB ObjectId`);
     }
-    
+
     return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to deactivate employee');
   }
 };
@@ -670,9 +681,9 @@ export const getEmployeeDetails = async (req, res) => {
       query['region.name'] = req.user.region;
     } else {
       const targetUser = await employeeSchema.findById(userId);
-      if (targetUser && 
-          (targetUser._id.toString() !== req.user.id && 
-           (targetUser.Department?.name !== req.user.Department || 
+      if (targetUser &&
+        (targetUser._id.toString() !== req.user.id &&
+          (targetUser.Department?.name !== req.user.Department ||
             targetUser.region?.name !== req.user.region ||
             targetUser.EmployeeType !== 'EMPLOYEE'))) {
         return sendErrorResponse(res, 403, 'FORBIDDEN', 'Access denied');
@@ -691,11 +702,11 @@ export const getEmployeeDetails = async (req, res) => {
 
   } catch (error) {
     console.error('Get employee details error:', error);
-    
+
     if (error.name === 'CastError') {
       return sendErrorResponse(res, 400, 'INVALID_ID', `Invalid ${error.path} format. Please provide a valid MongoDB ObjectId`);
     }
-    
+
     return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to retrieve employee details');
   }
 };
@@ -706,13 +717,13 @@ export const getAllDraftEmployee = async (req, res) => {
     const limit = Math.min(parseInt(req.query.limit) || 10, 100);
     const skip = (page - 1) * limit;
 
-    const { 
+    const {
       department,
       type,
       labs,
       status,
-      fromDate, 
-      toDate 
+      fromDate,
+      toDate
     } = req.query;
 
     let query = {};
@@ -762,7 +773,7 @@ export const getAllDraftEmployee = async (req, res) => {
       }
     }
 
-     const [users, total] = await Promise.all([
+    const [users, total] = await Promise.all([
       employeeDraftSchema
         .find(query)
         .select('-password -passwordResetToken -passwordResetExpires -twoFactorSecret -permissions -profile')
@@ -800,7 +811,7 @@ export const getMyDraftEmployee = async (req, res) => {
 
     const query = { createdBy: userId };
 
-     const [users, total] = await Promise.all([
+    const [users, total] = await Promise.all([
       employeeDraftSchema
         .find(query)
         .select('-password -passwordResetToken -passwordResetExpires -twoFactorSecret -permissions -profile')
@@ -833,9 +844,9 @@ export const getSupervisorsByDepartment = async (req, res) => {
   try {
     const { department, zone } = req.query;
 
-    let query = { 
-      EmployeeType: 'SUPERVISOR', 
-      isActive: true 
+    let query = {
+      EmployeeType: 'SUPERVISOR',
+      isActive: true
     };
     if (req.user.EmployeeType === 'SUPERADMIN') {
       if (department) query['Department.name'] = department.toUpperCase();
@@ -874,7 +885,7 @@ export const getDraftEmployeeDetails = async (req, res) => {
 
     let query = { _id: userId, isActive: true };
     const user = await employeeDraftSchema.findOne(query)
-    .select('-password -passwordResetToken -passwordResetExpires -twoFactorSecret')
+      .select('-password -passwordResetToken -passwordResetExpires -twoFactorSecret')
 
     if (!user) {
       return sendErrorResponse(res, 404, 'USER_NOT_FOUND', 'Employee not found');
@@ -884,11 +895,11 @@ export const getDraftEmployeeDetails = async (req, res) => {
 
   } catch (error) {
     console.error('Get employee details error:', error);
-    
+
     if (error.name === 'CastError') {
       return sendErrorResponse(res, 400, 'INVALID_ID', `Invalid ${error.path} format. Please provide a valid MongoDB ObjectId`);
     }
-    
+
     return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to retrieve employee details');
   }
 };
