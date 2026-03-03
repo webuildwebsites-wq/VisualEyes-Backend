@@ -54,8 +54,8 @@ export const updateDraftEmployee = async (req, res) => {
     const updateFields = {};
 
     if (updateData.employeeName) updateFields.employeeName = updateData.employeeName.trim();
-    if (updateData.username) updateFields.username = updateData.username.trim();
-    if (updateData.email) updateFields.email = updateData.email.toLowerCase().trim();
+    if (updateData.username) updateFields.username = updateData.username.trim() || undefined;
+    if (updateData.email) updateFields.email = updateData.email.trim() ? updateData.email.toLowerCase().trim() : undefined;
     if (updateData.password) updateFields.password = updateData.password;
     if (updateData.phone) updateFields.phone = updateData.phone;
     if (updateData.address) updateFields.address = updateData.address.trim();

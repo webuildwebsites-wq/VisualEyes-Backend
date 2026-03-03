@@ -379,9 +379,9 @@ export const createDraftEmployee = async (req, res) => {
 
 
     const userData = {
-      username,
+      username: username && username.trim() ? username.trim() : undefined,
       employeeName,
-      email,
+      email: email && email.trim() ? email.toLowerCase().trim() : undefined,
       password,
       phone,
       address,

@@ -74,6 +74,7 @@ const customerDraftSchema = new mongoose.Schema(
     emailId: {
       type: String,
       unique: true,
+      sparse: true,
       lowercase: true,
       trim: true,
     },

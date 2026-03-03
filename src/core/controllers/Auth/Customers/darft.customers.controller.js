@@ -57,6 +57,7 @@ export const customerDraftRegistration = async (req, res) => {
 
 
      const normalizedEmail = emailId?.trim().toLowerCase();
+     console.log("normalizedEmail :  ",normalizedEmail);
 
     if (normalizedEmail) {
       const query = [];
@@ -84,8 +85,8 @@ export const customerDraftRegistration = async (req, res) => {
       mobileNo1,
       mobileNo2,
       landlineNo,
-      emailId: emailId.toLowerCase().trim(),
-      businessEmail: businessEmail ? businessEmail.toLowerCase().trim() : undefined,
+      emailId: emailId && emailId.trim() ? emailId.toLowerCase().trim() : undefined,
+      businessEmail: businessEmail && businessEmail.trim() ? businessEmail.toLowerCase().trim() : undefined,
       IsGSTRegistered,
       GSTNumber: IsGSTRegistered ? GSTNumber : undefined,
       gstType: IsGSTRegistered && gstType ? {
