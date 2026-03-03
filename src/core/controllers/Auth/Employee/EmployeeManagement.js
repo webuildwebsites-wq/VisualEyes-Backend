@@ -358,8 +358,6 @@ export const createDraftEmployee = async (req, res) => {
       })
     ]);
 
-    console.log("existingDraft : ",existingDraft);
-    console.log(first)
 
     if (existingUser) {
       return sendErrorResponse(res, 409, 'USER_EXISTS', 'Employee with this email or username already exists');

@@ -148,10 +148,11 @@ export const getAllCustomers = async (req, res) => {
       if (endDate) query.createdAt.$lte = endDate;
     }
 
+    console.log("query : ",query);
+
     const [customers, total] = await Promise.all([
       Customer
         .find(query)
-        .select('-password -emailOtp -emailOtpExpires -mobileOtp -mobileOtpExpires')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
