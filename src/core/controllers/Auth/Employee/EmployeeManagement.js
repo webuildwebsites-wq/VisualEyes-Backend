@@ -311,28 +311,6 @@ export const createDraftEmployee = async (req, res) => {
       return sendErrorResponse(res, 403, 'FORBIDDEN', 'Only SuperAdmin can create Admin');
     }
 
-    if (employeeType.toUpperCase() !== 'SUPERADMIN') {
-      if (!department && employeeType.toUpperCase() !== 'ADMIN') {
-        return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Department is required');
-      }
-
-      if (department && departmentRefId) {
-        const departmentDoc = await Department.findById(departmentRefId);
-        if (!departmentDoc) {
-          return sendErrorResponse(res, 404, 'DEPARTMENT_NOT_FOUND', 'Department not found');
-        }
-        if (departmentDoc.name !== department.toUpperCase()) {
-          return sendErrorResponse(res, 400, 'DEPARTMENT_MISMATCH', 'Department name does not match the provided ID');
-        }
-      }
-
-      if ((req.user.EmployeeType === 'SUPERADMIN' || req.user.EmployeeType === 'ADMIN' ) && employeeType.toUpperCase() !== 'ADMIN') {
-        const userDepartmentId = req.user.Department?.refId?.toString();
-        if (userDepartmentId && departmentRefId && userDepartmentId !== departmentRefId) {
-          return sendErrorResponse(res, 403, 'FORBIDDEN', 'Admin can only create employees in their own department');
-        }
-      }
-    }
     let assignedTeamLead = null;
 
     if (employeeType.toUpperCase() === 'EMPLOYEE') {
@@ -379,6 +357,9 @@ export const createDraftEmployee = async (req, res) => {
         $or: [{ email }, { username }]
       })
     ]);
+
+    console.log("existingDraft : ",existingDraft);
+    console.log(first)
 
     if (existingUser) {
       return sendErrorResponse(res, 409, 'USER_EXISTS', 'Employee with this email or username already exists');

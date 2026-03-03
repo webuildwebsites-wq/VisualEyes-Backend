@@ -9,7 +9,7 @@ const employeeManagementRouter = express.Router();
 employeeManagementRouter.use(ProtectUser);
 
 employeeManagementRouter.post('/create-employee', requireSubAdminOrHigher, createEmployee);
-employeeManagementRouter.post('/create-draft-employee', requireSubAdminOrHigher, createDraftEmployee);
+employeeManagementRouter.post('/create-draft-employee',  createDraftEmployee);
 
 
 employeeManagementRouter.get('/get-all-employees', canManageEmployee, getAllEmployees);

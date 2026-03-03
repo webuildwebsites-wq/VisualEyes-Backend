@@ -152,8 +152,6 @@ export const getAllCustomers = async (req, res) => {
       Customer
         .find(query)
         .select('-password -emailOtp -emailOtpExpires -mobileOtp -mobileOtpExpires')
-        .populate('salesPerson.refId', 'username employeeName emailId')
-        .populate('createdBy', 'username employeeName emailId Department')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
