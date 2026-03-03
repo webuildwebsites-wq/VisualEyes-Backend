@@ -1,11 +1,19 @@
-import { sendErrorResponse, sendTokenResponse, sendSuccessResponse } from "../../../../Utils/response/responseHandler.js";
-import { generateToken, generateRefreshToken } from "../../../../Utils/Auth/tokenUtils.js";
+import {
+  sendErrorResponse,
+  sendTokenResponse,
+  sendSuccessResponse,
+} from "../../../../Utils/response/responseHandler.js";
+import {
+  generateToken,
+  generateRefreshToken,
+} from "../../../../Utils/Auth/tokenUtils.js";
 import CredentialsTemplate from "../../../../Utils/Mail/CredentialsTemplate.js";
 import { sendEmail } from "../../../config/Email/emailService.js";
 import Customer from "../../../../models/Auth/Customer.js";
 import customerDraftSchema from "../../../../models/Auth/CustomerDraft.js";
 import dotenv from "dotenv";
 import crypto from "crypto";
+import mongoose from "mongoose";
 dotenv.config();
 
 export const customerLogin = async (req, res) => {
@@ -21,7 +29,7 @@ export const customerLogin = async (req, res) => {
       );
     }
 
-    const customer = await Customer.findOne({ emailId }).select("+password")
+    const customer = await Customer.findOne({ emailId }).select("+password");
 
     if (!customer) {
       return sendErrorResponse(
@@ -123,12 +131,17 @@ export const customerBasicRegistration = async (req, res) => {
       salesPerson,
       salesPersonRefId,
       customerpassword,
+      draftCustomerId,
     } = req.body;
 
     const userEmployeeType = req.user?.EmployeeType;
-    const userDepartment = userEmployeeType === 'SUPERADMIN' ? 'SUPERADMIN' : req.user?.Department?.name || req.user?.Department;
+    const userDepartment =
+      userEmployeeType === "SUPERADMIN"
+        ? "SUPERADMIN"
+        : req.user?.Department?.name || req.user?.Department;
     const isSalesDepartment = userDepartment === "SALES";
-    const isFinanceDepartment = userDepartment === "FINANCE" || userEmployeeType === "SUPERADMIN";
+    const isFinanceDepartment =
+      userDepartment === "FINANCE" || userEmployeeType === "SUPERADMIN";
 
     // Check if user is from Sales or Finance department
     // if (!['SALES', 'FINANCE'].includes(userDepartment)) {
@@ -140,24 +153,65 @@ export const customerBasicRegistration = async (req, res) => {
     //   );
     // }
 
+    // Validate ObjectId formats
+    if (draftCustomerId && !mongoose.Types.ObjectId.isValid(draftCustomerId)) {
+      return sendErrorResponse(
+        res,
+        400,
+        "INVALID_ID",
+        "Invalid draft customer ID format",
+      );
+    }
+
     if (!CustomerType || !shopName || !ownerName || !emailId || !orderMode) {
-      return sendErrorResponse(res, 400,
-        "VALIDATION_ERROR", "CustomerType, shopName, ownerName, emailId and orderMode are required");
+      return sendErrorResponse(
+        res,
+        400,
+        "VALIDATION_ERROR",
+        "CustomerType, shopName, ownerName, emailId and orderMode are required",
+      );
     }
 
     // salesPerson is only required for Finance department and SUPERADMIN
-    if ((isFinanceDepartment || userEmployeeType === 'SUPERADMIN') && !salesPerson) {
-      return sendErrorResponse(res, 400,
-        "VALIDATION_ERROR", "salesPerson is required for FINANCE department and SUPERADMIN");
+    if (
+      (isFinanceDepartment || userEmployeeType === "SUPERADMIN") &&
+      !salesPerson
+    ) {
+      return sendErrorResponse(
+        res,
+        400,
+        "VALIDATION_ERROR",
+        "salesPerson is required for FINANCE department and SUPERADMIN",
+      );
     }
 
     if (!Array.isArray(address) || address.length === 0) {
-      return sendErrorResponse(res, 400, "VALIDATION_ERROR", "At least one address is required");
+      return sendErrorResponse(
+        res,
+        400,
+        "VALIDATION_ERROR",
+        "At least one address is required",
+      );
     }
 
     for (const addr of address) {
-      if (!addr.branchAddress || !addr.contactPerson || !addr.contactNumber || !addr.country || !addr.state || !addr.city || !addr.zipCode || !addr.billingCurrency || !addr.billingMode) {
-        return sendErrorResponse(res, 400, "VALIDATION_ERROR", "All address fields are required");
+      if (
+        !addr.branchAddress ||
+        !addr.contactPerson ||
+        !addr.contactNumber ||
+        !addr.country ||
+        !addr.state ||
+        !addr.city ||
+        !addr.zipCode ||
+        !addr.billingCurrency ||
+        !addr.billingMode
+      ) {
+        return sendErrorResponse(
+          res,
+          400,
+          "VALIDATION_ERROR",
+          "All address fields are required",
+        );
       }
     }
 
@@ -167,7 +221,7 @@ export const customerBasicRegistration = async (req, res) => {
           res,
           400,
           "VALIDATION_ERROR",
-          "GSTNumber, gstType and GSTCertificateImg are required when GST registered"
+          "GSTNumber, gstType and GSTCertificateImg are required when GST registered",
         );
       }
     } else {
@@ -176,79 +230,140 @@ export const customerBasicRegistration = async (req, res) => {
           res,
           400,
           "VALIDATION_ERROR",
-          "PANCard, AadharCard and their images are required when not GST registered"
+          "PANCard, AadharCard and their images are required when not GST registered",
         );
       }
     }
 
-    if (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') {
+    if (isFinanceDepartment || userEmployeeType === "SUPERADMIN") {
       const isValidObjectId = (id) => /^[0-9a-fA-F]{24}$/.test(id);
 
       const requiredRefIds = [
-        { name: 'CustomerTypeRefId', value: CustomerTypeRefId },
-        { name: 'salesPersonRefId', value: salesPersonRefId },
+        { name: "CustomerTypeRefId", value: CustomerTypeRefId },
+        { name: "salesPersonRefId", value: salesPersonRefId },
       ];
 
       for (const field of requiredRefIds) {
         if (!field.value) {
-          return sendErrorResponse(res, 400, "VALIDATION_ERROR", `${field.name} is required for FINANCE department`);
+          return sendErrorResponse(
+            res,
+            400,
+            "VALIDATION_ERROR",
+            `${field.name} is required for FINANCE department`,
+          );
         }
         if (!isValidObjectId(field.value)) {
-          return sendErrorResponse(res, 400, "VALIDATION_ERROR",
-            `${field.name} must be a valid ObjectId (24 hex characters)`);
+          return sendErrorResponse(
+            res,
+            400,
+            "VALIDATION_ERROR",
+            `${field.name} must be a valid ObjectId (24 hex characters)`,
+          );
         }
       }
 
       const optionalRefIds = [
-        { name: 'zoneRefId', value: zoneRefId },
-        { name: 'specificLabRefId', value: specificLabRefId },
-        { name: 'gstTypeRefId', value: gstTypeRefId },
-        { name: 'plantRefId', value: plantRefId },
-        { name: 'fittingCenterRefId', value: fittingCenterRefId },
-        { name: 'creditDaysRefId', value: creditDaysRefId },
-        { name: 'courierNameRefId', value: courierNameRefId },
-        { name: 'courierTimeRefId', value: courierTimeRefId },
+        { name: "zoneRefId", value: zoneRefId },
+        { name: "specificLabRefId", value: specificLabRefId },
+        { name: "gstTypeRefId", value: gstTypeRefId },
+        { name: "plantRefId", value: plantRefId },
+        { name: "fittingCenterRefId", value: fittingCenterRefId },
+        { name: "creditDaysRefId", value: creditDaysRefId },
+        { name: "courierNameRefId", value: courierNameRefId },
+        { name: "courierTimeRefId", value: courierTimeRefId },
       ];
 
       for (const field of optionalRefIds) {
         if (field.value && !isValidObjectId(field.value)) {
-          return sendErrorResponse(res, 400, "VALIDATION_ERROR",
-            `${field.name} must be a valid ObjectId (24 hex characters)`);
+          return sendErrorResponse(
+            res,
+            400,
+            "VALIDATION_ERROR",
+            `${field.name} must be a valid ObjectId (24 hex characters)`,
+          );
         }
       }
 
       if (!customerpassword) {
-        return sendErrorResponse(res, 400, "VALIDATION_ERROR", "Password is required for FINANCE department");
+        return sendErrorResponse(
+          res,
+          400,
+          "VALIDATION_ERROR",
+          "Password is required for FINANCE department",
+        );
       }
 
-      if (!brandCategories || !Array.isArray(brandCategories) || brandCategories.length === 0) {
-        return sendErrorResponse(res, 400, "VALIDATION_ERROR", "brandCategories array with at least one brand is required for FINANCE department");
+      if (
+        !brandCategories ||
+        !Array.isArray(brandCategories) ||
+        brandCategories.length === 0
+      ) {
+        return sendErrorResponse(
+          res,
+          400,
+          "VALIDATION_ERROR",
+          "brandCategories array with at least one brand is required for FINANCE department",
+        );
       }
 
       for (let i = 0; i < brandCategories.length; i++) {
         const brand = brandCategories[i];
         if (!brand.brandName || !brand.brandId) {
-          return sendErrorResponse(res, 400, "VALIDATION_ERROR", `brandCategories[${i}]: brandName and brandId are required`);
+          return sendErrorResponse(
+            res,
+            400,
+            "VALIDATION_ERROR",
+            `brandCategories[${i}]: brandName and brandId are required`,
+          );
         }
         if (!isValidObjectId(brand.brandId)) {
-          return sendErrorResponse(res, 400, "VALIDATION_ERROR", `brandCategories[${i}].brandId must be a valid ObjectId`);
+          return sendErrorResponse(
+            res,
+            400,
+            "VALIDATION_ERROR",
+            `brandCategories[${i}].brandId must be a valid ObjectId`,
+          );
         }
-        if (!brand.categories || !Array.isArray(brand.categories) || brand.categories.length === 0) {
-          return sendErrorResponse(res, 400, "VALIDATION_ERROR", `brandCategories[${i}]: categories array with at least one category is required`);
+        if (
+          !brand.categories ||
+          !Array.isArray(brand.categories) ||
+          brand.categories.length === 0
+        ) {
+          return sendErrorResponse(
+            res,
+            400,
+            "VALIDATION_ERROR",
+            `brandCategories[${i}]: categories array with at least one category is required`,
+          );
         }
         for (let j = 0; j < brand.categories.length; j++) {
           const category = brand.categories[j];
           if (!category.categoryName || !category.categoryId) {
-            return sendErrorResponse(res, 400, "VALIDATION_ERROR", `brandCategories[${i}].categories[${j}]: categoryName and categoryId are required`);
+            return sendErrorResponse(
+              res,
+              400,
+              "VALIDATION_ERROR",
+              `brandCategories[${i}].categories[${j}]: categoryName and categoryId are required`,
+            );
           }
           if (!isValidObjectId(category.categoryId)) {
-            return sendErrorResponse(res, 400, "VALIDATION_ERROR", `brandCategories[${i}].categories[${j}].categoryId must be a valid ObjectId`);
+            return sendErrorResponse(
+              res,
+              400,
+              "VALIDATION_ERROR",
+              `brandCategories[${i}].categories[${j}].categoryId must be a valid ObjectId`,
+            );
           }
         }
       }
 
       if (!salesPerson || !salesPersonRefId) {
-        return sendErrorResponse(res, 400, "VALIDATION_ERROR", "salesPerson and salesPersonRefId are required for FINANCE department");
+        return sendErrorResponse(
+          res,
+          400,
+          "VALIDATION_ERROR",
+          "salesPerson and salesPersonRefId are required for FINANCE department",
+        );
       }
     }
 
@@ -256,12 +371,18 @@ export const customerBasicRegistration = async (req, res) => {
       const isValidObjectId = (id) => /^[0-9a-fA-F]{24}$/.test(id);
 
       if (CustomerTypeRefId && !isValidObjectId(CustomerTypeRefId)) {
-        return sendErrorResponse(res, 400, "VALIDATION_ERROR",
-          `CustomerTypeRefId must be a valid ObjectId (24 hex characters)`);
+        return sendErrorResponse(
+          res,
+          400,
+          "VALIDATION_ERROR",
+          `CustomerTypeRefId must be a valid ObjectId (24 hex characters)`,
+        );
       }
     }
 
-    const existingCustomer = await Customer.findOne({ emailId: emailId.toLowerCase() });
+    const existingCustomer = await Customer.findOne({
+      emailId: emailId.toLowerCase(),
+    });
     if (existingCustomer) {
       return sendErrorResponse(
         res,
@@ -278,22 +399,29 @@ export const customerBasicRegistration = async (req, res) => {
       // Customer Info.
       shopName: shopName.trim(),
       ownerName: ownerName.trim(),
-      CustomerType: CustomerTypeRefId ? {
-        name: CustomerType,
-        refId: CustomerTypeRefId
-      } : undefined,
+      CustomerType: CustomerTypeRefId
+        ? {
+            name: CustomerType,
+            refId: CustomerTypeRefId,
+          }
+        : undefined,
       orderMode,
       mobileNo1,
       mobileNo2,
       landlineNo,
       emailId: emailId.toLowerCase().trim(),
-      businessEmail: businessEmail ? businessEmail.toLowerCase().trim() : undefined,
+      businessEmail: businessEmail
+        ? businessEmail.toLowerCase().trim()
+        : undefined,
       IsGSTRegistered,
       GSTNumber: IsGSTRegistered ? GSTNumber : undefined,
-      gstType: IsGSTRegistered && gstType ? {
-        name: gstType,
-        refId: gstTypeRefId
-      } : undefined,
+      gstType:
+        IsGSTRegistered && gstType
+          ? {
+              name: gstType,
+              refId: gstTypeRefId,
+            }
+          : undefined,
       GSTCertificateImg: IsGSTRegistered ? GSTCertificateImg : undefined,
       PANCard: !IsGSTRegistered ? PANCard : undefined,
       AadharCard: !IsGSTRegistered ? AadharCard : undefined,
@@ -314,73 +442,126 @@ export const customerBasicRegistration = async (req, res) => {
       })),
 
       // Customer Registration - Only for FINANCE department or SUPERADMIN
-      password: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') ? customerpassword : undefined,
-      brandCategories: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') && brandCategories ? brandCategories : undefined,
+      password:
+        isFinanceDepartment || userEmployeeType === "SUPERADMIN"
+          ? customerpassword
+          : undefined,
+      brandCategories:
+        (isFinanceDepartment || userEmployeeType === "SUPERADMIN") &&
+        brandCategories
+          ? brandCategories
+          : undefined,
 
-      zone: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') && zone && zoneRefId ? {
-        name: zone,
-        refId: zoneRefId
-      } : undefined,
-      
-      salesPerson: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') && salesPerson && salesPersonRefId ? {
-        name: salesPerson,
-        refId: salesPersonRefId
-      } : undefined,
-      
-      specificLab: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') && specificLab && specificLabRefId ? {
-        name: specificLab,
-        refId: specificLabRefId
-      } : undefined,
+      zone:
+        (isFinanceDepartment || userEmployeeType === "SUPERADMIN") &&
+        zone &&
+        zoneRefId
+          ? {
+              name: zone,
+              refId: zoneRefId,
+            }
+          : undefined,
 
-      fittingCenter: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') && fittingCenter && fittingCenterRefId ? {
-        name: fittingCenter,
-        refId: fittingCenterRefId
-      } : undefined,
+      salesPerson:
+        (isFinanceDepartment || userEmployeeType === "SUPERADMIN") &&
+        salesPerson &&
+        salesPersonRefId
+          ? {
+              name: salesPerson,
+              refId: salesPersonRefId,
+            }
+          : undefined,
 
-      plant: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') && plant && plantRefId ? {
-        name: plant,
-        refId: plantRefId
-      } : undefined,
+      specificLab:
+        (isFinanceDepartment || userEmployeeType === "SUPERADMIN") &&
+        specificLab &&
+        specificLabRefId
+          ? {
+              name: specificLab,
+              refId: specificLabRefId,
+            }
+          : undefined,
 
-      creditLimit: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') ? creditLimit : null,
+      fittingCenter:
+        (isFinanceDepartment || userEmployeeType === "SUPERADMIN") &&
+        fittingCenter &&
+        fittingCenterRefId
+          ? {
+              name: fittingCenter,
+              refId: fittingCenterRefId,
+            }
+          : undefined,
 
-      creditDays: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') && creditDays && creditDaysRefId ? {
-        name: creditDays,
-        refId: creditDaysRefId
-      } : undefined,
+      plant:
+        (isFinanceDepartment || userEmployeeType === "SUPERADMIN") &&
+        plant &&
+        plantRefId
+          ? {
+              name: plant,
+              refId: plantRefId,
+            }
+          : undefined,
 
-      courierName: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') && courierName && courierNameRefId ? {
-        name: courierName,
-        refId: courierNameRefId
-      } : undefined,
+      creditLimit:
+        isFinanceDepartment || userEmployeeType === "SUPERADMIN"
+          ? creditLimit
+          : null,
 
-      courierTime: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') && courierTime && courierTimeRefId ? {
-        name: courierTime,
-        refId: courierTimeRefId
-      } : undefined,
+      creditDays:
+        (isFinanceDepartment || userEmployeeType === "SUPERADMIN") &&
+        creditDays &&
+        creditDaysRefId
+          ? {
+              name: creditDays,
+              refId: creditDaysRefId,
+            }
+          : undefined,
+
+      courierName:
+        (isFinanceDepartment || userEmployeeType === "SUPERADMIN") &&
+        courierName &&
+        courierNameRefId
+          ? {
+              name: courierName,
+              refId: courierNameRefId,
+            }
+          : undefined,
+
+      courierTime:
+        (isFinanceDepartment || userEmployeeType === "SUPERADMIN") &&
+        courierTime &&
+        courierTimeRefId
+          ? {
+              name: courierTime,
+              refId: courierTimeRefId,
+            }
+          : undefined,
 
       // System Internal details
       dcWithoutValue: false,
       designation: "Customer",
       createdBy: req.user.id,
       createdByDepartment: userDepartment,
-      approvalStatus: isSalesDepartment ? 'PENDING_FINANCE' : 'APPROVED',
+      approvalStatus: isSalesDepartment ? "PENDING_FINANCE" : "APPROVED",
       emailOtp: EmailOtp,
       emailOtpExpires: new Date(Date.now() + 10 * 60 * 1000),
       mobileOtp: MobileOtp,
       mobileOtpExpires: new Date(Date.now() + 10 * 60 * 1000),
     };
-    
+
     const customer = await Customer.create(customerData);
-    await customerDraftSchema.findOneAndDelete({ emailId: emailId.toLowerCase() });
+    await customerDraftSchema.findOneAndDelete({ _id: draftCustomerId });
 
     // Only send credentials email if password was set (FINANCE department or SUPERADMIN)
-    if ((isFinanceDepartment || userEmployeeType === 'SUPERADMIN') && customerpassword) {
+    if (
+      (isFinanceDepartment || userEmployeeType === "SUPERADMIN") &&
+      customerpassword
+    ) {
       sendEmail({
         to: emailId,
         subject: "Welcome Mail for choosing VISUAL EYES",
         html: CredentialsTemplate(ownerName, emailId, customerpassword),
-      }).catch(err => console.error("Background email error:", err));
+      }).catch((err) => console.error("Background email error:", err));
     }
 
     const customerObj = customer.toObject();
@@ -427,13 +608,18 @@ export const customerForgotPassword = async (req, res) => {
     const { email } = req.body;
 
     if (!email) {
-      return sendErrorResponse(res,
+      return sendErrorResponse(
+        res,
         400,
         "VALIDATION_ERROR",
-        "Please provide email address",);
+        "Please provide email address",
+      );
     }
 
-    const customer = await Customer.findOne({ emailId: email, "Status.isActive": true });
+    const customer = await Customer.findOne({
+      emailId: email,
+      "Status.isActive": true,
+    });
 
     if (!customer) {
       return sendErrorResponse(
@@ -588,47 +774,100 @@ export const financeCompleteCustomer = async (req, res) => {
       return sendErrorResponse(res, 404, "NOT_FOUND", "Customer not found");
     }
 
-    if (customer.approvalStatus === 'APPROVED') {
-      return sendErrorResponse(res, 400, "ALREADY_APPROVED", "Customer is already approved. Cannot update.");
+    if (customer.approvalStatus === "APPROVED") {
+      return sendErrorResponse(
+        res,
+        400,
+        "ALREADY_APPROVED",
+        "Customer is already approved. Cannot update.",
+      );
     }
 
     const requiredFinanceFields = [
-      'password', 'zone', 'plant', 'fittingCenter',
-      'creditDays', 'courierName', 'courierTime',
-      'brandCategories', 'specificLab', 'salesPerson'
+      "password",
+      "zone",
+      "plant",
+      "fittingCenter",
+      "creditDays",
+      "courierName",
+      "courierTime",
+      "brandCategories",
+      "specificLab",
+      "salesPerson",
     ];
 
-    const missingFields = requiredFinanceFields.filter(field => !req.body[field]);
+    const missingFields = requiredFinanceFields.filter(
+      (field) => !req.body[field],
+    );
 
     if (missingFields.length > 0) {
-      return sendErrorResponse(res, 400, "VALIDATION_ERROR", `Missing required fields: ${missingFields.join(', ')}`);
+      return sendErrorResponse(
+        res,
+        400,
+        "VALIDATION_ERROR",
+        `Missing required fields: ${missingFields.join(", ")}`,
+      );
     }
 
     const { brandCategories } = req.body;
     const isValidObjectId = (id) => /^[0-9a-fA-F]{24}$/.test(id);
 
     if (!Array.isArray(brandCategories) || brandCategories.length === 0) {
-      return sendErrorResponse(res, 400, "VALIDATION_ERROR", "brandCategories must be an array with at least one brand");
+      return sendErrorResponse(
+        res,
+        400,
+        "VALIDATION_ERROR",
+        "brandCategories must be an array with at least one brand",
+      );
     }
 
     for (let i = 0; i < brandCategories.length; i++) {
       const brand = brandCategories[i];
       if (!brand.brandName || !brand.brandId) {
-        return sendErrorResponse(res, 400, "VALIDATION_ERROR", `brandCategories[${i}]: brandName and brandId are required`);
+        return sendErrorResponse(
+          res,
+          400,
+          "VALIDATION_ERROR",
+          `brandCategories[${i}]: brandName and brandId are required`,
+        );
       }
       if (!isValidObjectId(brand.brandId)) {
-        return sendErrorResponse(res, 400, "VALIDATION_ERROR", `brandCategories[${i}].brandId must be a valid ObjectId`);
+        return sendErrorResponse(
+          res,
+          400,
+          "VALIDATION_ERROR",
+          `brandCategories[${i}].brandId must be a valid ObjectId`,
+        );
       }
-      if (!brand.categories || !Array.isArray(brand.categories) || brand.categories.length === 0) {
-        return sendErrorResponse(res, 400, "VALIDATION_ERROR", `brandCategories[${i}]: categories array with at least one category is required`);
+      if (
+        !brand.categories ||
+        !Array.isArray(brand.categories) ||
+        brand.categories.length === 0
+      ) {
+        return sendErrorResponse(
+          res,
+          400,
+          "VALIDATION_ERROR",
+          `brandCategories[${i}]: categories array with at least one category is required`,
+        );
       }
       for (let j = 0; j < brand.categories.length; j++) {
         const category = brand.categories[j];
         if (!category.categoryName || !category.categoryId) {
-          return sendErrorResponse(res, 400, "VALIDATION_ERROR", `brandCategories[${i}].categories[${j}]: categoryName and categoryId are required`);
+          return sendErrorResponse(
+            res,
+            400,
+            "VALIDATION_ERROR",
+            `brandCategories[${i}].categories[${j}]: categoryName and categoryId are required`,
+          );
         }
         if (!isValidObjectId(category.categoryId)) {
-          return sendErrorResponse(res, 400, "VALIDATION_ERROR", `brandCategories[${i}].categories[${j}].categoryId must be a valid ObjectId`);
+          return sendErrorResponse(
+            res,
+            400,
+            "VALIDATION_ERROR",
+            `brandCategories[${i}].categories[${j}].categoryId must be a valid ObjectId`,
+          );
         }
       }
     }
@@ -645,7 +884,7 @@ export const financeCompleteCustomer = async (req, res) => {
       creditLimit: req.body.creditLimit,
       courierName: req.body.courierName,
       courierTime: req.body.courierTime,
-      approvalStatus: 'APPROVED',
+      approvalStatus: "APPROVED",
       financeCompletedBy: req.user._id,
       financeCompletedAt: new Date(),
     };
@@ -653,17 +892,22 @@ export const financeCompleteCustomer = async (req, res) => {
     Object.assign(customer, updateData);
     await customer.save();
 
-    return sendSuccessResponse(res, 200, customer, "Customer completed and approved by Finance successfully");
+    return sendSuccessResponse(
+      res,
+      200,
+      customer,
+      "Customer completed and approved by Finance successfully",
+    );
   } catch (error) {
     console.error("Finance complete customer error:", error);
 
-    if (error.name === 'ValidationError') {
-      const messages = Object.values(error.errors).map(err => err.message);
+    if (error.name === "ValidationError") {
+      const messages = Object.values(error.errors).map((err) => err.message);
       return sendErrorResponse(
         res,
         400,
         "VALIDATION_ERROR",
-        messages.join(', ')
+        messages.join(", "),
       );
     }
 
@@ -671,7 +915,7 @@ export const financeCompleteCustomer = async (req, res) => {
       res,
       500,
       "INTERNAL_ERROR",
-      "Internal server error during customer completion"
+      "Internal server error during customer completion",
     );
   }
 };
