@@ -396,8 +396,7 @@ const customerSchema = new mongoose.Schema(
     },
     serialNumber: {
       type: Number,
-      unique: true,
-      required: true
+      unique: true
     },
   },
   { timestamps: true }
