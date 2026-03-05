@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
+import Counter from './Counter.js';
 
 const subRoleSchema = new mongoose.Schema({
   name: {
@@ -301,6 +302,11 @@ const employee = new mongoose.Schema({
     type: Date,
     select: false
   },
+  serialNumber: {
+    type: Number,
+    unique: true,
+    required: true
+  }
 }, {
   timestamps: true,
   toJSON: { 
@@ -324,13 +330,21 @@ employee.methods.comparePassword = async function(candidatePassword) {
 };
 
 employee.pre('save', async function () {
+  if (this.isNew && !this.serialNumber) {
+    try {
+      this.serialNumber = await Counter.getNextSequence('user_serial');
+    } catch (error) {
+      throw error;
+    }
+  }
+
   if (!this.isModified('password') || !this.password) return;
   try {
     const salt = await bcrypt.genSalt(12);
     this.password = await bcrypt.hash(this.password, salt);
   } catch (error) {
     console.log("Error : ", error);
-    return;
+    throw error;
   }
 });
 

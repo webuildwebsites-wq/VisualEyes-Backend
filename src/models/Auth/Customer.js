@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
+import Counter from "./Counter.js";
 
 const addressSchema = new mongoose.Schema(
   {
@@ -393,11 +394,24 @@ const customerSchema = new mongoose.Schema(
       type: String,
       default: "Customer",
     },
+    serialNumber: {
+      type: Number,
+      unique: true,
+      required: true
+    },
   },
   { timestamps: true }
 );
 
 customerSchema.pre("save", async function () {
+  if (this.isNew && !this.serialNumber) {
+    try {
+      this.serialNumber = await Counter.getNextSequence('user_serial');
+    } catch (error) {
+      throw error;
+    }
+  }
+
   if (!this.isModified("password") || !this.password) return;
   const salt = await bcrypt.genSalt(12);
   this.password = await bcrypt.hash(this.password, salt);
