@@ -31,7 +31,6 @@ export const requireSalesOrFinance = (req, res, next) => {
 
 export const requireSalesFinanceOrSuperAdmin = (req, res, next) => {
   const department = req.user.Department || req.user.Department?.name;
-  console.log("req.user : ",req.user);
   const employeeType = req.user.EmployeeType;
   
   if (employeeType === 'SUPERADMIN' || employeeType === 'ADMIN' || ['SALES', 'FINANCE'].includes(department)) {
@@ -43,7 +42,6 @@ export const requireSalesFinanceOrSuperAdmin = (req, res, next) => {
 
 export const attachDepartmentInfo = (req, res, next) => {
   if (req.user) {
-    console.log("req.user  : ",req.user);
     req.userDepartment =  req.user.Department || req.user.Department?.name;
   }
   next();

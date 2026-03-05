@@ -11,6 +11,14 @@ import CredentialsTemplate from "../../../../Utils/Mail/CredentialsTemplate.js";
 import { sendEmail } from "../../../config/Email/emailService.js";
 import Customer from "../../../../models/Auth/Customer.js";
 import customerDraftSchema from "../../../../models/Auth/CustomerDraft.js";
+import CustomerType from "../../../../models/Product/CustomerType.js";
+import Location from "../../../../models/Location/Location.js";
+import SpecificLab from "../../../../models/Product/SpecificLab.js";
+import Plant from "../../../../models/Product/Plant.js";
+import FittingCenter from "../../../../models/Product/FittingCenter.js";
+import CreditDay from "../../../../models/Product/CreditDay.js";
+import CourierName from "../../../../models/Product/CourierName.js";
+import CourierTime from "../../../../models/Product/CourierTime.js";
 import dotenv from "dotenv";
 import crypto from "crypto";
 import mongoose from "mongoose";
@@ -763,7 +771,7 @@ export const customerUpdatePassword = async (req, res) => {
 export const financeCompleteCustomer = async (req, res) => {
   try {
     const { customerId } = req.params;
-    const userDepartment = req.user.Department?.name || req.user.Department;
+    // const userDepartment = req.user.Department?.name || req.user.Department;
     // if (userDepartment !== 'FINANCE') {
     //   return sendErrorResponse(res, 403, "FORBIDDEN", "Only Finance department can complete customer registration");
     // }
@@ -917,5 +925,309 @@ export const financeCompleteCustomer = async (req, res) => {
       "INTERNAL_ERROR",
       "Internal server error during customer completion",
     );
+  }
+};
+
+
+export const updateCustomerProfile = async (req, res) => {
+  try {
+    const customerId = req.params.customerId;
+    const updateData = req.body;
+
+    const customer = await Customer.findById(customerId);
+    console.log("customer : ",customer);
+
+    if (!customer) {
+      return sendErrorResponse(res, 404, "NOT_FOUND", "Customer not found");
+    }
+
+    const updateFields = {};
+
+    if (updateData.shopName) updateFields.shopName = updateData.shopName;
+    if (updateData.ownerName) updateFields.ownerName = updateData.ownerName;
+    if (updateData.mobileNo1) updateFields.mobileNo1 = updateData.mobileNo1;
+    if (updateData.mobileNo2) updateFields.mobileNo2 = updateData.mobileNo2;
+    if (updateData.landlineNo) updateFields.landlineNo = updateData.landlineNo;
+    if (updateData.businessEmail)
+      updateFields.businessEmail = updateData.businessEmail;
+
+    // Validate CustomerType
+    if (updateData.CustomerType && updateData.CustomerTypeRefId) {
+      const customerType = await CustomerType.findById(updateData.CustomerTypeRefId);
+      if (!customerType) {
+        return sendErrorResponse(
+          res,
+          404,
+          "INVALID_REF_ID",
+          `CustomerType with refId ${updateData.CustomerTypeRefId} does not exist`
+        );
+      }
+      if (customerType.name !== updateData.CustomerType) {
+        return sendErrorResponse(
+          res,
+          400,
+          "NAME_MISMATCH",
+          `Incorrect CustomerType name for refId ${updateData.CustomerTypeRefId}. Expected: ${customerType.name}, Received: ${updateData.CustomerType}`
+        );
+      }
+      updateFields.CustomerType = {
+        name: updateData.CustomerType,
+        refId: updateData.CustomerTypeRefId,
+      };
+    }
+
+    // Validate zone
+    if (updateData.zone && updateData.zoneRefId) {
+      const location = await Location.findById(updateData.zoneRefId);
+      if (!location) {
+        return sendErrorResponse(
+          res,
+          404,
+          "INVALID_REF_ID",
+          `Zone with refId ${updateData.zoneRefId} does not exist`
+        );
+      }
+      if (location.zone !== updateData.zone.toUpperCase()) {
+        return sendErrorResponse(
+          res,
+          400,
+          "NAME_MISMATCH",
+          `Incorrect zone name for refId ${updateData.zoneRefId}. Expected: ${location.zone}, Received: ${updateData.zone}`
+        );
+      }
+      updateFields.zone = {
+        name: updateData.zone.toUpperCase(),
+        refId: updateData.zoneRefId,
+      };
+    }
+
+    // Validate specificLab
+    if (updateData.specificLab && updateData.specificLabRefId) {
+      const specificLab = await SpecificLab.findById(updateData.specificLabRefId);
+      if (!specificLab) {
+        return sendErrorResponse(
+          res,
+          404,
+          "INVALID_REF_ID",
+          `SpecificLab with refId ${updateData.specificLabRefId} does not exist`
+        );
+      }
+      if (specificLab.name !== updateData.specificLab) {
+        return sendErrorResponse(
+          res,
+          400,
+          "NAME_MISMATCH",
+          `Incorrect specificLab name for refId ${updateData.specificLabRefId}. Expected: ${specificLab.name}, Received: ${updateData.specificLab}`
+        );
+      }
+      updateFields.specificLab = {
+        name: updateData.specificLab,
+        refId: updateData.specificLabRefId,
+      };
+    }
+
+    // Validate plant
+    if (updateData.plant && updateData.plantRefId) {
+      const plant = await Plant.findById(updateData.plantRefId);
+      if (!plant) {
+        return sendErrorResponse(
+          res,
+          404,
+          "INVALID_REF_ID",
+          `Plant with refId ${updateData.plantRefId} does not exist`
+        );
+      }
+      if (plant.name !== updateData.plant) {
+        return sendErrorResponse(
+          res,
+          400,
+          "NAME_MISMATCH",
+          `Incorrect plant name for refId ${updateData.plantRefId}. Expected: ${plant.name}, Received: ${updateData.plant}`
+        );
+      }
+      updateFields.plant = {
+        name: updateData.plant,
+        refId: updateData.plantRefId,
+      };
+    }
+
+    // Validate fittingCenter
+    if (updateData.fittingCenter && updateData.fittingCenterRefId) {
+      const fittingCenter = await FittingCenter.findById(updateData.fittingCenterRefId);
+      if (!fittingCenter) {
+        return sendErrorResponse(
+          res,
+          404,
+          "INVALID_REF_ID",
+          `FittingCenter with refId ${updateData.fittingCenterRefId} does not exist`
+        );
+      }
+      if (fittingCenter.name !== updateData.fittingCenter) {
+        return sendErrorResponse(
+          res,
+          400,
+          "NAME_MISMATCH",
+          `Incorrect fittingCenter name for refId ${updateData.fittingCenterRefId}. Expected: ${fittingCenter.name}, Received: ${updateData.fittingCenter}`
+        );
+      }
+      updateFields.fittingCenter = {
+        name: updateData.fittingCenter,
+        refId: updateData.fittingCenterRefId,
+      };
+    }
+
+    // Validate creditDays
+    if (updateData.creditDays && updateData.creditDaysRefId) {
+      const creditDay = await CreditDay.findById(updateData.creditDaysRefId);
+      if (!creditDay) {
+        return sendErrorResponse(
+          res,
+          404,
+          "INVALID_REF_ID",
+          `CreditDays with refId ${updateData.creditDaysRefId} does not exist`
+        );
+      }
+      if (creditDay.days.toString() !== updateData.creditDays.toString()) {
+        return sendErrorResponse(
+          res,
+          400,
+          "NAME_MISMATCH",
+          `Incorrect creditDays value for refId ${updateData.creditDaysRefId}. Expected: ${creditDay.days}, Received: ${updateData.creditDays}`
+        );
+      }
+      updateFields.creditDays = {
+        name: updateData.creditDays,
+        refId: updateData.creditDaysRefId,
+      };
+    }
+
+    // Validate courierName
+    if (updateData.courierName && updateData.courierNameRefId) {
+      const courierName = await CourierName.findById(updateData.courierNameRefId);
+      if (!courierName) {
+        return sendErrorResponse(
+          res,
+          404,
+          "INVALID_REF_ID",
+          `CourierName with refId ${updateData.courierNameRefId} does not exist`
+        );
+      }
+      if (courierName.name !== updateData.courierName) {
+        return sendErrorResponse(
+          res,
+          400,
+          "NAME_MISMATCH",
+          `Incorrect courierName for refId ${updateData.courierNameRefId}. Expected: ${courierName.name}, Received: ${updateData.courierName}`
+        );
+      }
+      updateFields.courierName = {
+        name: updateData.courierName,
+        refId: updateData.courierNameRefId,
+      };
+    }
+
+    // Validate courierTime
+    if (updateData.courierTime && updateData.courierTimeRefId) {
+      const courierTime = await CourierTime.findById(updateData.courierTimeRefId);
+      if (!courierTime) {
+        return sendErrorResponse(
+          res,
+          404,
+          "INVALID_REF_ID",
+          `CourierTime with refId ${updateData.courierTimeRefId} does not exist`
+        );
+      }
+      const courierTimeValue = `${courierTime.location} - ${courierTime.time}`;
+      if (courierTimeValue !== updateData.courierTime) {
+        return sendErrorResponse(
+          res,
+          400,
+          "NAME_MISMATCH",
+          `Incorrect courierTime for refId ${updateData.courierTimeRefId}. Expected: ${courierTimeValue}, Received: ${updateData.courierTime}`
+        );
+      }
+      updateFields.courierTime = {
+        name: updateData.courierTime,
+        refId: updateData.courierTimeRefId,
+      };
+    }
+
+    if (updateData.address) {
+      if (!Array.isArray(updateData.address) || updateData.address.length === 0) {
+        return sendErrorResponse(
+          res,
+          400,
+          "VALIDATION_ERROR",
+          "Address must be    an array with at least one address",
+        );
+      }
+      for (const addr of updateData.address) {
+        if (
+          !addr.branchAddress ||
+          !addr.contactPerson ||
+          !addr.contactNumber ||
+          !addr.country ||
+          !addr.state ||
+          !addr.city ||
+          !addr.zipCode ||
+          !addr.billingCurrency ||
+          !addr.billingMode
+        ) {
+          return sendErrorResponse(
+            res,
+            400,
+            "VALIDATION_ERROR",
+            "All address fields are required",
+          );
+        }
+      }
+      updateFields.address = updateData.address.map((addr) => ({
+        branchAddress: addr.branchAddress.trim(),
+        contactPerson: addr.contactPerson.trim(),
+        contactNumber: addr.contactNumber.trim(),
+        country: addr.country,
+        state: addr.state,
+        zipCode: addr.zipCode,
+        city: addr.city.trim(),
+        billingCurrency: addr.billingCurrency,
+        billingMode: addr.billingMode,
+      }));
+    }
+
+    if (updateData.emailId) {
+      const existingCustomer = await Customer.findOne({
+        emailId: updateData.emailId.toLowerCase(),
+        _id: { $ne: customerId },
+      });
+      if (existingCustomer) {
+        return sendErrorResponse(
+          res,
+          409,
+          "EMAIL_EXISTS",
+          "Another customer with this email already exists",
+        );
+      }
+      updateFields.emailId = updateData.emailId.toLowerCase().trim();
+    }
+
+    Object.assign(customer, updateFields);
+    await customer.save();
+
+    const customerObj = customer.toObject();
+    delete customerObj.password;
+    delete customerObj.emailOtp;
+    delete customerObj.mobileOtp;
+
+    return sendSuccessResponse(res, 200, { customer: customerObj }, "Customer profile updated successfully");
+  } catch (error) {
+    console.error("Update customer profile error:", error);
+    if (error.name === "ValidationError") {
+      const messages = Object.values(error.errors).map((err) => err.message);
+      return sendErrorResponse(res, 400, "VALIDATION_ERROR", messages.join(", "));
+    }
+    if (error.code === 11000) {
+      return sendErrorResponse(res, 409, "DUPLICATE_FIELD", "Email already exists");
+    }
+    return sendErrorResponse(res, 500, "INTERNAL_ERROR", "Internal server error during profile update");
   }
 };

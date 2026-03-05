@@ -1,5 +1,5 @@
 import express from 'express';
-import { customerForgotPassword, customerLogin,customerResetPassword,customerUpdatePassword, customerBasicRegistration, financeCompleteCustomer } from '../../core/controllers/Auth/Customers/CustomerAuth.js';
+import { customerForgotPassword, customerLogin,customerResetPassword,customerUpdatePassword, customerBasicRegistration, financeCompleteCustomer, updateCustomerProfile } from '../../core/controllers/Auth/Customers/CustomerAuth.js';
 import { getAllCustomers, getCustomerById, getCustomerProfile, getDraftCustomers, getPendingFinanceCustomers } from '../../core/controllers/Auth/Customers/customer.get.controller.js';
 import { requireSalesFinanceOrSuperAdmin, attachDepartmentInfo } from '../../middlewares/Auth/AdminMiddleware/departmentMiddleware.js';
 import { protectCustomer } from '../../middlewares/Auth/CustomerMiddleware/customerMiddleware.js';
@@ -16,8 +16,11 @@ customerRouter.post('/register', ProtectUser, attachDepartmentInfo, requireSales
 
 customerRouter.post('/draft-register', ProtectUser, attachDepartmentInfo, requireSalesFinanceOrSuperAdmin, customerDraftRegistration);
 
+// FINANCE COMPLETE
+customerRouter.put('/:customerId/finance-complete', ProtectUser, attachDepartmentInfo, financeCompleteCustomer);
 
-customerRouter.put('/:customerId/finance-update', ProtectUser, attachDepartmentInfo, financeCompleteCustomer);
+// UPDATE CUSTOMER PROFILE
+customerRouter.put('/update-profile/:customerId', ProtectUser, updateCustomerProfile);
 
 // FORGOT PASSWORD
 customerRouter.post('/forgot-password',  customerForgotPassword);
