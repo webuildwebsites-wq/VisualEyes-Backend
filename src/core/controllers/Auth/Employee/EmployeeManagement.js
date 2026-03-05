@@ -557,7 +557,13 @@ export const getAllEmployees = async (req, res) => {
 export const updateEmployeeDetails = async (req, res) => {
   try {
     const { userId } = req.params;
-    const updates = req.body;
+    let updates = req.body;
+
+    if (!updates || typeof updates !== 'object') {
+      return sendErrorResponse(res, 400, 'INVALID_PAYLOAD', 'Request body must be a JSON object containing fields to update');
+    }
+
+    updates = { ...updates };
 
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       return sendErrorResponse(res, 400, 'INVALID_ID', 'Invalid user ID format');
@@ -568,6 +574,9 @@ export const updateEmployeeDetails = async (req, res) => {
     delete updates.createdBy;
     delete updates._id;
 
+      if (Object.keys(updates).length === 0) {
+        return sendErrorResponse(res, 400, 'NO_UPDATES', 'No updatable fields supplied');
+      }
     let query = { _id: userId, isActive: true };
 
     if (req.user.EmployeeType === 'SUPERADMIN') {

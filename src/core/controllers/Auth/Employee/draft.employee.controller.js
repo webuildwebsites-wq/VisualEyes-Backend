@@ -121,7 +121,7 @@ export const updateDraftEmployee = async (req, res) => {
     const updatedDraft = await employeeDraftSchema.findByIdAndUpdate(
       draftId,
       { $set: updateFields },
-      { new: true, runValidators: true }
+      { returnDocument: 'after', runValidators: true }
     ).select('-password');
 
     return sendSuccessResponse(res, 200, { employee: updatedDraft }, 'Draft employee updated successfully');

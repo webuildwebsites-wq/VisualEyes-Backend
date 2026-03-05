@@ -614,7 +614,7 @@ export const updateDraftCustomer = async (req, res) => {
     const updatedDraft = await customerDraftSchema.findByIdAndUpdate(
       draftId,
       { $set: updateFields },
-      { new: true, runValidators: true }
+      { returnDocument: 'after', runValidators: true }
     ).select('-password');
 
     return sendSuccessResponse(res, 200, { customer: updatedDraft }, 'Draft customer updated successfully');
