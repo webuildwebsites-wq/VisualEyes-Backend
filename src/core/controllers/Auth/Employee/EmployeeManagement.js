@@ -249,9 +249,19 @@ export const createEmployee = async (req, res) => {
 
     const newUser = new employeeSchema(userData);
     await newUser.save();
-    await employeeDraftSchema.findOneAndDelete({
-      _id: draftEmployeeId
-    });
+    
+    if (draftEmployeeId) {
+      try {
+        const deletedDraft = await employeeDraftSchema.findByIdAndDelete(draftEmployeeId);
+        if (deletedDraft) {
+          console.log(`Draft employee ${draftEmployeeId} deleted successfully`);
+        } else {
+          console.warn(`Draft employee ${draftEmployeeId} not found for deletion`);
+        }
+      } catch (draftError) {
+        console.error(`Error deleting draft employee ${draftEmployeeId}:`, draftError);
+      }
+    }
 
     const userResponse = newUser.toObject();
     delete userResponse.password;

@@ -546,7 +546,19 @@ export const customerBasicRegistration = async (req, res) => {
     };
 
     const customer = await Customer.create(customerData);
-    await customerDraftSchema.findOneAndDelete({ _id: draftCustomerId });
+    
+    if (draftCustomerId) {
+      try {
+        const deletedDraft = await customerDraftSchema.findByIdAndDelete(draftCustomerId);
+        if (deletedDraft) {
+          console.log(`Draft customer ${draftCustomerId} deleted successfully`);
+        } else {
+          console.warn(`Draft customer ${draftCustomerId} not found for deletion`);
+        }
+      } catch (draftError) {
+        console.error(`Error deleting draft customer ${draftCustomerId}:`, draftError);
+      }
+    }
 
     // Only send credentials email if password was set (FINANCE department or SUPERADMIN)
     if (

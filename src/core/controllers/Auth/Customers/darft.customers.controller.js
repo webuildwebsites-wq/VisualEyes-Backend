@@ -1,6 +1,4 @@
 import { sendErrorResponse, sendSuccessResponse } from "../../../../Utils/response/responseHandler.js";
-import CredentialsTemplate from "../../../../Utils/Mail/CredentialsTemplate.js";
-import { sendEmail } from "../../../config/Email/emailService.js";
 import Customer from "../../../../models/Auth/Customer.js";
 import customerDraftSchema from "../../../../models/Auth/CustomerDraft.js";
 import dotenv from "dotenv";
@@ -180,16 +178,6 @@ export const customerDraftRegistration = async (req, res) => {
     };
 
     const customer = await customerDraftSchema.create(customerData);
-
-    // Only send credentials email if password was set (FINANCE department or SUPERADMIN)
-    if ((isFinanceDepartment || userEmployeeType === 'SUPERADMIN') && customerpassword) {
-      sendEmail({
-        to: emailId,
-        subject: "Welcome Mail for choosing VISUAL EYES",
-        html: CredentialsTemplate(ownerName, emailId, customerpassword),
-      }).catch(err => console.error("Background email error:", err));
-    }
-
     const customerObj = customer.toObject();
     delete customerObj.password;
     delete customerObj.emailOtp;
