@@ -1,4 +1,4 @@
-import { sendErrorResponse,sendSuccessResponse } from "../../../../Utils/response/responseHandler.js";
+import { sendErrorResponse, sendSuccessResponse } from "../../../../Utils/response/responseHandler.js";
 import Customer from "../../../../models/Auth/Customer.js";
 import dotenv from "dotenv";
 import CustomerDraft from "../../../../models/Auth/CustomerDraft.js";
@@ -35,7 +35,7 @@ export const getCustomerById = async (req, res) => {
     const customer = await Customer.findById(customerId);
 
     if (!customer) {
-      return sendErrorResponse( res, 404, "USER_NOT_FOUND", "Customer not found");
+      return sendErrorResponse(res, 404, "USER_NOT_FOUND", "Customer not found");
     }
 
     return sendSuccessResponse(res, 200, customer, "customer profile fetch successfully");
@@ -58,7 +58,7 @@ export const getDraftCustomers = async (req, res) => {
     const customer = await CustomerDraft.findById(customerId);
 
     if (!customer) {
-      return sendErrorResponse( res, 404, "USER_NOT_FOUND", "Customer not found");
+      return sendErrorResponse(res, 404, "USER_NOT_FOUND", "Customer not found");
     }
 
     return sendSuccessResponse(res, 200, customer, "customer profile fetch successfully");
@@ -73,23 +73,22 @@ export const getDraftCustomers = async (req, res) => {
   }
 };
 
-
 export const getAllCustomers = async (req, res) => {
   try {
     const page = Math.max(parseInt(req.query.page) || 1, 1);
     const limit = Math.min(parseInt(req.query.limit) || 10, 100);
     const skip = (page - 1) * limit;
 
-    const { 
-      shopName, 
-      customerType, 
-      status, 
-      createdByDepartment, 
-      zone, 
-      specificBrand, 
-      specificCategory, 
-      fromDate, 
-      toDate 
+    const {
+      shopName,
+      customerType,
+      status,
+      createdByDepartment,
+      zone,
+      specificBrand,
+      specificCategory,
+      fromDate,
+      toDate
     } = req.query;
 
     let query = {};
@@ -107,7 +106,7 @@ export const getAllCustomers = async (req, res) => {
         query.isActive = true;
       } else if (status.toLowerCase() === 'inactive') {
         query.isActive = false;
-      } 
+      }
     }
 
     if (createdByDepartment) {
@@ -148,7 +147,6 @@ export const getAllCustomers = async (req, res) => {
       if (endDate) query.createdAt.$lte = endDate;
     }
 
-    console.log("query : ",query);
 
     const [customers, total] = await Promise.all([
       Customer
@@ -180,22 +178,35 @@ export const getAllCustomers = async (req, res) => {
 
 export const getPendingFinanceCustomers = async (req, res) => {
   try {
-    const customers = await Customer.find({
-      approvalStatus: 'PENDING_FINANCE',
-      createdByDepartment: 'SALES'
-    })
-      .populate('createdBy', 'username employeeName employeeName email Department')
-      .sort({ createdAt: -1 });
+    const page = Math.max(parseInt(req.query.page) || 1, 1);
+    const limit = Math.min(parseInt(req.query.limit) || 10, 100);
+    const skip = (page - 1) * limit;
 
-    return sendSuccessResponse(
-      res,
-      200,
-      {
-        count: customers.length,
-        customers
-      },
-      "Pending Finance approval customers retrieved successfully"
-    );
+    const [customers, total] = await Promise.all([
+      Customer.find({
+        approvalStatus: 'PENDING_FINANCE'
+      })
+        .populate('createdBy', 'username employeeName employeeName email Department')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Customer.countDocuments({
+        approvalStatus: 'PENDING_FINANCE'
+      })
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    const pagination = {
+      currentPage: page,
+      totalPages,
+      totalCustomers: total,
+      hasNext: page < totalPages,
+      hasPrev: page > 1
+    };
+
+    return sendSuccessResponse(res, 200, { customers, pagination }, "Pending Finance approval customers retrieved successfully");
   } catch (error) {
     console.error("Get pending finance customers error:", error);
     return sendErrorResponse(

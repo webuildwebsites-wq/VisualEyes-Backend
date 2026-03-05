@@ -143,13 +143,9 @@ export const customerBasicRegistration = async (req, res) => {
     } = req.body;
 
     const userEmployeeType = req.user?.EmployeeType;
-    const userDepartment =
-      userEmployeeType === "SUPERADMIN"
-        ? "SUPERADMIN"
-        : req.user?.Department?.name || req.user?.Department;
+    const userDepartment = userEmployeeType === "SUPERADMIN" ? "SUPERADMIN" : req.user?.Department?.name || req.user?.Department;
     const isSalesDepartment = userDepartment === "SALES";
-    const isFinanceDepartment =
-      userDepartment === "FINANCE" || userEmployeeType === "SUPERADMIN";
+    const isFinanceDepartment = userDepartment === "FINANCE" || userEmployeeType === "SUPERADMIN";
 
     // Check if user is from Sales or Finance department
     // if (!['SALES', 'FINANCE'].includes(userDepartment)) {
@@ -409,9 +405,9 @@ export const customerBasicRegistration = async (req, res) => {
       ownerName: ownerName.trim(),
       CustomerType: CustomerTypeRefId
         ? {
-            name: CustomerType,
-            refId: CustomerTypeRefId,
-          }
+          name: CustomerType,
+          refId: CustomerTypeRefId,
+        }
         : undefined,
       orderMode,
       mobileNo1,
@@ -426,9 +422,9 @@ export const customerBasicRegistration = async (req, res) => {
       gstType:
         IsGSTRegistered && gstType
           ? {
-              name: gstType,
-              refId: gstTypeRefId,
-            }
+            name: gstType,
+            refId: gstTypeRefId,
+          }
           : undefined,
       GSTCertificateImg: IsGSTRegistered ? GSTCertificateImg : undefined,
       PANCard: !IsGSTRegistered ? PANCard : undefined,
@@ -450,64 +446,56 @@ export const customerBasicRegistration = async (req, res) => {
       })),
 
       // Customer Registration - Only for FINANCE department or SUPERADMIN
-      password:
-        isFinanceDepartment || userEmployeeType === "SUPERADMIN"
-          ? customerpassword
-          : undefined,
-      brandCategories:
-        (isFinanceDepartment || userEmployeeType === "SUPERADMIN") &&
-        brandCategories
-          ? brandCategories
-          : undefined,
+      password: isFinanceDepartment || userEmployeeType === "SUPERADMIN" ? customerpassword : undefined,
+      brandCategories: (isFinanceDepartment || userEmployeeType === "SUPERADMIN") && brandCategories ? brandCategories : undefined,
 
-      zone:
-        (isFinanceDepartment || userEmployeeType === "SUPERADMIN") &&
+      zone: (isFinanceDepartment || userEmployeeType === "SUPERADMIN") &&
         zone &&
         zoneRefId
-          ? {
-              name: zone,
-              refId: zoneRefId,
-            }
-          : undefined,
+        ? {
+          name: zone,
+          refId: zoneRefId,
+        }
+        : undefined,
 
       salesPerson:
         (isFinanceDepartment || userEmployeeType === "SUPERADMIN") &&
-        salesPerson &&
-        salesPersonRefId
+          salesPerson &&
+          salesPersonRefId
           ? {
-              name: salesPerson,
-              refId: salesPersonRefId,
-            }
+            name: salesPerson,
+            refId: salesPersonRefId,
+          }
           : undefined,
 
       specificLab:
         (isFinanceDepartment || userEmployeeType === "SUPERADMIN") &&
-        specificLab &&
-        specificLabRefId
+          specificLab &&
+          specificLabRefId
           ? {
-              name: specificLab,
-              refId: specificLabRefId,
-            }
+            name: specificLab,
+            refId: specificLabRefId,
+          }
           : undefined,
 
       fittingCenter:
         (isFinanceDepartment || userEmployeeType === "SUPERADMIN") &&
-        fittingCenter &&
-        fittingCenterRefId
+          fittingCenter &&
+          fittingCenterRefId
           ? {
-              name: fittingCenter,
-              refId: fittingCenterRefId,
-            }
+            name: fittingCenter,
+            refId: fittingCenterRefId,
+          }
           : undefined,
 
       plant:
         (isFinanceDepartment || userEmployeeType === "SUPERADMIN") &&
-        plant &&
-        plantRefId
+          plant &&
+          plantRefId
           ? {
-              name: plant,
-              refId: plantRefId,
-            }
+            name: plant,
+            refId: plantRefId,
+          }
           : undefined,
 
       creditLimit:
@@ -517,32 +505,32 @@ export const customerBasicRegistration = async (req, res) => {
 
       creditDays:
         (isFinanceDepartment || userEmployeeType === "SUPERADMIN") &&
-        creditDays &&
-        creditDaysRefId
+          creditDays &&
+          creditDaysRefId
           ? {
-              name: creditDays,
-              refId: creditDaysRefId,
-            }
+            name: creditDays,
+            refId: creditDaysRefId,
+          }
           : undefined,
 
       courierName:
         (isFinanceDepartment || userEmployeeType === "SUPERADMIN") &&
-        courierName &&
-        courierNameRefId
+          courierName &&
+          courierNameRefId
           ? {
-              name: courierName,
-              refId: courierNameRefId,
-            }
+            name: courierName,
+            refId: courierNameRefId,
+          }
           : undefined,
 
       courierTime:
         (isFinanceDepartment || userEmployeeType === "SUPERADMIN") &&
-        courierTime &&
-        courierTimeRefId
+          courierTime &&
+          courierTimeRefId
           ? {
-              name: courierTime,
-              refId: courierTimeRefId,
-            }
+            name: courierTime,
+            refId: courierTimeRefId,
+          }
           : undefined,
 
       // System Internal details
@@ -771,10 +759,11 @@ export const customerUpdatePassword = async (req, res) => {
 export const financeCompleteCustomer = async (req, res) => {
   try {
     const { customerId } = req.params;
-    // const userDepartment = req.user.Department?.name || req.user.Department;
-    // if (userDepartment !== 'FINANCE') {
-    //   return sendErrorResponse(res, 403, "FORBIDDEN", "Only Finance department can complete customer registration");
-    // }
+    const userDepartment = req.user.Department?.name || req.user.Department;
+
+    if (userDepartment !== 'FINANCE' && userDepartment !== 'SUPERADMIN') {
+      return sendErrorResponse(res, 403, "FORBIDDEN", "Only Finance department can complete customer registration");
+    }
 
     const customer = await Customer.findById(customerId);
 
@@ -792,7 +781,6 @@ export const financeCompleteCustomer = async (req, res) => {
     }
 
     const requiredFinanceFields = [
-      "password",
       "zone",
       "plant",
       "fittingCenter",
@@ -804,9 +792,7 @@ export const financeCompleteCustomer = async (req, res) => {
       "salesPerson",
     ];
 
-    const missingFields = requiredFinanceFields.filter(
-      (field) => !req.body[field],
-    );
+    const missingFields = requiredFinanceFields.filter((field) => !req.body[field],);
 
     if (missingFields.length > 0) {
       return sendErrorResponse(
@@ -935,7 +921,7 @@ export const updateCustomerProfile = async (req, res) => {
     const updateData = req.body;
 
     const customer = await Customer.findById(customerId);
-    console.log("customer : ",customer);
+    console.log("customer : ", customer);
 
     if (!customer) {
       return sendErrorResponse(res, 404, "NOT_FOUND", "Customer not found");

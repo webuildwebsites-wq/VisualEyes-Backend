@@ -25,7 +25,7 @@ const employee = new mongoose.Schema({
     unique: true,
     trim: true,
     minlength: [3, 'Username must be at least 3 characters'],
-    maxlength: [10, 'Username cannot exceed 10 characters']
+    maxlength: [15, 'Username cannot exceed 15 characters']
   },
   email: {
     type: String,
