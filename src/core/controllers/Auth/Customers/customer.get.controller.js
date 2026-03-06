@@ -88,10 +88,30 @@ export const getAllCustomers = async (req, res) => {
       specificBrand,
       specificCategory,
       fromDate,
-      toDate
+      toDate,
+      search
     } = req.query;
 
     let query = {};
+
+    if (search) {
+      const searchConditions = [];
+      
+      if (!isNaN(search)) {
+        searchConditions.push({ serialNumber: Number(search) });
+      }
+      
+      searchConditions.push({ ownerName: { $regex: search, $options: 'i' } });
+      searchConditions.push({ shopName: { $regex: search, $options: 'i' } });
+      searchConditions.push({ mobileNo1: { $regex: search, $options: 'i' } });
+      searchConditions.push({ mobileNo2: { $regex: search, $options: 'i' } });
+      searchConditions.push({ landlineNo: { $regex: search, $options: 'i' } });
+      searchConditions.push({ emailId: { $regex: search, $options: 'i' } });
+      searchConditions.push({ businessEmail: { $regex: search, $options: 'i' } });
+      searchConditions.push({ 'salesPerson.name': { $regex: search, $options: 'i' } });
+      
+      query.$or = searchConditions;
+    }
 
     if (shopName) {
       query.shopName = { $regex: shopName, $options: 'i' };

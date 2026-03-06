@@ -249,7 +249,7 @@ export const createEmployee = async (req, res) => {
 
     const newUser = new employeeSchema(userData);
     await newUser.save();
-    
+
     if (draftEmployeeId) {
       try {
         const deletedDraft = await employeeDraftSchema.findByIdAndDelete(draftEmployeeId);
@@ -487,8 +487,10 @@ export const getAllEmployees = async (req, res) => {
       labs,
       status,
       fromDate,
-      toDate
+      toDate,
+      search
     } = req.query;
+    console.log("search.: ",search);
 
     let query = {};
 
@@ -502,6 +504,21 @@ export const getAllEmployees = async (req, res) => {
 
     if (labs) {
       query['lab.name'] = labs.toUpperCase();
+    }
+
+    if (search) {
+      const searchConditions = [];
+      
+      if (!isNaN(search)) {
+        searchConditions.push({ serialNumber: Number(search) });
+      }
+      
+      searchConditions.push({ employeeName: { $regex: search, $options: 'i' } });
+      searchConditions.push({ username: { $regex: search, $options: 'i' } });
+      searchConditions.push({ phone: { $regex: search, $options: 'i' } });
+      searchConditions.push({ email: { $regex: search, $options: 'i' } });
+      
+      query.$or = searchConditions;
     }
 
     let startDate, endDate;
@@ -584,9 +601,9 @@ export const updateEmployeeDetails = async (req, res) => {
     delete updates.createdBy;
     delete updates._id;
 
-      if (Object.keys(updates).length === 0) {
-        return sendErrorResponse(res, 400, 'NO_UPDATES', 'No updatable fields supplied');
-      }
+    if (Object.keys(updates).length === 0) {
+      return sendErrorResponse(res, 400, 'NO_UPDATES', 'No updatable fields supplied');
+    }
     let query = { _id: userId, isActive: true };
 
     if (req.user.EmployeeType === 'SUPERADMIN') {
