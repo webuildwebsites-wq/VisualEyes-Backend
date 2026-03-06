@@ -120,12 +120,12 @@ export const getAllCustomers = async (req, res) => {
     if (customerType) {
       query['CustomerType.refId'] = customerType;
     }
-
+    console.log("status : ",status);
     if (status) {
       if (status.toLowerCase() === 'active') {
-        query.isActive = true;
+        query['Status.isActive'] = true;
       } else if (status.toLowerCase() === 'inactive') {
-        query.isActive = false;
+         query['Status.isActive'] = false;
       }
     }
 
@@ -166,8 +166,7 @@ export const getAllCustomers = async (req, res) => {
       if (startDate) query.createdAt.$gte = startDate;
       if (endDate) query.createdAt.$lte = endDate;
     }
-
-
+    console.log("query : ",query);
     const [customers, total] = await Promise.all([
       Customer
         .find(query)
