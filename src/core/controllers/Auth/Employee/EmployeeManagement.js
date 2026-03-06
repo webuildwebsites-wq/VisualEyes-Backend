@@ -483,40 +483,39 @@ export const getAllEmployees = async (req, res) => {
 
     const {
       department,
-      type,
-      labs,
+      EmployeeType,
       status,
       fromDate,
       toDate,
       search
     } = req.query;
-    console.log("search.: ",search);
+
+    const searchTerm = Array.isArray(search) ? search[0] : search;
+    const departmentTerm = Array.isArray(department) ? department[0] : department;
+    const employeeTypeTerm = Array.isArray(EmployeeType) ? EmployeeType[0] : EmployeeType;
+    const statusTerm = Array.isArray(status) ? status[0] : status;
 
     let query = {};
 
-    if (department) {
-      query['Department.name'] = department.toUpperCase();
+    if (departmentTerm) {
+      query['Department.name'] = departmentTerm.toUpperCase();
     }
 
-    if (type) {
-      query.EmployeeType = type.toUpperCase();
+    if (employeeTypeTerm) {
+      query.EmployeeType = employeeTypeTerm.toUpperCase();
     }
 
-    if (labs) {
-      query['lab.name'] = labs.toUpperCase();
-    }
-
-    if (search) {
+    if (searchTerm) {
       const searchConditions = [];
       
-      if (!isNaN(search)) {
-        searchConditions.push({ serialNumber: Number(search) });
+      if (!isNaN(searchTerm)) {
+        searchConditions.push({ serialNumber: Number(searchTerm) });
       }
       
-      searchConditions.push({ employeeName: { $regex: search, $options: 'i' } });
-      searchConditions.push({ username: { $regex: search, $options: 'i' } });
-      searchConditions.push({ phone: { $regex: search, $options: 'i' } });
-      searchConditions.push({ email: { $regex: search, $options: 'i' } });
+      searchConditions.push({ employeeName: { $regex: searchTerm, $options: 'i' } });
+      searchConditions.push({ username: { $regex: searchTerm, $options: 'i' } });
+      searchConditions.push({ phone: { $regex: searchTerm, $options: 'i' } });
+      searchConditions.push({ email: { $regex: searchTerm, $options: 'i' } });
       
       query.$or = searchConditions;
     }
@@ -543,10 +542,10 @@ export const getAllEmployees = async (req, res) => {
       if (endDate) query.createdAt.$lte = endDate;
     }
 
-    if (status) {
-      if (status.toLowerCase() === 'active') {
+    if (statusTerm) {
+      if (statusTerm.toLowerCase() === 'active') {
         query.isActive = true;
-      } else if (status.toLowerCase() === 'inactive') {
+      } else if (statusTerm.toLowerCase() === 'inactive') {
         query.isActive = false;
       }
     }

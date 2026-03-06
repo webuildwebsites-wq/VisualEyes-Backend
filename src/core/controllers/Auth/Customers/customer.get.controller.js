@@ -80,7 +80,6 @@ export const getAllCustomers = async (req, res) => {
     const skip = (page - 1) * limit;
 
     const {
-      shopName,
       customerType,
       status,
       createdByDepartment,
@@ -92,57 +91,61 @@ export const getAllCustomers = async (req, res) => {
       search
     } = req.query;
 
+    const searchTerm = Array.isArray(search) ? search[0] : search;
+    const customerTypeTerm = Array.isArray(customerType) ? customerType[0] : customerType;
+    const statusTerm = Array.isArray(status) ? status[0] : status;
+    const createdByDepartmentTerm = Array.isArray(createdByDepartment) ? createdByDepartment[0] : createdByDepartment;
+    const zoneTerm = Array.isArray(zone) ? zone[0] : zone;
+    const specificBrandTerm = Array.isArray(specificBrand) ? specificBrand[0] : specificBrand;
+    const specificCategoryTerm = Array.isArray(specificCategory) ? specificCategory[0] : specificCategory;
+
     let query = {};
 
-    if (search) {
+    if (searchTerm) {
       const searchConditions = [];
       
-      if (!isNaN(search)) {
-        searchConditions.push({ serialNumber: Number(search) });
+      if (!isNaN(searchTerm)) {
+        searchConditions.push({ serialNumber: Number(searchTerm) });
       }
       
-      searchConditions.push({ ownerName: { $regex: search, $options: 'i' } });
-      searchConditions.push({ shopName: { $regex: search, $options: 'i' } });
-      searchConditions.push({ mobileNo1: { $regex: search, $options: 'i' } });
-      searchConditions.push({ mobileNo2: { $regex: search, $options: 'i' } });
-      searchConditions.push({ landlineNo: { $regex: search, $options: 'i' } });
-      searchConditions.push({ emailId: { $regex: search, $options: 'i' } });
-      searchConditions.push({ businessEmail: { $regex: search, $options: 'i' } });
-      searchConditions.push({ 'salesPerson.name': { $regex: search, $options: 'i' } });
+      searchConditions.push({ ownerName: { $regex: searchTerm, $options: 'i' } });
+      searchConditions.push({ shopName: { $regex: searchTerm, $options: 'i' } });
+      searchConditions.push({ mobileNo1: { $regex: searchTerm, $options: 'i' } });
+      searchConditions.push({ mobileNo2: { $regex: searchTerm, $options: 'i' } });
+      searchConditions.push({ landlineNo: { $regex: searchTerm, $options: 'i' } });
+      searchConditions.push({ emailId: { $regex: searchTerm, $options: 'i' } });
+      searchConditions.push({ businessEmail: { $regex: searchTerm, $options: 'i' } });
+      searchConditions.push({ 'salesPerson.name': { $regex: searchTerm, $options: 'i' } });
       
       query.$or = searchConditions;
     }
 
-    if (shopName) {
-      query.shopName = { $regex: shopName, $options: 'i' };
+    if (customerTypeTerm) {
+      query['CustomerType.refId'] = customerTypeTerm;
     }
 
-    if (customerType) {
-      query['CustomerType.refId'] = customerType;
-    }
-    console.log("status : ",status);
-    if (status) {
-      if (status.toLowerCase() === 'active') {
+    if (statusTerm) {
+      if (statusTerm.toLowerCase() === 'active') {
         query['Status.isActive'] = true;
-      } else if (status.toLowerCase() === 'inactive') {
+      } else if (statusTerm.toLowerCase() === 'inactive') {
          query['Status.isActive'] = false;
       }
     }
 
-    if (createdByDepartment) {
-      query.createdByDepartment = createdByDepartment.toUpperCase();
+    if (createdByDepartmentTerm) {
+      query.createdByDepartment = createdByDepartmentTerm.toUpperCase();
     }
 
-    if (zone) {
-      query['zone.refId'] = zone;
+    if (zoneTerm) {
+      query['zone.refId'] = zoneTerm;
     }
 
-    if (specificBrand) {
-      query['brandCategories.brandId'] = specificBrand;
+    if (specificBrandTerm) {
+      query['brandCategories.brandId'] = specificBrandTerm;
     }
 
-    if (specificCategory) {
-      query['brandCategories.categories.categoryId'] = specificCategory;
+    if (specificCategoryTerm) {
+      query['brandCategories.categories.categoryId'] = specificCategoryTerm;
     }
 
     let startDate, endDate;
