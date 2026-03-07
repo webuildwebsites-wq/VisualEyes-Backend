@@ -9,7 +9,7 @@ import employeeDraftSchema from '../../../../models/Auth/EmployeeDraft.js';
 export const createEmployee = async (req, res) => {
   try {
     const { employeeType, username, employeeName, email, password, phone, address, department, departmentRefId, country,
-      pincode, expiry, zone, zoneRefId, aadharCard, panCard, lab, labRefId, subRoles, aadharCardImg, panCardImg, draftEmployeeId, employeeImageUrl } = req.body;
+      pincode, expiry, zone, zoneRefId, aadharCard, panCard, lab, labRefId, subRoles, aadharCardImg, panCardImg, draftEmployeeId, employeeProfileImg } = req.body;
 
     let assignedSupervisor = null;
 
@@ -217,10 +217,6 @@ export const createEmployee = async (req, res) => {
 
       assignedSupervisor = await employeeSchema.findOne(supervisorQuery);
 
-      if (assignedSupervisor && req.user.EmployeeType === 'SUPERVISOR' && assignedSupervisor._id.toString() !== req.user.id.toString()) {
-        return sendErrorResponse(res, 403, 'FORBIDDEN', 'Supervisors can only assign themselves as supervisor');
-      }
-
       const teamLeadQuery = {
         EmployeeType: 'TEAMLEAD',
         'Department.name': department.toUpperCase(),
@@ -399,10 +395,6 @@ export const createDraftEmployee = async (req, res) => {
       }
 
       assignedSupervisor = await employeeSchema.findOne(supervisorQuery);
-
-      if (assignedSupervisor && req.user.EmployeeType === 'SUPERVISOR' && assignedSupervisor._id.toString() !== req.user.id.toString()) {
-        return sendErrorResponse(res, 403, 'FORBIDDEN', 'Supervisors can only assign themselves as supervisor');
-      }
 
       const teamLeadQuery = {
         EmployeeType: 'TEAMLEAD',
@@ -728,41 +720,34 @@ export const deactivateEmployee = async (req, res) => {
       return sendErrorResponse(res, 400, 'INVALID_ID', 'Invalid user ID format');
     }
 
-    let query = { _id: userId, isActive: true };
-    if (req.user.EmployeeType === 'SUPERADMIN') {
-      const targetUser = await employeeSchema.findById(userId);
-      if (targetUser && targetUser.EmployeeType === 'SUPERADMIN') {
-        return sendErrorResponse(res, 403, 'FORBIDDEN', 'Cannot deactivate another SuperAdmin');
-      }
-    } else if (req.user.EmployeeType === 'ADMIN') {
-      const targetUser = await employeeSchema.findById(userId);
-      if (targetUser && targetUser.EmployeeType === 'SUPERADMIN') {
-        return sendErrorResponse(res, 403, 'FORBIDDEN', 'Admin cannot deactivate SuperAdmin');
-      }
-    } else if (req.user.EmployeeType === 'SUPERVISOR') {
-      query['Department.name'] = req.user.Department;
-      query['zone.name'] = req.user.zone;
-      query.EmployeeType = 'EMPLOYEE';
-    } else {
-      return sendErrorResponse(res, 403, 'FORBIDDEN', 'Insufficient privileges to deactivate users');
-    }
-    const user = await employeeSchema.findOne(query);
-    if (!user) {
-      return sendErrorResponse(res, 404, 'USER_NOT_FOUND', 'Employee not found or not authorized to deactivate');
+    const department = req.user.Department?.name || req.user.Department;
+    const employeeType = req.user.EmployeeType;
+
+    const targetUser = await employeeSchema.findById(userId);
+
+    if (!targetUser || !targetUser.isActive) {
+      return sendErrorResponse(res, 404, 'USER_NOT_FOUND', 'Employee not found or already inactive');
     }
 
-    user.isActive = false;
-    await user.save();
+    if (employeeType === 'SUPERADMIN' && targetUser.EmployeeType === 'SUPERADMIN') {
+      return sendErrorResponse(res, 403, 'FORBIDDEN', 'Cannot deactivate another SuperAdmin');
+    }
+
+    if (employeeType === 'ADMIN' && targetUser.EmployeeType === 'SUPERADMIN') {
+      return sendErrorResponse(res, 403, 'FORBIDDEN', 'Admin cannot deactivate SuperAdmin');
+    }
+
+    if (employeeType !== 'SUPERADMIN' && employeeType !== 'ADMIN' && department !== "FINANCE") {
+      return sendErrorResponse(res, 403, "FORBIDDEN', 'You don't have permission to deactivate employees");
+    }
+
+    targetUser.isActive = false;
+    await targetUser.save({ validateBeforeSave: false });
 
     return sendSuccessResponse(res, 200, null, 'Employee deactivated successfully');
 
   } catch (error) {
     console.error('Deactivate employee error:', error);
-
-    if (error.name === 'CastError') {
-      return sendErrorResponse(res, 400, 'INVALID_ID', `Invalid ${error.path} format. Please provide a valid MongoDB ObjectId`);
-    }
-
     return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to deactivate employee');
   }
 };

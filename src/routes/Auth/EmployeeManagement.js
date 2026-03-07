@@ -8,7 +8,7 @@ const employeeManagementRouter = express.Router();
 
 employeeManagementRouter.use(ProtectUser);
 
-employeeManagementRouter.post('/create-employee', requireSubAdminOrHigher, createEmployee);
+employeeManagementRouter.post('/create-employee',  createEmployee);
 employeeManagementRouter.post('/create-draft-employee',  createDraftEmployee);
 
 
@@ -23,7 +23,7 @@ employeeManagementRouter.get('/get-draft-employee/:userId',  getDraftEmployeeDet
 employeeManagementRouter.put('/update-employee/:userId', canManageEmployee, updateEmployeeDetails);
 employeeManagementRouter.delete('/deactivate-draft-employee/:draftId',  deactivateEmployeeDraft);
 
-employeeManagementRouter.delete('/delete-employee/:userId', canManageEmployee, deactivateEmployee);
+employeeManagementRouter.delete('/delete-employee/:userId',  deactivateEmployee);
 
 employeeManagementRouter.get('/supervisors', requireSubAdminOrHigher, getSupervisorsByDepartment);
 

@@ -9,7 +9,7 @@ export const employeeLogin = async (req, res) => {
   try {
     const { username, password } = req.body;
     if (!username || !password) {
-      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Please provide username/email and password');
+      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Please provide username and password');
     }
 
     const user = await employeeSchema.findOne({ 
@@ -21,7 +21,7 @@ export const employeeLogin = async (req, res) => {
     .populate('createdBy supervisor', 'username employeeName email');
 
     if (!user) {
-      return sendErrorResponse(res, 401, 'INVALID_CREDENTIALS', 'Invalid credentials');
+      return sendErrorResponse(res, 401, 'INVALID_CREDENTIALS', 'Invalid credentials or account is inactive');
     }
     
     if (user.isLocked) {

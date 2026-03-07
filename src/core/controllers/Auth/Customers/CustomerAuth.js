@@ -38,14 +38,14 @@ export const customerLogin = async (req, res) => {
       );
     }
 
-    const customer = await Customer.findOne({ emailId }).select("+password");
+    const customer = await Customer.findOne({ emailId, 'Status.isActive': true }).select("+password");
 
     if (!customer) {
       return sendErrorResponse(
         res,
         401,
         "INVALID_CREDENTIALS",
-        "Invalid credentials",
+        "Invalid credentials or account is inactive",
       );
     }
 
