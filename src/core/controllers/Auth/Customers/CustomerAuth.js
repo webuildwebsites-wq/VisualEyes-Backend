@@ -11,7 +11,6 @@ import CredentialsTemplate from "../../../../Utils/Mail/CredentialsTemplate.js";
 import { sendEmail } from "../../../config/Email/emailService.js";
 import Customer from "../../../../models/Auth/Customer.js";
 import customerDraftSchema from "../../../../models/Auth/CustomerDraft.js";
-import CustomerType from "../../../../models/Product/CustomerType.js";
 import Location from "../../../../models/Location/Location.js";
 import SpecificLab from "../../../../models/Product/SpecificLab.js";
 import Plant from "../../../../models/Product/Plant.js";

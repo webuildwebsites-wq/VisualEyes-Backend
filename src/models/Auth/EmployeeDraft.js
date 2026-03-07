@@ -164,77 +164,77 @@ const employee = new mongoose.Schema(
       select: false,
     },
     permissions: {
-        CanCreateEmployee: {
-          type: Boolean,
-        },
-        CanManageEmployee: {
-          type: Boolean,
-        },
-        CanManageDepartments: {
-          type: Boolean,
-         
-        },
-        CanManageAllDepartments: {
-          type: Boolean,
-         
-        },
-        CanCreateOrders: {
-          type: Boolean,
-          default: true,
-        },
-        CanUpdateOrders: {
-          type: Boolean,
-          default: true,
-        },
-        CanViewOrders: {
-          type: Boolean,
-          default: true,
-        },
-        CanDeleteOrders: {
-          type: Boolean,
-          
-        },
-        CanProcessWorkflow: {
-          type: Boolean,
-          default: true,
-        },
-        CanApproveWorkflow: {
-          type: Boolean,
-          
-        },
-        CanCreateCustomers: {
-          type: Boolean,
-          default: true,
-        },
-        CanManageCustomers: {
-          type: Boolean,
-          default: true,
-        },
-        CanManageProducts: {
-          type: Boolean,
-          default: true,
-        },
-        CanViewFinancials: {
-          type: Boolean,
-          default: true,
-        },
-        CanManageFinancials: {
-          type: Boolean,
-         
-        },
-        CanManageSettings: {
-          type: Boolean,
-         
-        },
-        CanViewReports: {
-          type: Boolean,
-         
-        },
-        CanExportReports: {
-          type: Boolean,
-          
-        },
+      CanCreateEmployee: {
+        type: Boolean,
       },
+      CanManageEmployee: {
+        type: Boolean,
+      },
+      CanManageDepartments: {
+        type: Boolean,
+
+      },
+      CanManageAllDepartments: {
+        type: Boolean,
+
+      },
+      CanCreateOrders: {
+        type: Boolean,
+        default: true,
+      },
+      CanUpdateOrders: {
+        type: Boolean,
+        default: true,
+      },
+      CanViewOrders: {
+        type: Boolean,
+        default: true,
+      },
+      CanDeleteOrders: {
+        type: Boolean,
+
+      },
+      CanProcessWorkflow: {
+        type: Boolean,
+        default: true,
+      },
+      CanApproveWorkflow: {
+        type: Boolean,
+
+      },
+      CanCreateCustomers: {
+        type: Boolean,
+        default: true,
+      },
+      CanManageCustomers: {
+        type: Boolean,
+        default: true,
+      },
+      CanManageProducts: {
+        type: Boolean,
+        default: true,
+      },
+      CanViewFinancials: {
+        type: Boolean,
+        default: true,
+      },
+      CanManageFinancials: {
+        type: Boolean,
+
+      },
+      CanManageSettings: {
+        type: Boolean,
+
+      },
+      CanViewReports: {
+        type: Boolean,
+
+      },
+      CanExportReports: {
+        type: Boolean,
+
+      },
+    },
     profile: {
       dateOfJoining: {
         type: Date,
@@ -247,7 +247,7 @@ const employee = new mongoose.Schema(
         name: String,
         phone: {
           type: String,
-  
+
         },
         relation: String,
       },
@@ -266,11 +266,11 @@ const employee = new mongoose.Schema(
       type: Date,
       select: false,
     },
-    employeeProfileImg : {
-    type: String,
-    trim: true,
-    default: null 
-  },
+    employeeProfileImg: {
+      type: String,
+      trim: true,
+      default: null
+    },
   },
   {
     timestamps: true,
@@ -302,27 +302,30 @@ employee.pre("save", async function () {
     this.password = await bcrypt.hash(this.password, salt);
   } catch (error) {
     console.log("Error : ", error);
-    return;
+    throw error;
   }
 });
 
-employee.pre('save', function(next) {
-  if (this.isModified('isDeleted') && this.isDeleted === true) {
-    const expiryDate = new Date();
-    expiryDate.setDate(expiryDate.getDate() + 30);
-    this.expireAt = expiryDate;
-    
-    console.log(`Employee Draft will be automatically deleted on ${expiryDate.toISOString()}`);
+employee.pre('save', function () {
+  try {
+    if (this.isModified('isDeleted') && this.isDeleted === true) {
+      const expiryDate = new Date();
+      expiryDate.setDate(expiryDate.getDate() + 30);
+      this.expireAt = expiryDate;
+
+      console.log(`Employee Draft will be automatically deleted on ${expiryDate.toISOString()}`);
+    }
+
+    if (this.isModified('isDeleted') && this.isDeleted === false) {
+      this.expireAt = null;
+      console.log(`Employee Draft restored - automatic deletion cancelled`);
+    }
+  } catch (error) {
+    console.log("erorr : ", error);
+    throw error;
   }
-  
-  if (this.isModified('isDeleted') && this.isDeleted === false) {
-    this.expireAt = null;
-    console.log(`Employee Draft restored - automatic deletion cancelled`);
-  }
-  
-  next();
 });
 
-employee.index({ expireAt: 1 },{ expireAfterSeconds: 0, partialFilterExpression: { expireAt: { $ne: null } } });
+employee.index({ expireAt: 1 }, { expireAfterSeconds: 0, partialFilterExpression: { expireAt: { $ne: null } } });
 const employeeDraftSchema = mongoose.model('employeeDraft', employee);
 export default employeeDraftSchema;

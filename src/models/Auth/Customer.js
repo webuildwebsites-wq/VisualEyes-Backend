@@ -108,14 +108,14 @@ const customerSchema = new mongoose.Schema(
       type: String,
       minlength: 6,
       select: false,
-      required: function() {
+      required: function () {
         return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
       }
     },
     zone: {
       name: {
         type: String,
-        required: function() {
+        required: function () {
           return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
         }
       },
@@ -136,14 +136,14 @@ const customerSchema = new mongoose.Schema(
     specificLab: {
       name: {
         type: String,
-        required: function() {
+        required: function () {
           return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
         }
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'SpecificLab',
-        required: function() {
+        required: function () {
           return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
         }
       }
@@ -172,7 +172,7 @@ const customerSchema = new mongoose.Schema(
         }]
       }],
       validate: {
-        validator: function(value) {
+        validator: function (value) {
           if (['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED') {
             return value && value.length > 0;
           }
@@ -184,14 +184,14 @@ const customerSchema = new mongoose.Schema(
     salesPerson: {
       name: {
         type: String,
-        required: function() {
+        required: function () {
           return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
         }
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'employee',
-        required: function() {
+        required: function () {
           return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
         }
       }
@@ -259,14 +259,14 @@ const customerSchema = new mongoose.Schema(
     plant: {
       name: {
         type: String,
-        required: function() {
+        required: function () {
           return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
         }
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Plant',
-        required: function() {
+        required: function () {
           return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
         }
       }
@@ -283,14 +283,14 @@ const customerSchema = new mongoose.Schema(
     fittingCenter: {
       name: {
         type: String,
-        required: function() {
+        required: function () {
           return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
         }
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'FittingCenter',
-        required: function() {
+        required: function () {
           return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
         }
       }
@@ -303,14 +303,14 @@ const customerSchema = new mongoose.Schema(
     creditDays: {
       name: {
         type: String,
-        required: function() {
+        required: function () {
           return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
         }
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'CreditDay',
-        required: function() {
+        required: function () {
           return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
         }
       }
@@ -318,14 +318,14 @@ const customerSchema = new mongoose.Schema(
     courierName: {
       name: {
         type: String,
-        required: function() {
+        required: function () {
           return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
         }
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'CourierName',
-        required: function() {
+        required: function () {
           return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
         }
       }
@@ -333,14 +333,14 @@ const customerSchema = new mongoose.Schema(
     courierTime: {
       name: {
         type: String,
-        required: function() {
+        required: function () {
           return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
         }
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'CourierTime',
-        required: function() {
+        required: function () {
           return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
         }
       }
@@ -349,16 +349,16 @@ const customerSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    Status : {
-      isSuspended : {
-        type : Boolean,
-        default : false
+    Status: {
+      isSuspended: {
+        type: Boolean,
+        default: false
       },
-      isActive : {
-        type : Boolean,
-        default : true,
+      isActive: {
+        type: Boolean,
+        default: true,
       },
-      suspensionReason : String,
+      suspensionReason: String,
     },
     isDeleted: {
       type: Boolean,
@@ -392,7 +392,7 @@ const customerSchema = new mongoose.Schema(
     approvalStatus: {
       type: String,
       enum: ['PENDING_FINANCE', 'APPROVED'],
-      default: function() {
+      default: function () {
         return this.createdByDepartment === 'SALES' ? 'PENDING_FINANCE' : 'APPROVED';
       }
     },
@@ -429,31 +429,38 @@ customerSchema.pre("save", async function () {
   }
 
   if (!this.isModified("password") || !this.password) return;
-  const salt = await bcrypt.genSalt(12);
-  this.password = await bcrypt.hash(this.password, salt);
+  try {
+    const salt = await bcrypt.genSalt(12);
+    this.password = await bcrypt.hash(this.password, salt);
+  } catch (error) {
+    throw error;
+  }
 });
 
-customerSchema.pre('save', function(next) {
-  if (this.isModified('isDeleted') && this.isDeleted === true) {
-    const expiryDate = new Date();
-    expiryDate.setDate(expiryDate.getDate() + 30);
-    this.expireAt = expiryDate;
-    
-    console.log(`Customer ${this.shopName} will be automatically deleted on ${expiryDate.toISOString()}`);
+customerSchema.pre('save', function () {
+  try {
+    if (this.isModified('isDeleted') && this.isDeleted === true) {
+      const expiryDate = new Date();
+      expiryDate.setDate(expiryDate.getDate() + 30);
+      this.expireAt = expiryDate;
+
+      console.log(`Customer ${this.shopName} will be automatically deleted on ${expiryDate.toISOString()}`);
+    }
+
+    if (this.isModified('isDeleted') && this.isDeleted === false) {
+      this.expireAt = null;
+      console.log(`Customer ${this.shopName} restored - automatic deletion cancelled`);
+    }
+  } catch (error) {
+    console.log("Error : ", error);
+    throw error;
   }
-  
-  if (this.isModified('isDeleted') && this.isDeleted === false) {
-    this.expireAt = null;
-    console.log(`Customer ${this.shopName} restored - automatic deletion cancelled`);
-  }
-  
-  next();
 });
 
 customerSchema.methods.comparePassword = async function (candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };
 
-customerSchema.index({ expireAt: 1 },{ expireAfterSeconds: 0, partialFilterExpression: { expireAt: { $ne: null } } });
+customerSchema.index({ expireAt: 1 }, { expireAfterSeconds: 0, partialFilterExpression: { expireAt: { $ne: null } } });
 const Customer = mongoose.model('Customer', customerSchema);
 export default Customer;

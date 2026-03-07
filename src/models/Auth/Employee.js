@@ -62,9 +62,9 @@ const employee = new mongoose.Schema({
     trim: true,
   },
   EmployeeType: {
-      type: String,
-      required: [true, 'Employee type is required'],
-      trim: true
+    type: String,
+    required: [true, 'Employee type is required'],
+    trim: true
   },
   ProfilePicture: {
     type: String,
@@ -75,14 +75,14 @@ const employee = new mongoose.Schema({
     name: {
       type: String,
       trim: true,
-      required: function() {
+      required: function () {
         return this.EmployeeType !== 'SUPERADMIN';
       }
     },
     refId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Department',
-      required: function() {
+      required: function () {
         return this.EmployeeType !== 'SUPERADMIN';
       }
     }
@@ -101,7 +101,7 @@ const employee = new mongoose.Schema({
   zone: {
     name: {
       type: String,
-      required: function() {
+      required: function () {
         const dept = this.Department?.name || this.Department;
         return ['EMPLOYEE', 'SUPERVISOR', 'TEAMLEAD'].includes(this.EmployeeType) && dept === 'SALES';
       },
@@ -111,7 +111,7 @@ const employee = new mongoose.Schema({
     refId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Location',
-      required: function() {
+      required: function () {
         const dept = this.Department?.name || this.Department;
         return ['EMPLOYEE', 'SUPERVISOR', 'TEAMLEAD'].includes(this.EmployeeType) && dept === 'SALES';
       }
@@ -139,7 +139,7 @@ const employee = new mongoose.Schema({
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'employee',
-    required: function() {
+    required: function () {
       return !['SUPERADMIN'].includes(this.EmployeeType);
     }
   },
@@ -192,29 +192,29 @@ const employee = new mongoose.Schema({
     type: String,
     select: false
   },
-  
+
   permissions: {
     CanCreateEmployee: {
       type: Boolean,
-      default: function() {
+      default: function () {
         return ['SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(this.EmployeeType);
       }
     },
     CanManageEmployee: {
       type: Boolean,
-      default: function() {
+      default: function () {
         return ['SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(this.EmployeeType);
       }
     },
     CanManageDepartments: {
       type: Boolean,
-      default: function() {
+      default: function () {
         return ['SUPERADMIN', 'ADMIN'].includes(this.EmployeeType);
       }
     },
     CanManageAllDepartments: {
       type: Boolean,
-      default: function() {
+      default: function () {
         return this.EmployeeType === 'ADMIN';
       }
     },
@@ -232,7 +232,7 @@ const employee = new mongoose.Schema({
     },
     CanDeleteOrders: {
       type: Boolean,
-      default: function() {
+      default: function () {
         return ['SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(this.EmployeeType);
       }
     },
@@ -242,7 +242,7 @@ const employee = new mongoose.Schema({
     },
     CanApproveWorkflow: {
       type: Boolean,
-      default: function() {
+      default: function () {
         return ['SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(this.EmployeeType);
       }
     },
@@ -264,25 +264,25 @@ const employee = new mongoose.Schema({
     },
     CanManageFinancials: {
       type: Boolean,
-      default: function() {
+      default: function () {
         return ['SUPERADMIN', 'ADMIN'].includes(this.EmployeeType);
       }
-    },    
+    },
     CanManageSettings: {
       type: Boolean,
-      default: function() {
+      default: function () {
         return ['SUPERADMIN', 'ADMIN'].includes(this.EmployeeType);
       }
     },
     CanViewReports: {
       type: Boolean,
-      default: function() {
+      default: function () {
         return this.EmployeeType !== 'EMPLOYEE';
       }
     },
     CanExportReports: {
       type: Boolean,
-      default: function() {
+      default: function () {
         return ['SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(this.EmployeeType);
       }
     }
@@ -304,7 +304,7 @@ const employee = new mongoose.Schema({
       relation: String
     },
   },
-  
+
   lastLogin: {
     type: Date
   },
@@ -323,30 +323,30 @@ const employee = new mongoose.Schema({
     type: Number,
     unique: true
   },
-  employeeProfileImg : {
+  employeeProfileImg: {
     type: String,
     trim: true,
-    default: null 
+    default: null
   },
-}, {  
+}, {
   timestamps: true,
-  toJSON: { 
+  toJSON: {
     virtuals: true,
-    transform: function(doc, ret) {
+    transform: function (doc, ret) {
       delete ret.id;
       return ret;
     }
   },
-  toObject: { 
+  toObject: {
     virtuals: true,
-    transform: function(doc, ret) {
+    transform: function (doc, ret) {
       delete ret.id;
       return ret;
     }
   }
 });
 
-employee.methods.comparePassword = async function(candidatePassword) {
+employee.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
@@ -369,23 +369,26 @@ employee.pre('save', async function () {
   }
 });
 
-employee.pre('save', function(next) {
-  if (this.isModified('isDeleted') && this.isDeleted === true) {
-    const expiryDate = new Date();
-    expiryDate.setDate(expiryDate.getDate() + 30);
-    this.expireAt = expiryDate;
-    
-    console.log(`Employee ${this.employeeName} will be automatically deleted on ${expiryDate.toISOString()}`);
+employee.pre('save', function () {
+  try {
+    if (this.isModified('isDeleted') && this.isDeleted === true) {
+      const expiryDate = new Date();
+      expiryDate.setDate(expiryDate.getDate() + 30);
+      this.expireAt = expiryDate;
+      console.log(`Employee ${this.employeeName} will be automatically deleted on ${expiryDate.toISOString()}`);
+    }
+
+    if (this.isModified('isDeleted') && this.isDeleted === false) {
+      this.expireAt = null;
+      console.log(`Employee ${this.employeeName} restored - automatic deletion cancelled`);
+    }
+  } catch (error) {
+    console.log("Error : ", error);
+    throw error;
   }
-  
-  if (this.isModified('isDeleted') && this.isDeleted === false) {
-    this.expireAt = null;
-    console.log(`Employee ${this.employeeName} restored - automatic deletion cancelled`);
-  }
-  
-  next();
+
 });
 
-employee.index({ expireAt: 1 },{ expireAfterSeconds: 0, partialFilterExpression: { expireAt: { $ne: null } } });
+employee.index({ expireAt: 1 }, { expireAfterSeconds: 0, partialFilterExpression: { expireAt: { $ne: null } } });
 const employeeSchema = mongoose.model('employee', employee);
 export default employeeSchema;
