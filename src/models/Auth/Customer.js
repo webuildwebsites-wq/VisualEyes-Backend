@@ -356,7 +356,7 @@ const customerSchema = new mongoose.Schema(
       },
       isActive: {
         type: Boolean,
-        default: true,
+        default: false,
       },
       suspensionReason: String,
     },

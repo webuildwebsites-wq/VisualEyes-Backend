@@ -697,6 +697,12 @@ export const customerBasicRegistration = async (req, res) => {
       AadharCard: !IsGSTRegistered ? AadharCard : undefined,
       PANCardImg: !IsGSTRegistered ? PANCardImg : undefined,
       AadharCardImg: !IsGSTRegistered ? AadharCardImg : undefined,
+      
+      // Account Status
+      Status: {
+        isActive: isFinanceDepartment ? true : false,
+        isSuspended: false,
+      },
 
       // Address
       address: address.map((addr) => ({
