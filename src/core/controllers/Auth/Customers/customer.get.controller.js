@@ -81,7 +81,7 @@ export const getAllCustomers = async (req, res) => {
 
     const {
       customerType,
-      status,
+      status = "active",
       createdByDepartment,
       zone,
       specificBrand,

@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import employeeSchema from '../../../models/Auth/Employee.js'
 import dotenv from 'dotenv';
+import Customer from '../../../models/Auth/Customer.js';
 dotenv.config();
 
 export const ProtectUser = async (req, res, next) => {
@@ -28,6 +29,8 @@ export const ProtectUser = async (req, res, next) => {
       let user = await employeeSchema.findById(decoded.id);
       
       if (!user || !user.isActive) {
+        user =  await Customer.findById(decoded.id);
+        if (!user || !user.Status.isActive) {  
           return res.status(401).json({
             success: false,
             error: {
@@ -36,7 +39,9 @@ export const ProtectUser = async (req, res, next) => {
               timestamp: new Date().toISOString()
             }
           });
+
         }
+      }
       
       if (user.isLocked) {
         return res.status(423).json({

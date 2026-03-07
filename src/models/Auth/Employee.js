@@ -305,8 +305,13 @@ const employee = new mongoose.Schema({
   serialNumber: {
     type: Number,
     unique: true
-  }
-}, {
+  },
+  employeeProfileImg : {
+    type: String,
+    trim: true,
+    default: null 
+  },
+}, {  
   timestamps: true,
   toJSON: { 
     virtuals: true,

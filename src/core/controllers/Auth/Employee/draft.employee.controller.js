@@ -139,3 +139,34 @@ export const updateDraftEmployee = async (req, res) => {
     return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to update draft employee');
   }
 };
+
+export const deactivateEmployeeDraft = async (req, res) => {
+  try {
+    const { draftId } = req.params;
+    const userId = req.user.id;
+    const userEmployeeType = req.user?.EmployeeType;
+    const departmentName = req.user?.Department?.name || req.user?.Department;
+
+    const draftEmployee = await employeeDraftSchema.findById(draftId);
+
+    if (!draftEmployee || !draftEmployee.isActive) {
+      return sendErrorResponse(res, 404, 'NOT_FOUND', 'Draft employee not found or already deactivated');
+    }
+
+    const isCreator = draftEmployee.createdBy.toString() === userId.toString();
+    const isSuperAdmin = userEmployeeType === 'SUPERADMIN' || departmentName === 'FINANCE';
+    
+    if (!isCreator && !isSuperAdmin) {
+      return sendErrorResponse(res, 403, 'FORBIDDEN', 'You do not have permission to deactivate this draft');
+    }
+
+    draftEmployee.isActive = false;
+    await draftEmployee.save({ validateBeforeSave: false });
+
+    return sendSuccessResponse(res, 200, null, 'Draft employee deactivated successfully');
+
+  } catch (error) {
+    console.error('Deactivate draft employee error:', error);
+    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to deactivate draft employee');
+  }
+};  

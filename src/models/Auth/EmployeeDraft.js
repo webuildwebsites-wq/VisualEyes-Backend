@@ -249,6 +249,11 @@ const employee = new mongoose.Schema(
       type: Date,
       select: false,
     },
+    employeeProfileImg : {
+    type: String,
+    trim: true,
+    default: null 
+  },
   },
   {
     timestamps: true,

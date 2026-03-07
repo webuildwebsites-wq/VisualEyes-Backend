@@ -9,7 +9,7 @@ import employeeDraftSchema from '../../../../models/Auth/EmployeeDraft.js';
 export const createEmployee = async (req, res) => {
   try {
     const { employeeType, username, employeeName, email, password, phone, address, department, departmentRefId, country,
-      pincode, expiry, zone, zoneRefId, aadharCard, panCard, lab, labRefId, subRoles, aadharCardImg, panCardImg, draftEmployeeId } = req.body;
+      pincode, expiry, zone, zoneRefId, aadharCard, panCard, lab, labRefId, subRoles, aadharCardImg, panCardImg, draftEmployeeId, employeeImageUrl } = req.body;
 
     let assignedSupervisor = null;
 
@@ -260,7 +260,8 @@ export const createEmployee = async (req, res) => {
       createdBy: req.user.id,
       isActive: true,
       aadharCardImg,
-      panCardImg
+      panCardImg,
+      employeeProfileImg,
     };
 
     if (employeeType.toUpperCase() !== 'SUPERADMIN') {
@@ -347,7 +348,7 @@ export const createEmployee = async (req, res) => {
 export const createDraftEmployee = async (req, res) => {
   try {
     const { employeeType, username, employeeName, email, password, phone, address, department, departmentRefId, country,
-      pincode, expiry, zone, zoneRefId, aadharCard, panCard, lab, labRefId, subRoles, aadharCardImg, panCardImg } = req.body;
+      pincode, expiry, zone, zoneRefId, aadharCard, panCard, lab, labRefId, subRoles, aadharCardImg, panCardImg, employeeProfileImg } = req.body;
 
     let assignedSupervisor = null;
 
@@ -464,7 +465,8 @@ export const createDraftEmployee = async (req, res) => {
       createdBy: req.user.id,
       isActive: true,
       aadharCardImg,
-      panCardImg
+      panCardImg,
+      employeeProfileImg
     };
 
     if (employeeType.toUpperCase() !== 'SUPERADMIN') {
@@ -544,7 +546,7 @@ export const getAllEmployees = async (req, res) => {
     const {
       department,
       EmployeeType,
-      status,
+      status = "active",
       fromDate,
       toDate,
       search,
@@ -825,7 +827,7 @@ export const getAllDraftEmployee = async (req, res) => {
       department,
       type,
       labs,
-      status,
+      status = "active",
       fromDate,
       toDate
     } = req.query;

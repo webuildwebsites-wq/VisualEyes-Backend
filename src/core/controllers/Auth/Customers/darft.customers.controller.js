@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { sendErrorResponse, sendSuccessResponse } from "../../../../Utils/response/responseHandler.js";
 import Customer from "../../../../models/Auth/Customer.js";
 import customerDraftSchema from "../../../../models/Auth/CustomerDraft.js";
@@ -226,7 +227,7 @@ export const getAllDraftCustomers = async (req, res) => {
     const { 
       shopName, 
       customerType, 
-      status, 
+      status = "active", 
       createdByDepartment, 
       zone, 
       specificBrand, 
@@ -621,3 +622,85 @@ export const updateDraftCustomer = async (req, res) => {
   }
 };
 
+export const deactivateCustomer = async (req, res) => {
+  try {
+    const { customerId } = req.params;
+    const userEmployeeType = req.user?.EmployeeType;
+    const userDepartment = userEmployeeType === 'SUPERADMIN' ? 'SUPERADMIN' : req.user?.Department?.name || req.user?.Department;
+
+    if (!mongoose.Types.ObjectId.isValid(customerId)) {
+      return sendErrorResponse(res, 400, 'INVALID_ID', 'Invalid customer ID format');
+    }
+
+    const isFinanceDepartment = userDepartment === 'FINANCE' || userEmployeeType === 'SUPERADMIN';
+
+    if (!isFinanceDepartment) {
+      return sendErrorResponse(res, 403, 'FORBIDDEN', 'You do not have permission to delete this customer');
+    }
+
+    const user = await Customer.findOne({ _id: customerId, 'Status.isActive': true });
+    if (!user) {
+      return sendErrorResponse(res, 404, 'USER_NOT_FOUND', 'Customer not found or already deactivated');
+    }
+
+    user.Status.isActive = false;
+    user.Status.isSuspended = true;
+    user.Status.suspensionReason = req?.body?.suspensionReason || 'N/A';
+    await user.save({ validateBeforeSave: false });
+
+    return sendSuccessResponse(res, 200, null, 'Customer deactivated successfully');
+
+  } catch (error) {
+    console.error('Deactivate Customer Error:', error);
+
+    if (error.name === 'CastError') {
+      return sendErrorResponse(res, 400, 'INVALID_ID', `Invalid ${error.path} format. Please provide a valid MongoDB ObjectId`);
+    }
+
+    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to deactivate customer');
+  }
+};
+
+export const deactivateDraftCustomer = async (req, res) => {
+  try {
+    const { draftId } = req.params;
+    const userEmployeeType = req.user?.EmployeeType;
+    const userDepartment = userEmployeeType === 'SUPERADMIN' ? 'SUPERADMIN' : req.user?.Department?.name || req.user?.Department;
+
+    if (!mongoose.Types.ObjectId.isValid(draftId)) {
+      return sendErrorResponse(res, 400, 'INVALID_ID', 'Invalid draft customer ID format');
+    }
+
+    const isFinanceDepartment = userDepartment === 'FINANCE' || userEmployeeType === 'SUPERADMIN';
+
+    const draftCustomer = await customerDraftSchema.findOne({ _id: draftId, 'Status.isActive': true });
+    if (!draftCustomer) {
+      return sendErrorResponse(res, 404, 'DRAFT_NOT_FOUND', 'Draft customer not found or already deactivated');
+    }
+
+    if (draftCustomer.createdBy.toString() !== req.user.id.toString() && !isFinanceDepartment) {
+      return sendErrorResponse(
+      res,
+      403,
+      'FORBIDDEN',
+      'You do not have permission to delete this draft customer'
+    );
+  }
+
+    draftCustomer.Status.isActive = false;
+    draftCustomer.Status.isSuspended = true;
+    draftCustomer.Status.suspensionReason = req?.body?.suspensionReason || 'N/A';
+    await draftCustomer.save({ validateBeforeSave: false });
+
+    return sendSuccessResponse(res, 200, null, 'Draft customer deactivated successfully');
+
+  } catch (error) {
+    console.error('Deactivate Draft Customer Error:', error);
+
+    if (error.name === 'CastError') {
+      return sendErrorResponse(res, 400, 'INVALID_ID', `Invalid ${error.path} format. Please provide a valid MongoDB ObjectId`);
+    }
+
+    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to deactivate draft customer');
+  }
+};

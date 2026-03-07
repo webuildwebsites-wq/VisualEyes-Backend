@@ -6,7 +6,7 @@ import { protectCustomer } from '../../middlewares/Auth/CustomerMiddleware/custo
 import { verifyCustomerEmail } from '../../core/controllers/Auth/Customers/VarifyAccount.js';
 import { ProtectUser } from '../../middlewares/Auth/AdminMiddleware/adminMiddleware.js';
 import { logout, refreshToken } from '../../Utils/Auth/tokenUtils.js';
-import { customerDraftRegistration, getAllDraftCustomers, getMyDraftCustomers, updateDraftCustomer } from '../../core/controllers/Auth/Customers/darft.customers.controller.js';
+import { customerDraftRegistration, deactivateCustomer, deactivateDraftCustomer, getAllDraftCustomers, getMyDraftCustomers, updateDraftCustomer } from '../../core/controllers/Auth/Customers/darft.customers.controller.js';
 
 const customerRouter = express.Router();
 
@@ -14,7 +14,7 @@ const customerRouter = express.Router();
 customerRouter.post('/login',  customerLogin);
 customerRouter.post('/register', ProtectUser, attachDepartmentInfo, requireSalesFinanceOrSuperAdmin, customerBasicRegistration);
 
-customerRouter.post('/draft-register', ProtectUser, attachDepartmentInfo, requireSalesFinanceOrSuperAdmin, customerDraftRegistration);
+customerRouter.post('/draft-register', protectCustomer, attachDepartmentInfo, customerDraftRegistration);
 
 // FINANCE COMPLETE
 customerRouter.put('/:customerId/finance-complete', ProtectUser, attachDepartmentInfo, financeCompleteCustomer);
@@ -46,5 +46,10 @@ customerRouter.get('/get-my-draft-customers', ProtectUser, attachDepartmentInfo,
 
 // UPDATE DRAFT CUSTOMER
 customerRouter.put('/update-draft-customer/:draftId', ProtectUser, attachDepartmentInfo, requireSalesFinanceOrSuperAdmin, updateDraftCustomer);
+
+// DEACTIVATE CUSTOMER
+customerRouter.delete('/deactivate-customer/:customerId', ProtectUser, attachDepartmentInfo, requireSalesFinanceOrSuperAdmin, deactivateCustomer);
+customerRouter.delete('/deactivate-draft-customer/:draftId', ProtectUser, attachDepartmentInfo,  deactivateDraftCustomer);
+
 
 export default customerRouter;
