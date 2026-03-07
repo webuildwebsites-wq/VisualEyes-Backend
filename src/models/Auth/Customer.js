@@ -360,6 +360,23 @@ const customerSchema = new mongoose.Schema(
       },
       suspensionReason : String,
     },
+    isDeleted: {
+      type: Boolean,
+      default: false
+    },
+    deletedAt: {
+      type: Date,
+      default: null
+    },
+    deletedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'employee',
+      default: null
+    },
+    expireAt: {
+      type: Date,
+      default: null
+    },
 
     // SYSTEM INTERNAL DETAILS
     createdBy: {
@@ -416,8 +433,27 @@ customerSchema.pre("save", async function () {
   this.password = await bcrypt.hash(this.password, salt);
 });
 
+customerSchema.pre('save', function(next) {
+  if (this.isModified('isDeleted') && this.isDeleted === true) {
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + 30);
+    this.expireAt = expiryDate;
+    
+    console.log(`Customer ${this.shopName} will be automatically deleted on ${expiryDate.toISOString()}`);
+  }
+  
+  if (this.isModified('isDeleted') && this.isDeleted === false) {
+    this.expireAt = null;
+    console.log(`Customer ${this.shopName} restored - automatic deletion cancelled`);
+  }
+  
+  next();
+});
+
 customerSchema.methods.comparePassword = async function (candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };
 
-export default mongoose.model("Customer", customerSchema);
+customerSchema.index({ expireAt: 1 },{ expireAfterSeconds: 0, partialFilterExpression: { expireAt: { $ne: null } } });
+const Customer = mongoose.model('Customer', customerSchema);
+export default Customer;

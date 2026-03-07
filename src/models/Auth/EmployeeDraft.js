@@ -138,6 +138,23 @@ const employee = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    isDeleted: {
+      type: Boolean,
+      default: false
+    },
+    deletedAt: {
+      type: Date,
+      default: null
+    },
+    deletedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'employee',
+      default: null
+    },
+    expireAt: {
+      type: Date,
+      default: null
+    },
     twoFactorEnabled: {
       type: Boolean,
       default: false,
@@ -289,6 +306,23 @@ employee.pre("save", async function () {
   }
 });
 
-const employeeDraftSchema = mongoose.model("employeeDraft", employee);
+employee.pre('save', function(next) {
+  if (this.isModified('isDeleted') && this.isDeleted === true) {
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + 30);
+    this.expireAt = expiryDate;
+    
+    console.log(`Employee Draft will be automatically deleted on ${expiryDate.toISOString()}`);
+  }
+  
+  if (this.isModified('isDeleted') && this.isDeleted === false) {
+    this.expireAt = null;
+    console.log(`Employee Draft restored - automatic deletion cancelled`);
+  }
+  
+  next();
+});
 
+employee.index({ expireAt: 1 },{ expireAfterSeconds: 0, partialFilterExpression: { expireAt: { $ne: null } } });
+const employeeDraftSchema = mongoose.model('employeeDraft', employee);
 export default employeeDraftSchema;

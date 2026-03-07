@@ -123,5 +123,8 @@ app.listen(process.env.PORT || 8080, () => {
 });
 
 connectDB()
-  .then(() => console.log("DB Connected"))
+  .then(() => {
+    console.log("DB Connected");
+    console.log("MongoDB TTL indexes active - Automatic deletion enabled for records older than 30 days");
+  })
   .catch(err => console.error("DB Failed:", err));

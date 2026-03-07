@@ -149,7 +149,7 @@ export const deactivateEmployeeDraft = async (req, res) => {
 
     const draftEmployee = await employeeDraftSchema.findById(draftId);
 
-    if (!draftEmployee || !draftEmployee.isActive) {
+    if (!draftEmployee || !draftEmployee.isActive || draftEmployee.isDeleted) {
       return sendErrorResponse(res, 404, 'NOT_FOUND', 'Draft employee not found or already deactivated');
     }
 
@@ -161,12 +161,96 @@ export const deactivateEmployeeDraft = async (req, res) => {
     }
 
     draftEmployee.isActive = false;
+    draftEmployee.isDeleted = true;
+    draftEmployee.deletedAt = new Date();
+    draftEmployee.deletedBy = req.user.id;
     await draftEmployee.save({ validateBeforeSave: false });
 
-    return sendSuccessResponse(res, 200, null, 'Draft employee deactivated successfully');
+    return sendSuccessResponse(res, 200, null, 'Draft employee moved to recycle bin. Will be permanently deleted after 30 days');
 
   } catch (error) {
     console.error('Deactivate draft employee error:', error);
     return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to deactivate draft employee');
   }
 };  
+
+
+export const restoreEmployeeDraft = async (req, res) => {
+  try {
+    const { draftId } = req.params;
+    const userId = req.user.id;
+    const userEmployeeType = req.user?.EmployeeType;
+    const departmentName = req.user?.Department?.name || req.user?.Department;
+
+    if (!mongoose.Types.ObjectId.isValid(draftId)) {
+      return sendErrorResponse(res, 400, 'INVALID_ID', 'Invalid draft ID format');
+    }
+
+    const draftEmployee = await employeeDraftSchema.findOne({ _id: draftId, isDeleted: true });
+
+    if (!draftEmployee) {
+      return sendErrorResponse(res, 404, 'NOT_FOUND', 'Draft employee not found in recycle bin');
+    }
+
+    const isCreator = draftEmployee.createdBy.toString() === userId.toString();
+    const isSuperAdmin = userEmployeeType === 'SUPERADMIN' || departmentName === 'FINANCE';
+    
+    if (!isCreator && !isSuperAdmin) {
+      return sendErrorResponse(res, 403, 'FORBIDDEN', 'You do not have permission to restore this draft');
+    }
+
+    // Check if 30 days have passed
+    const daysSinceDeletion = Math.floor((new Date() - new Date(draftEmployee.deletedAt)) / (1000 * 60 * 60 * 24));
+    if (daysSinceDeletion > 30) {
+      return sendErrorResponse(res, 400, 'EXPIRED', 'Cannot restore draft. More than 30 days have passed since deletion');
+    }
+
+    draftEmployee.isActive = true;
+    draftEmployee.isDeleted = false;
+    draftEmployee.deletedAt = null;
+    draftEmployee.deletedBy = null;
+    await draftEmployee.save({ validateBeforeSave: false });
+
+    return sendSuccessResponse(res, 200, null, 'Draft employee restored successfully');
+
+  } catch (error) {
+    console.error('Restore draft employee error:', error);
+    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to restore draft employee');
+  }
+};
+
+export const getDeletedEmployeeDrafts = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const userEmployeeType = req.user?.EmployeeType;
+    const departmentName = req.user?.Department?.name || req.user?.Department;
+
+    const isSuperAdmin = userEmployeeType === 'SUPERADMIN' || departmentName === 'FINANCE';
+    
+    let query = { isDeleted: true };
+    if (!isSuperAdmin) {
+      query.createdBy = userId;
+    }
+
+    const deletedDrafts = await employeeDraftSchema.find(query)
+      .populate('deletedBy', 'employeeName username')
+      .sort({ deletedAt: -1 });
+
+    const draftsWithDaysLeft = deletedDrafts.map(draft => {
+      const daysSinceDeletion = Math.floor((new Date() - new Date(draft.deletedAt)) / (1000 * 60 * 60 * 24));
+      const daysLeft = 30 - daysSinceDeletion;
+      
+      return {
+        ...draft.toObject(),
+        daysUntilPermanentDeletion: daysLeft > 0 ? daysLeft : 0,
+        canRestore: daysLeft > 0
+      };
+    });
+
+    return sendSuccessResponse(res, 200, { drafts: draftsWithDaysLeft, count: draftsWithDaysLeft.length }, 'Deleted draft employees retrieved successfully');
+
+  } catch (error) {
+    console.error('Get deleted draft employees error:', error);
+    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to retrieve deleted draft employees');
+  }
+};

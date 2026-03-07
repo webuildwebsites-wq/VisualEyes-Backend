@@ -6,7 +6,7 @@ import { protectCustomer } from '../../middlewares/Auth/CustomerMiddleware/custo
 import { verifyCustomerEmail } from '../../core/controllers/Auth/Customers/VarifyAccount.js';
 import { ProtectUser } from '../../middlewares/Auth/AdminMiddleware/adminMiddleware.js';
 import { logout, refreshToken } from '../../Utils/Auth/tokenUtils.js';
-import { customerDraftRegistration, deactivateCustomer, deactivateDraftCustomer, getAllDraftCustomers, getMyDraftCustomers, updateDraftCustomer } from '../../core/controllers/Auth/Customers/darft.customers.controller.js';
+import { customerDraftRegistration, deactivateCustomer, deactivateDraftCustomer, getAllDraftCustomers, getMyDraftCustomers, updateDraftCustomer, restoreCustomer, restoreDraftCustomer, getDeletedCustomers, getDeletedDraftCustomers } from '../../core/controllers/Auth/Customers/darft.customers.controller.js';
 
 const customerRouter = express.Router();
 
@@ -50,6 +50,14 @@ customerRouter.put('/update-draft-customer/:draftId', ProtectUser, attachDepartm
 // DEACTIVATE CUSTOMER
 customerRouter.delete('/deactivate-customer/:customerId', ProtectUser, attachDepartmentInfo, requireSalesFinanceOrSuperAdmin, deactivateCustomer);
 customerRouter.delete('/deactivate-draft-customer/:draftId', ProtectUser, attachDepartmentInfo,  deactivateDraftCustomer);
+
+// RESTORE CUSTOMER (RECYCLE BIN)
+customerRouter.put('/restore-customer/:customerId', ProtectUser, attachDepartmentInfo, requireSalesFinanceOrSuperAdmin, restoreCustomer);
+customerRouter.put('/restore-draft-customer/:draftId', ProtectUser, attachDepartmentInfo, restoreDraftCustomer);
+
+// GET DELETED CUSTOMERS (RECYCLE BIN)
+customerRouter.get('/deleted-customers', ProtectUser, attachDepartmentInfo, requireSalesFinanceOrSuperAdmin, getDeletedCustomers);
+customerRouter.get('/deleted-draft-customers', ProtectUser, attachDepartmentInfo, getDeletedDraftCustomers);
 
 
 export default customerRouter;

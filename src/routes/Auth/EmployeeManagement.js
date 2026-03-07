@@ -1,7 +1,7 @@
 import express from 'express';
 import { ProtectUser } from '../../middlewares/Auth/AdminMiddleware/adminMiddleware.js';
-import { updateEmployeeDetails, deactivateEmployee, getEmployeeDetails, getSupervisorsByDepartment, getAllEmployees, createEmployee, createDraftEmployee, getAllDraftEmployee, getMyDraftEmployee, getDraftEmployeeDetails } from '../../core/controllers/Auth/Employee/EmployeeManagement.js';
-import {  deactivateEmployeeDraft, updateDraftEmployee } from '../../core/controllers/Auth/Employee/draft.employee.controller.js';
+import { updateEmployeeDetails, deactivateEmployee, getEmployeeDetails, getSupervisorsByDepartment, getAllEmployees, createEmployee, createDraftEmployee, getAllDraftEmployee, getMyDraftEmployee, getDraftEmployeeDetails, restoreEmployee, getDeletedEmployees } from '../../core/controllers/Auth/Employee/EmployeeManagement.js';
+import {  deactivateEmployeeDraft, updateDraftEmployee, restoreEmployeeDraft, getDeletedEmployeeDrafts } from '../../core/controllers/Auth/Employee/draft.employee.controller.js';
 import { requireSubAdminOrHigher, canManageEmployee } from '../../middlewares/Auth/AdminMiddleware/roleMiddleware.js';
 
 const employeeManagementRouter = express.Router();
@@ -21,9 +21,18 @@ employeeManagementRouter.get('/get-employee/:userId', canManageEmployee, getEmpl
 employeeManagementRouter.get('/get-draft-employee/:userId',  getDraftEmployeeDetails);
 
 employeeManagementRouter.put('/update-employee/:userId', canManageEmployee, updateEmployeeDetails);
-employeeManagementRouter.delete('/deactivate-draft-employee/:draftId',  deactivateEmployeeDraft);
+employeeManagementRouter.put('/update-draft-employee/:draftId', canManageEmployee, updateDraftEmployee);
 
+employeeManagementRouter.delete('/deactivate-draft-employee/:draftId',  deactivateEmployeeDraft);
 employeeManagementRouter.delete('/delete-employee/:userId',  deactivateEmployee);
+
+// RESTORE EMPLOYEE (RECYCLE BIN)
+employeeManagementRouter.put('/restore-employee/:userId', restoreEmployee);
+employeeManagementRouter.put('/restore-draft-employee/:draftId', restoreEmployeeDraft);
+
+// GET DELETED EMPLOYEES (RECYCLE BIN)
+employeeManagementRouter.get('/deleted-employees', getDeletedEmployees);
+employeeManagementRouter.get('/deleted-draft-employees', getDeletedEmployeeDrafts);
 
 employeeManagementRouter.get('/supervisors', requireSubAdminOrHigher, getSupervisorsByDepartment);
 

@@ -638,7 +638,7 @@ export const deactivateCustomer = async (req, res) => {
       return sendErrorResponse(res, 403, 'FORBIDDEN', 'You do not have permission to delete this customer');
     }
 
-    const user = await Customer.findOne({ _id: customerId, 'Status.isActive': true });
+    const user = await Customer.findOne({ _id: customerId, 'Status.isActive': true, isDeleted: false });
     if (!user) {
       return sendErrorResponse(res, 404, 'USER_NOT_FOUND', 'Customer not found or already deactivated');
     }
@@ -646,9 +646,12 @@ export const deactivateCustomer = async (req, res) => {
     user.Status.isActive = false;
     user.Status.isSuspended = true;
     user.Status.suspensionReason = req?.body?.suspensionReason || 'N/A';
+    user.isDeleted = true;
+    user.deletedAt = new Date();
+    user.deletedBy = req.user.id;
     await user.save({ validateBeforeSave: false });
 
-    return sendSuccessResponse(res, 200, null, 'Customer deactivated successfully');
+    return sendSuccessResponse(res, 200, null, 'Customer moved to recycle bin. Will be permanently deleted after 30 days');
 
   } catch (error) {
     console.error('Deactivate Customer Error:', error);
@@ -673,7 +676,7 @@ export const deactivateDraftCustomer = async (req, res) => {
 
     const isFinanceDepartment = userDepartment === 'FINANCE' || userEmployeeType === 'SUPERADMIN';
 
-    const draftCustomer = await customerDraftSchema.findOne({ _id: draftId, 'Status.isActive': true });
+    const draftCustomer = await customerDraftSchema.findOne({ _id: draftId, 'Status.isActive': true, isDeleted: false });
     if (!draftCustomer) {
       return sendErrorResponse(res, 404, 'DRAFT_NOT_FOUND', 'Draft customer not found or already deactivated');
     }
@@ -690,9 +693,12 @@ export const deactivateDraftCustomer = async (req, res) => {
     draftCustomer.Status.isActive = false;
     draftCustomer.Status.isSuspended = true;
     draftCustomer.Status.suspensionReason = req?.body?.suspensionReason || 'N/A';
+    draftCustomer.isDeleted = true;
+    draftCustomer.deletedAt = new Date();
+    draftCustomer.deletedBy = req.user.id;
     await draftCustomer.save({ validateBeforeSave: false });
 
-    return sendSuccessResponse(res, 200, null, 'Draft customer deactivated successfully');
+    return sendSuccessResponse(res, 200, null, 'Draft customer moved to recycle bin. Will be permanently deleted after 30 days');
 
   } catch (error) {
     console.error('Deactivate Draft Customer Error:', error);
@@ -702,5 +708,172 @@ export const deactivateDraftCustomer = async (req, res) => {
     }
 
     return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to deactivate draft customer');
+  }
+};
+
+
+export const restoreCustomer = async (req, res) => {
+  try {
+    const { customerId } = req.params;
+    const userEmployeeType = req.user?.EmployeeType;
+    const userDepartment = userEmployeeType === 'SUPERADMIN' ? 'SUPERADMIN' : req.user?.Department?.name || req.user?.Department;
+
+    if (!mongoose.Types.ObjectId.isValid(customerId)) {
+      return sendErrorResponse(res, 400, 'INVALID_ID', 'Invalid customer ID format');
+    }
+
+    const isFinanceDepartment = userDepartment === 'FINANCE' || userEmployeeType === 'SUPERADMIN';
+
+    if (!isFinanceDepartment) {
+      return sendErrorResponse(res, 403, 'FORBIDDEN', 'You do not have permission to restore customers');
+    }
+
+    const user = await Customer.findOne({ _id: customerId, isDeleted: true });
+    if (!user) {
+      return sendErrorResponse(res, 404, 'USER_NOT_FOUND', 'Customer not found in recycle bin');
+    }
+
+    // Check if 30 days have passed
+    const daysSinceDeletion = Math.floor((new Date() - new Date(user.deletedAt)) / (1000 * 60 * 60 * 24));
+    if (daysSinceDeletion > 30) {
+      return sendErrorResponse(res, 400, 'EXPIRED', 'Cannot restore customer. More than 30 days have passed since deletion');
+    }
+
+    user.Status.isActive = true;
+    user.Status.isSuspended = false;
+    user.Status.suspensionReason = null;
+    user.isDeleted = false;
+    user.deletedAt = null;
+    user.deletedBy = null;
+    await user.save({ validateBeforeSave: false });
+
+    return sendSuccessResponse(res, 200, null, 'Customer restored successfully');
+
+  } catch (error) {
+    console.error('Restore Customer Error:', error);
+
+    if (error.name === 'CastError') {
+      return sendErrorResponse(res, 400, 'INVALID_ID', `Invalid ${error.path} format. Please provide a valid MongoDB ObjectId`);
+    }
+
+    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to restore customer');
+  }
+};
+
+export const restoreDraftCustomer = async (req, res) => {
+  try {
+    const { draftId } = req.params;
+    const userEmployeeType = req.user?.EmployeeType;
+    const userDepartment = userEmployeeType === 'SUPERADMIN' ? 'SUPERADMIN' : req.user?.Department?.name || req.user?.Department;
+
+    if (!mongoose.Types.ObjectId.isValid(draftId)) {
+      return sendErrorResponse(res, 400, 'INVALID_ID', 'Invalid draft customer ID format');
+    }
+
+    const isFinanceDepartment = userDepartment === 'FINANCE' || userEmployeeType === 'SUPERADMIN';
+
+    const draftCustomer = await customerDraftSchema.findOne({ _id: draftId, isDeleted: true });
+    if (!draftCustomer) {
+      return sendErrorResponse(res, 404, 'DRAFT_NOT_FOUND', 'Draft customer not found in recycle bin');
+    }
+
+    if (draftCustomer.createdBy.toString() !== req.user.id.toString() && !isFinanceDepartment) {
+      return sendErrorResponse(res, 403, 'FORBIDDEN', 'You do not have permission to restore this draft customer');
+    }
+
+    // Check if 30 days have passed
+    const daysSinceDeletion = Math.floor((new Date() - new Date(draftCustomer.deletedAt)) / (1000 * 60 * 60 * 24));
+    if (daysSinceDeletion > 30) {
+      return sendErrorResponse(res, 400, 'EXPIRED', 'Cannot restore draft. More than 30 days have passed since deletion');
+    }
+
+    draftCustomer.Status.isActive = true;
+    draftCustomer.Status.isSuspended = false;
+    draftCustomer.Status.suspensionReason = null;
+    draftCustomer.isDeleted = false;
+    draftCustomer.deletedAt = null;
+    draftCustomer.deletedBy = null;
+    await draftCustomer.save({ validateBeforeSave: false });
+
+    return sendSuccessResponse(res, 200, null, 'Draft customer restored successfully');
+
+  } catch (error) {
+    console.error('Restore Draft Customer Error:', error);
+
+    if (error.name === 'CastError') {
+      return sendErrorResponse(res, 400, 'INVALID_ID', `Invalid ${error.path} format. Please provide a valid MongoDB ObjectId`);
+    }
+
+    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to restore draft customer');
+  }
+};
+
+// GET ALL DELETED CUSTOMERS (RECYCLE BIN)
+export const getDeletedCustomers = async (req, res) => {
+  try {
+    const userEmployeeType = req.user?.EmployeeType;
+    const userDepartment = userEmployeeType === 'SUPERADMIN' ? 'SUPERADMIN' : req.user?.Department?.name || req.user?.Department;
+
+    const isFinanceDepartment = userDepartment === 'FINANCE' || userEmployeeType === 'SUPERADMIN';
+
+    if (!isFinanceDepartment) {
+      return sendErrorResponse(res, 403, 'FORBIDDEN', 'You do not have permission to view deleted customers');
+    }
+
+    const deletedCustomers = await Customer.find({ isDeleted: true })
+      .populate('deletedBy', 'employeeName username')
+      .sort({ deletedAt: -1 });
+
+    const customersWithDaysLeft = deletedCustomers.map(customer => {
+      const daysSinceDeletion = Math.floor((new Date() - new Date(customer.deletedAt)) / (1000 * 60 * 60 * 24));
+      const daysLeft = 30 - daysSinceDeletion;
+      
+      return {
+        ...customer.toObject(),
+        daysUntilPermanentDeletion: daysLeft > 0 ? daysLeft : 0,
+        canRestore: daysLeft > 0
+      };
+    });
+
+    return sendSuccessResponse(res, 200, { customers: customersWithDaysLeft, count: customersWithDaysLeft.length }, 'Deleted customers retrieved successfully');
+
+  } catch (error) {
+    console.error('Get Deleted Customers Error:', error);
+    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to retrieve deleted customers');
+  }
+};
+
+export const getDeletedDraftCustomers = async (req, res) => {
+  try {
+    const userEmployeeType = req.user?.EmployeeType;
+    const userDepartment = userEmployeeType === 'SUPERADMIN' ? 'SUPERADMIN' : req.user?.Department?.name || req.user?.Department;
+
+    const isFinanceDepartment = userDepartment === 'FINANCE' || userEmployeeType === 'SUPERADMIN';
+
+    let query = { isDeleted: true };
+    if (!isFinanceDepartment) {
+      query.createdBy = req.user.id;
+    }
+
+    const deletedDrafts = await customerDraftSchema.find(query)
+      .populate('deletedBy', 'employeeName username')
+      .sort({ deletedAt: -1 });
+
+    const draftsWithDaysLeft = deletedDrafts.map(draft => {
+      const daysSinceDeletion = Math.floor((new Date() - new Date(draft.deletedAt)) / (1000 * 60 * 60 * 24));
+      const daysLeft = 30 - daysSinceDeletion;
+      
+      return {
+        ...draft.toObject(),
+        daysUntilPermanentDeletion: daysLeft > 0 ? daysLeft : 0,
+        canRestore: daysLeft > 0
+      };
+    });
+
+    return sendSuccessResponse(res, 200, { drafts: draftsWithDaysLeft, count: draftsWithDaysLeft.length }, 'Deleted draft customers retrieved successfully');
+
+  } catch (error) {
+    console.error('Get Deleted Draft Customers Error:', error);
+    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to retrieve deleted draft customers');
   }
 };

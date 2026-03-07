@@ -277,6 +277,23 @@ const customerDraftSchema = new mongoose.Schema(
       },
       suspensionReason : String,
     },
+    isDeleted: {
+      type: Boolean,
+      default: false
+    },
+    deletedAt: {
+      type: Date,
+      default: null
+    },
+    deletedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'employee',
+      default: null
+    },
+    expireAt: {
+      type: Date,
+      default: null
+    },
 
     // SYSTEM INTERNAL DETAILS
     createdBy: {
@@ -314,8 +331,27 @@ customerDraftSchema.pre("save", async function () {
   this.password = await bcrypt.hash(this.password, salt);
 });
 
+customerDraftSchema.pre('save', function(next) {
+  if (this.isModified('isDeleted') && this.isDeleted === true) {
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + 30);
+    this.expireAt = expiryDate;
+    
+    console.log(`Customer Draft will be automatically deleted on ${expiryDate.toISOString()}`);
+  }
+  
+  if (this.isModified('isDeleted') && this.isDeleted === false) {
+    this.expireAt = null;
+    console.log(`Customer Draft restored - automatic deletion cancelled`);
+  }
+  
+  next();
+});
+
 customerDraftSchema.methods.comparePassword = async function (candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };
 
-export default mongoose.model("CustomerDraft", customerDraftSchema);
+customerDraftSchema.index({ expireAt: 1 },{ expireAfterSeconds: 0, partialFilterExpression: { expireAt: { $ne: null } } });
+const CustomerDraft = mongoose.model('CustomerDraft', customerDraftSchema);
+export default CustomerDraft;

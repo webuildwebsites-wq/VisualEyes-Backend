@@ -725,7 +725,7 @@ export const deactivateEmployee = async (req, res) => {
 
     const targetUser = await employeeSchema.findById(userId);
 
-    if (!targetUser || !targetUser.isActive) {
+    if (!targetUser || !targetUser.isActive || targetUser.isDeleted) {
       return sendErrorResponse(res, 404, 'USER_NOT_FOUND', 'Employee not found or already inactive');
     }
 
@@ -742,9 +742,12 @@ export const deactivateEmployee = async (req, res) => {
     }
 
     targetUser.isActive = false;
+    targetUser.isDeleted = true;
+    targetUser.deletedAt = new Date();
+    targetUser.deletedBy = req.user.id;
     await targetUser.save({ validateBeforeSave: false });
 
-    return sendSuccessResponse(res, 200, null, 'Employee deactivated successfully');
+    return sendSuccessResponse(res, 200, null, 'Employee moved to recycle bin. Will be permanently deleted after 30 days');
 
   } catch (error) {
     console.error('Deactivate employee error:', error);
@@ -990,5 +993,79 @@ export const getDraftEmployeeDetails = async (req, res) => {
     }
 
     return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to retrieve employee details');
+  }
+};
+
+export const restoreEmployee = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return sendErrorResponse(res, 400, 'INVALID_ID', 'Invalid user ID format');
+    }
+
+    const department = req.user.Department?.name || req.user.Department;
+    const employeeType = req.user.EmployeeType;
+
+    if (employeeType !== 'SUPERADMIN' && employeeType !== 'ADMIN' && department !== "FINANCE") {
+      return sendErrorResponse(res, 403, "FORBIDDEN", "You don't have permission to restore employees");
+    }
+
+    const targetUser = await employeeSchema.findOne({ _id: userId, isDeleted: true });
+
+    if (!targetUser) {
+      return sendErrorResponse(res, 404, 'USER_NOT_FOUND', 'Employee not found in recycle bin');
+    }
+
+    // Check if 30 days have passed
+    const daysSinceDeletion = Math.floor((new Date() - new Date(targetUser.deletedAt)) / (1000 * 60 * 60 * 24));
+    if (daysSinceDeletion > 30) {
+      return sendErrorResponse(res, 400, 'EXPIRED', 'Cannot restore employee. More than 30 days have passed since deletion');
+    }
+
+    targetUser.isActive = true;
+    targetUser.isDeleted = false;
+    targetUser.deletedAt = null;
+    targetUser.deletedBy = null;
+    await targetUser.save({ validateBeforeSave: false });
+
+    return sendSuccessResponse(res, 200, null, 'Employee restored successfully');
+
+  } catch (error) {
+    console.error('Restore employee error:', error);
+    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to restore employee');
+  }
+};
+
+export const getDeletedEmployees = async (req, res) => {
+  try {
+    const department = req.user.Department?.name || req.user.Department;
+    const employeeType = req.user.EmployeeType;
+
+    if (employeeType !== 'SUPERADMIN' && employeeType !== 'ADMIN' && department !== "FINANCE") {
+      return sendErrorResponse(res, 403, "FORBIDDEN", "You don't have permission to view deleted employees");
+    }
+
+    const deletedEmployees = await employeeSchema.find({ isDeleted: true })
+      .select('-password -passwordResetToken -passwordResetExpires -twoFactorSecret')
+      .populate('deletedBy', 'employeeName username')
+      .sort({ deletedAt: -1 });
+
+    const employeesWithDaysLeft = deletedEmployees.map(emp => {
+      const daysSinceDeletion = Math.floor((new Date() - new Date(emp.deletedAt)) / (1000 * 60 * 60 * 24));
+      const daysLeft = 30 - daysSinceDeletion;
+      
+      return {
+        ...emp.toObject(),
+        daysUntilPermanentDeletion: daysLeft > 0 ? daysLeft : 0,
+        canRestore: daysLeft > 0
+      };
+    });
+
+    return sendSuccessResponse(res, 200, { employees: employeesWithDaysLeft, count: employeesWithDaysLeft.length }, 'Deleted employees retrieved successfully');
+
+  } catch (error) {
+    console.error('Get deleted employees error:', error);
+    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to retrieve deleted employees');
   }
 };
