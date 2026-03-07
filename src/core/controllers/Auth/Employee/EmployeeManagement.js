@@ -1,8 +1,8 @@
 import { sendSuccessResponse, sendErrorResponse } from '../../../../Utils/response/responseHandler.js';
 import employeeSchema from '../../../../models/Auth/Employee.js';
 import Department from '../../../../models/Auth/Department.js';
-import SystemConfig from '../../../../models/Auth/SystemConfig.js';
 import Location from '../../../../models/Location/Location.js';
+import SpecificLab from '../../../../models/Product/SpecificLab.js';
 import mongoose from 'mongoose';
 import employeeDraftSchema from '../../../../models/Auth/EmployeeDraft.js';
 
@@ -55,10 +55,20 @@ export const createEmployee = async (req, res) => {
       if (department && departmentRefId) {
         const departmentDoc = await Department.findById(departmentRefId);
         if (!departmentDoc) {
-          return sendErrorResponse(res, 404, 'DEPARTMENT_NOT_FOUND', 'Department not found');
+          return sendErrorResponse(
+            res,
+            404,
+            'INVALID_REF_ID',
+            `Department with refId ${departmentRefId} does not exist`
+          );
         }
         if (departmentDoc.name !== department.toUpperCase()) {
-          return sendErrorResponse(res, 400, 'DEPARTMENT_MISMATCH', 'Department name does not match the provided ID');
+          return sendErrorResponse(
+            res,
+            400,
+            'NAME_MISMATCH',
+            `Incorrect department name for refId ${departmentRefId}. Expected: ${departmentDoc.name}, Received: ${department}`
+          );
         }
 
         if (employeeType.toUpperCase() === 'ADMIN') {
@@ -89,21 +99,48 @@ export const createEmployee = async (req, res) => {
 
       const departmentDoc = await Department.findById(departmentRefId);
       if (!departmentDoc) {
-        return sendErrorResponse(res, 404, 'DEPARTMENT_NOT_FOUND', 'Department not found');
+        return sendErrorResponse(
+          res,
+          404,
+          'INVALID_REF_ID',
+          `Department with refId ${departmentRefId} does not exist`
+        );
       }
 
       for (const subRole of subRoles) {
         if (!subRole.refId) {
           return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Sub-role refId is required');
         }
+        if (!subRole.name) {
+          return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Sub-role name is required');
+        }
 
         const subRoleExists = departmentDoc.subRoles.id(subRole.refId);
         if (!subRoleExists) {
-          return sendErrorResponse(res, 400, 'INVALID_SUBROLE', `Sub-role ${subRole.name} does not belong to department ${department}`);
+          return sendErrorResponse(
+            res,
+            404,
+            'INVALID_REF_ID',
+            `Sub-role with refId ${subRole.refId} does not exist in department ${department}`
+          );
+        }
+
+        if (subRoleExists.name !== subRole.name) {
+          return sendErrorResponse(
+            res,
+            400,
+            'NAME_MISMATCH',
+            `Incorrect sub-role name for refId ${subRole.refId}. Expected: ${subRoleExists.name}, Received: ${subRole.name}`
+          );
         }
 
         if (!subRoleExists.isActive) {
-          return sendErrorResponse(res, 400, 'INACTIVE_SUBROLE', `Sub-role ${subRole.name} is not active`);
+          return sendErrorResponse(
+            res,
+            400,
+            'INACTIVE_SUBROLE',
+            `Sub-role ${subRole.name} is not active`
+          );
         }
       }
     }
@@ -116,25 +153,48 @@ export const createEmployee = async (req, res) => {
     if (zone && zoneRefId) {
       const locationDoc = await Location.findById(zoneRefId);
       if (!locationDoc) {
-        return sendErrorResponse(res, 404, 'ZONE_NOT_FOUND', 'Zone not found');
+        return sendErrorResponse(
+          res,
+          404,
+          'INVALID_REF_ID',
+          `Zone with refId ${zoneRefId} does not exist`
+        );
       }
       if (!locationDoc.isActive) {
-        return sendErrorResponse(res, 400, 'ZONE_INACTIVE', 'Zone is not active');
+        return sendErrorResponse(
+          res,
+          400,
+          'ZONE_INACTIVE',
+          'Zone is not active'
+        );
       }
       if (locationDoc.zone !== zone.toUpperCase()) {
-        return sendErrorResponse(res, 400, 'ZONE_MISMATCH', 'Zone name does not match the provided ID');
+        return sendErrorResponse(
+          res,
+          400,
+          'NAME_MISMATCH',
+          `Incorrect zone name for refId ${zoneRefId}. Expected: ${locationDoc.zone}, Received: ${zone}`
+        );
       }
     }
 
-    if (lab) {
-      const labConfig = await SystemConfig.findOne({ configType: 'Lab' });
-      if (!labConfig) {
-        return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Lab configuration not found in system');
+    if (lab && labRefId) {
+      const labDoc = await SpecificLab.findById(labRefId);
+      if (!labDoc) {
+        return sendErrorResponse(
+          res,
+          404,
+          'INVALID_REF_ID',
+          `Lab with refId ${labRefId} does not exist`
+        );
       }
-
-      const validLabs = labConfig.values;
-      if (!validLabs.includes(lab.toUpperCase())) {
-        return sendErrorResponse(res, 400, 'VALIDATION_ERROR', `Invalid lab value. Valid labs: ${validLabs.join(', ')}`);
+      if (labDoc.name !== lab) {
+        return sendErrorResponse(
+          res,
+          400,
+          'NAME_MISMATCH',
+          `Incorrect lab name for refId ${labRefId}. Expected: ${labDoc.name}, Received: ${lab}`
+        );
       }
     }
 
@@ -487,7 +547,8 @@ export const getAllEmployees = async (req, res) => {
       status,
       fromDate,
       toDate,
-      search
+      search,
+      zone,
     } = req.query;
 
     const searchTerm = Array.isArray(search) ? search[0] : search;
@@ -516,6 +577,10 @@ export const getAllEmployees = async (req, res) => {
       searchConditions.push({ username: { $regex: searchTerm, $options: 'i' } });
       searchConditions.push({ phone: { $regex: searchTerm, $options: 'i' } });
       searchConditions.push({ email: { $regex: searchTerm, $options: 'i' } });
+      
+      if (mongoose.Types.ObjectId.isValid(searchTerm)) {
+        searchConditions.push({ 'zone.refId': new mongoose.Types.ObjectId(searchTerm) });
+      }
       
       query.$or = searchConditions;
     }
@@ -548,6 +613,10 @@ export const getAllEmployees = async (req, res) => {
       } else if (statusTerm.toLowerCase() === 'inactive') {
         query.isActive = false;
       }
+    }
+
+    if(zone && mongoose.Types.ObjectId.isValid(zone)){
+      query['zone.refId'] = zone;
     }
 
     const [users, total] = await Promise.all([

@@ -19,6 +19,7 @@ import FittingCenter from "../../../../models/Product/FittingCenter.js";
 import CreditDay from "../../../../models/Product/CreditDay.js";
 import CourierName from "../../../../models/Product/CourierName.js";
 import CourierTime from "../../../../models/Product/CourierTime.js";
+import customerTypeSchema from "../../../../models/Product/CustomerType.js"
 import dotenv from "dotenv";
 import crypto from "crypto";
 import mongoose from "mongoose";
@@ -146,16 +147,6 @@ export const customerBasicRegistration = async (req, res) => {
     const userDepartment = userEmployeeType === "SUPERADMIN" ? "SUPERADMIN" : req.user?.Department?.name || req.user?.Department;
     const isSalesDepartment = userDepartment === "SALES";
     const isFinanceDepartment = userDepartment === "FINANCE" || userEmployeeType === "SUPERADMIN";
-
-    // Check if user is from Sales or Finance department
-    // if (!['SALES', 'FINANCE'].includes(userDepartment)) {
-    //   return sendErrorResponse(
-    //     res,
-    //     403,
-    //     "FORBIDDEN",
-    //     "Only Sales or Finance department can register customers"
-    //   );
-    // }
 
     // Validate ObjectId formats
     if (draftCustomerId && !mongoose.Types.ObjectId.isValid(draftCustomerId)) {
@@ -394,6 +385,282 @@ export const customerBasicRegistration = async (req, res) => {
         "CUSTOMER_EXISTS",
         "Customer with this email already exists",
       );
+    }
+
+    // Validate CustomerType
+    if (CustomerTypeRefId && CustomerType) {
+      const customerType = await customerTypeSchema.findById(CustomerTypeRefId);
+      if (!customerType) {
+        return sendErrorResponse(
+          res,
+          404,
+          "INVALID_REF_ID",
+          `CustomerType with refId ${CustomerTypeRefId} does not exist`
+        );
+      }
+      if (customerType.name !== CustomerType) {
+        return sendErrorResponse(
+          res,
+          400,
+          "NAME_MISMATCH",
+          `Incorrect CustomerType name for refId ${CustomerTypeRefId}. Expected: ${customerType.name}, Received: ${CustomerType}`
+        );
+      }
+    }
+
+    // Validate zone
+    if (zoneRefId && zone) {
+      const location = await Location.findById(zoneRefId);
+      if (!location) {
+        return sendErrorResponse(
+          res,
+          404,
+          "INVALID_REF_ID",
+          `Zone with refId ${zoneRefId} does not exist`
+        );
+      }
+      if (location.zone !== zone.toUpperCase()) {
+        return sendErrorResponse(
+          res,
+          400,
+          "NAME_MISMATCH",
+          `Incorrect zone name for refId ${zoneRefId}. Expected: ${location.zone}, Received: ${zone}`
+        );
+      }
+    }
+
+    // Validate specificLab
+    if (specificLabRefId && specificLab) {
+      const specificLabDoc = await SpecificLab.findById(specificLabRefId);
+      if (!specificLabDoc) {
+        return sendErrorResponse(
+          res,
+          404,
+          "INVALID_REF_ID",
+          `SpecificLab with refId ${specificLabRefId} does not exist`
+        );
+      }
+      if (specificLabDoc.name !== specificLab) {
+        return sendErrorResponse(
+          res,
+          400,
+          "NAME_MISMATCH",
+          `Incorrect specificLab name for refId ${specificLabRefId}. Expected: ${specificLabDoc.name}, Received: ${specificLab}`
+        );
+      }
+    }
+
+    // Validate plant
+    if (plantRefId && plant) {
+      const plantDoc = await Plant.findById(plantRefId);
+      if (!plantDoc) {
+        return sendErrorResponse(
+          res,
+          404,
+          "INVALID_REF_ID",
+          `Plant with refId ${plantRefId} does not exist`
+        );
+      }
+      if (plantDoc.name !== plant) {
+        return sendErrorResponse(
+          res,
+          400,
+          "NAME_MISMATCH",
+          `Incorrect plant name for refId ${plantRefId}. Expected: ${plantDoc.name}, Received: ${plant}`
+        );
+      }
+    }
+
+    // Validate fittingCenter
+    if (fittingCenterRefId && fittingCenter) {
+      const fittingCenterDoc = await FittingCenter.findById(fittingCenterRefId);
+      if (!fittingCenterDoc) {
+        return sendErrorResponse(
+          res,
+          404,
+          "INVALID_REF_ID",
+          `FittingCenter with refId ${fittingCenterRefId} does not exist`
+        );
+      }
+      if (fittingCenterDoc.name !== fittingCenter) {
+        return sendErrorResponse(
+          res,
+          400,
+          "NAME_MISMATCH",
+          `Incorrect fittingCenter name for refId ${fittingCenterRefId}. Expected: ${fittingCenterDoc.name}, Received: ${fittingCenter}`
+        );
+      }
+    }
+
+    // Validate creditDays
+    if (creditDaysRefId && creditDays) {
+      const creditDayDoc = await CreditDay.findById(creditDaysRefId);
+      if (!creditDayDoc) {
+        return sendErrorResponse(
+          res,
+          404,
+          "INVALID_REF_ID",
+          `CreditDays with refId ${creditDaysRefId} does not exist`
+        );
+      }
+      if (creditDayDoc.days.toString() !== creditDays.toString()) {
+        return sendErrorResponse(
+          res,
+          400,
+          "NAME_MISMATCH",
+          `Incorrect creditDays value for refId ${creditDaysRefId}. Expected: ${creditDayDoc.days}, Received: ${creditDays}`
+        );
+      }
+    }
+
+    // Validate courierName
+    if (courierNameRefId && courierName) {
+      const courierNameDoc = await CourierName.findById(courierNameRefId);
+      if (!courierNameDoc) {
+        return sendErrorResponse(
+          res,
+          404,
+          "INVALID_REF_ID",
+          `CourierName with refId ${courierNameRefId} does not exist`
+        );
+      }
+      if (courierNameDoc.name !== courierName) {
+        return sendErrorResponse(
+          res,
+          400,
+          "NAME_MISMATCH",
+          `Incorrect courierName for refId ${courierNameRefId}. Expected: ${courierNameDoc.name}, Received: ${courierName}`
+        );
+      }
+    }
+
+    // Validate courierTime
+    if (courierTimeRefId && courierTime) {
+      const courierTimeDoc = await CourierTime.findById(courierTimeRefId);
+      if (!courierTimeDoc) {
+        return sendErrorResponse(
+          res,
+          404,
+          "INVALID_REF_ID",
+          `CourierTime with refId ${courierTimeRefId} does not exist`
+        );
+      }
+
+      if (courierTimeDoc.time !== courierTime) {
+        return sendErrorResponse(
+          res,
+          400,
+          "NAME_MISMATCH",
+          `Incorrect courierTime for refId ${courierTimeRefId}. Expected: ${courierTimeDoc.time}, Received: ${courierTime}`
+        );
+      }
+    }
+
+    // Validate gstType
+    if (gstTypeRefId && gstType) {
+      const GSTType = await import('../../../../models/Product/GSTType.js').then(m => m.default);
+      const gstTypeDoc = await GSTType.findById(gstTypeRefId);
+      if (!gstTypeDoc) {
+        return sendErrorResponse(
+          res,
+          404,
+          "INVALID_REF_ID",
+          `GSTType with refId ${gstTypeRefId} does not exist`
+        );
+      }
+      if (gstTypeDoc.name !== gstType) {
+        return sendErrorResponse(
+          res,
+          400,
+          "NAME_MISMATCH",
+          `Incorrect gstType name for refId ${gstTypeRefId}. Expected: ${gstTypeDoc.name}, Received: ${gstType}`
+        );
+      }
+    }
+
+    // Validate salesPerson
+    if (salesPersonRefId && salesPerson) {
+      const employeeSchema = await import('../../../../models/Auth/Employee.js').then(m => m.default);
+      const salesPersonDoc = await employeeSchema.findById(salesPersonRefId);
+      if (!salesPersonDoc) {
+        return sendErrorResponse(
+          res,
+          404,
+          "INVALID_REF_ID",
+          `SalesPerson with refId ${salesPersonRefId} does not exist`
+        );
+      }
+      if (salesPersonDoc.employeeName !== salesPerson) {
+        return sendErrorResponse(
+          res,
+          400,
+          "NAME_MISMATCH",
+          `Incorrect salesPerson name for refId ${salesPersonRefId}. Expected: ${salesPersonDoc.employeeName}, Received: ${salesPerson}`
+        );
+      }
+    }
+
+    // Validate brandCategories
+    if (brandCategories && Array.isArray(brandCategories)) {
+      const Brand = await import('../../../../models/Product/Brand.js').then(m => m.default);
+      const Category = await import('../../../../models/Product/Category.js').then(m => m.default);
+      
+      for (let i = 0; i < brandCategories.length; i++) {
+        const brand = brandCategories[i];
+        
+        // Validate brand
+        const brandDoc = await Brand.findById(brand.brandId);
+        if (!brandDoc) {
+          return sendErrorResponse(
+            res,
+            404,
+            "INVALID_REF_ID",
+            `Brand with refId ${brand.brandId} does not exist in brandCategories[${i}]`
+          );
+        }
+        if (brandDoc.name !== brand.brandName.toUpperCase()) {
+          return sendErrorResponse(
+            res,
+            400,
+            "NAME_MISMATCH",
+            `Incorrect brand name for refId ${brand.brandId} in brandCategories[${i}]. Expected: ${brandDoc.name}, Received: ${brand.brandName}`
+          );
+        }
+
+        // Validate categories
+        if (brand.categories && Array.isArray(brand.categories)) {
+          for (let j = 0; j < brand.categories.length; j++) {
+            const category = brand.categories[j];
+            
+            const categoryDoc = await Category.findById(category.categoryId);
+            if (!categoryDoc) {
+              return sendErrorResponse(
+                res,
+                404,
+                "INVALID_REF_ID",
+                `Category with refId ${category.categoryId} does not exist in brandCategories[${i}].categories[${j}]`
+              );
+            }
+            if (categoryDoc.name !== category.categoryName) {
+              return sendErrorResponse(
+                res,
+                400,
+                "NAME_MISMATCH",
+                `Incorrect category name for refId ${category.categoryId} in brandCategories[${i}].categories[${j}]. Expected: ${categoryDoc.name}, Received: ${category.categoryName}`
+              );
+            }
+            // Verify category belongs to the brand
+            if (categoryDoc.brand.toString() !== brand.brandId) {
+              return sendErrorResponse(
+                res,
+                400,
+                "BRAND_CATEGORY_MISMATCH",
+                `Category "${category.categoryName}" does not belong to brand "${brand.brandName}" in brandCategories[${i}].categories[${j}]`
+              );
+            }
+          }
+        }
+      }
     }
 
     const EmailOtp = Math.floor(100000 + Math.random() * 800000).toString();
@@ -878,6 +1145,237 @@ export const financeCompleteCustomer = async (req, res) => {
       }
     }
 
+    // Validate zone
+    if (req.body.zone && req.body.zoneRefId) {
+      const location = await Location.findById(req.body.zoneRefId);
+      if (!location) {
+        return sendErrorResponse(
+          res,
+          404,
+          "INVALID_REF_ID",
+          `Zone with refId ${req.body.zoneRefId} does not exist`
+        );
+      }
+      if (location.zone !== req.body.zone.toUpperCase()) {
+        return sendErrorResponse(
+          res,
+          400,
+          "NAME_MISMATCH",
+          `Incorrect zone name for refId ${req.body.zoneRefId}. Expected: ${location.zone}, Received: ${req.body.zone}`
+        );
+      }
+    }
+
+    // Validate specificLab
+    if (req.body.specificLab && req.body.specificLabRefId) {
+      const specificLabDoc = await SpecificLab.findById(req.body.specificLabRefId);
+      if (!specificLabDoc) {
+        return sendErrorResponse(
+          res,
+          404,
+          "INVALID_REF_ID",
+          `SpecificLab with refId ${req.body.specificLabRefId} does not exist`
+        );
+      }
+      if (specificLabDoc.name !== req.body.specificLab) {
+        return sendErrorResponse(
+          res,
+          400,
+          "NAME_MISMATCH",
+          `Incorrect specificLab name for refId ${req.body.specificLabRefId}. Expected: ${specificLabDoc.name}, Received: ${req.body.specificLab}`
+        );
+      }
+    }
+
+    // Validate plant
+    if (req.body.plant && req.body.plantRefId) {
+      const plantDoc = await Plant.findById(req.body.plantRefId);
+      if (!plantDoc) {
+        return sendErrorResponse(
+          res,
+          404,
+          "INVALID_REF_ID",
+          `Plant with refId ${req.body.plantRefId} does not exist`
+        );
+      }
+      if (plantDoc.name !== req.body.plant) {
+        return sendErrorResponse(
+          res,
+          400,
+          "NAME_MISMATCH",
+          `Incorrect plant name for refId ${req.body.plantRefId}. Expected: ${plantDoc.name}, Received: ${req.body.plant}`
+        );
+      }
+    }
+
+    // Validate fittingCenter
+    if (req.body.fittingCenter && req.body.fittingCenterRefId) {
+      const fittingCenterDoc = await FittingCenter.findById(req.body.fittingCenterRefId);
+      if (!fittingCenterDoc) {
+        return sendErrorResponse(
+          res,
+          404,
+          "INVALID_REF_ID",
+          `FittingCenter with refId ${req.body.fittingCenterRefId} does not exist`
+        );
+      }
+      if (fittingCenterDoc.name !== req.body.fittingCenter) {
+        return sendErrorResponse(
+          res,
+          400,
+          "NAME_MISMATCH",
+          `Incorrect fittingCenter name for refId ${req.body.fittingCenterRefId}. Expected: ${fittingCenterDoc.name}, Received: ${req.body.fittingCenter}`
+        );
+      }
+    }
+
+    // Validate creditDays
+    if (req.body.creditDays && req.body.creditDaysRefId) {
+      const creditDayDoc = await CreditDay.findById(req.body.creditDaysRefId);
+      if (!creditDayDoc) {
+        return sendErrorResponse(
+          res,
+          404,
+          "INVALID_REF_ID",
+          `CreditDays with refId ${req.body.creditDaysRefId} does not exist`
+        );
+      }
+      if (creditDayDoc.days.toString() !== req.body.creditDays.toString()) {
+        return sendErrorResponse(
+          res,
+          400,
+          "NAME_MISMATCH",
+          `Incorrect creditDays value for refId ${req.body.creditDaysRefId}. Expected: ${creditDayDoc.days}, Received: ${req.body.creditDays}`
+        );
+      }
+    }
+
+    // Validate courierName
+    if (req.body.courierName && req.body.courierNameRefId) {
+      const courierNameDoc = await CourierName.findById(req.body.courierNameRefId);
+      if (!courierNameDoc) {
+        return sendErrorResponse(
+          res,
+          404,
+          "INVALID_REF_ID",
+          `CourierName with refId ${req.body.courierNameRefId} does not exist`
+        );
+      }
+      if (courierNameDoc.name !== req.body.courierName) {
+        return sendErrorResponse(
+          res,
+          400,
+          "NAME_MISMATCH",
+          `Incorrect courierName for refId ${req.body.courierNameRefId}. Expected: ${courierNameDoc.name}, Received: ${req.body.courierName}`
+        );
+      }
+    }
+
+    // Validate courierTime
+    if (req.body.courierTime && req.body.courierTimeRefId) {
+      const courierTimeDoc = await CourierTime.findById(req.body.courierTimeRefId);
+      if (!courierTimeDoc) {
+        return sendErrorResponse(
+          res,
+          404,
+          "INVALID_REF_ID",
+          `CourierTime with refId ${req.body.courierTimeRefId} does not exist`
+        );
+      }
+
+      if (courierTimeDoc.time !== req.body.courierTime) {
+        return sendErrorResponse(
+          res,
+          400,
+          "NAME_MISMATCH",
+          `Incorrect courierTime for refId ${req.body.courierTimeRefId}. Expected: ${courierTimeDoc.time}, Received: ${req.body.courierTime}`
+        );
+      }
+    }
+
+    // Validate salesPerson
+    if (req.body.salesPerson && req.body.salesPersonRefId) {
+      const employeeSchema = await import('../../../../models/Auth/Employee.js').then(m => m.default);
+      const salesPersonDoc = await employeeSchema.findById(req.body.salesPersonRefId);
+      if (!salesPersonDoc) {
+        return sendErrorResponse(
+          res,
+          404,
+          "INVALID_REF_ID",
+          `SalesPerson with refId ${req.body.salesPersonRefId} does not exist`
+        );
+      }
+      if (salesPersonDoc.employeeName !== req.body.salesPerson) {
+        return sendErrorResponse(
+          res,
+          400,
+          "NAME_MISMATCH",
+          `Incorrect salesPerson name for refId ${req.body.salesPersonRefId}. Expected: ${salesPersonDoc.employeeName}, Received: ${req.body.salesPerson}`
+        );
+      }
+    }
+
+    // Validate brandCategories
+    const Brand = await import('../../../../models/Product/Brand.js').then(m => m.default);
+    const Category = await import('../../../../models/Product/Category.js').then(m => m.default);
+    
+    for (let i = 0; i < brandCategories.length; i++) {
+      const brand = brandCategories[i];
+      
+      // Validate brand
+      const brandDoc = await Brand.findById(brand.brandId);
+      if (!brandDoc) {
+        return sendErrorResponse(
+          res,
+          404,
+          "INVALID_REF_ID",
+          `Brand with refId ${brand.brandId} does not exist in brandCategories[${i}]`
+        );
+      }
+      if (brandDoc.name !== brand.brandName.toUpperCase()) {
+        return sendErrorResponse(
+          res,
+          400,
+          "NAME_MISMATCH",
+          `Incorrect brand name for refId ${brand.brandId} in brandCategories[${i}]. Expected: ${brandDoc.name}, Received: ${brand.brandName}`
+        );
+      }
+
+      // Validate categories
+      if (brand.categories && Array.isArray(brand.categories)) {
+        for (let j = 0; j < brand.categories.length; j++) {
+          const category = brand.categories[j];
+          
+          const categoryDoc = await Category.findById(category.categoryId);
+          if (!categoryDoc) {
+            return sendErrorResponse(
+              res,
+              404,
+              "INVALID_REF_ID",
+              `Category with refId ${category.categoryId} does not exist in brandCategories[${i}].categories[${j}]`
+            );
+          }
+          if (categoryDoc.name !== category.categoryName) {
+            return sendErrorResponse(
+              res,
+              400,
+              "NAME_MISMATCH",
+              `Incorrect category name for refId ${category.categoryId} in brandCategories[${i}].categories[${j}]. Expected: ${categoryDoc.name}, Received: ${category.categoryName}`
+            );
+          }
+          // Verify category belongs to the brand
+          if (categoryDoc.brand.toString() !== brand.brandId) {
+            return sendErrorResponse(
+              res,
+              400,
+              "BRAND_CATEGORY_MISMATCH",
+              `Category "${category.categoryName}" does not belong to brand "${brand.brandName}" in brandCategories[${i}].categories[${j}]`
+            );
+          }
+        }
+      }
+    }
+
     const updateData = {
       password: req.body.password,
       zone: req.body.zone,
@@ -951,7 +1449,7 @@ export const updateCustomerProfile = async (req, res) => {
 
     // Validate CustomerType
     if (updateData.CustomerType && updateData.CustomerTypeRefId) {
-      const customerType = await CustomerType.findById(updateData.CustomerTypeRefId);
+      const customerType = await customerTypeSchema.findById(updateData.CustomerTypeRefId);
       if (!customerType) {
         return sendErrorResponse(
           res,
@@ -1135,13 +1633,13 @@ export const updateCustomerProfile = async (req, res) => {
           `CourierTime with refId ${updateData.courierTimeRefId} does not exist`
         );
       }
-      const courierTimeValue = `${courierTime.location} - ${courierTime.time}`;
-      if (courierTimeValue !== updateData.courierTime) {
+
+      if (courierTime.time !== updateData.courierTime) {
         return sendErrorResponse(
           res,
           400,
           "NAME_MISMATCH",
-          `Incorrect courierTime for refId ${updateData.courierTimeRefId}. Expected: ${courierTimeValue}, Received: ${updateData.courierTime}`
+          `Incorrect courierTime for refId ${updateData.courierTimeRefId}. Expected: ${courierTime.time}, Received: ${updateData.courierTime}`
         );
       }
       updateFields.courierTime = {

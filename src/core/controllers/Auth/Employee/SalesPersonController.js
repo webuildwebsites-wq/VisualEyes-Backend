@@ -18,7 +18,7 @@ export const getAllSalesPersons = async (req, res) => {
     }
 
     if (zone) {
-      filter['zone.name'] = zone.toUpperCase();
+      filter['zone.refId'] = zone.toUpperCase();
     }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
