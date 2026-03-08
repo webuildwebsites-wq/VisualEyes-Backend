@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { sendErrorResponse, sendSuccessResponse } from "../../../../Utils/response/responseHandler.js";
 import Employee from "../../../../models/Auth/Employee.js";
 import employeeDraftSchema from "../../../../models/Auth/EmployeeDraft.js";
@@ -227,27 +228,47 @@ export const getDeletedEmployeeDrafts = async (req, res) => {
 
     const isSuperAdmin = userEmployeeType === 'SUPERADMIN' || departmentName === 'FINANCE';
     
+    const page = Math.max(parseInt(req.query.page) || 1, 1);
+    const limit = Math.min(parseInt(req.query.limit) || 10, 100);
+    const skip = (page - 1) * limit;
+
     let query = { isDeleted: true };
     if (!isSuperAdmin) {
       query.createdBy = userId;
     }
 
-    const deletedDrafts = await employeeDraftSchema.find(query)
-      .populate('deletedBy', 'employeeName username')
-      .sort({ deletedAt: -1 });
+    const [deletedDrafts, total] = await Promise.all([
+      employeeDraftSchema.find(query)
+        .populate('deletedBy', 'employeeName username')
+        .sort({ deletedAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      employeeDraftSchema.countDocuments(query)
+    ]);
 
     const draftsWithDaysLeft = deletedDrafts.map(draft => {
       const daysSinceDeletion = Math.floor((new Date() - new Date(draft.deletedAt)) / (1000 * 60 * 60 * 24));
       const daysLeft = 30 - daysSinceDeletion;
       
       return {
-        ...draft.toObject(),
+        ...draft,
         daysUntilPermanentDeletion: daysLeft > 0 ? daysLeft : 0,
         canRestore: daysLeft > 0
       };
     });
 
-    return sendSuccessResponse(res, 200, { drafts: draftsWithDaysLeft, count: draftsWithDaysLeft.length }, 'Deleted draft employees retrieved successfully');
+    const totalPages = Math.ceil(total / limit);
+
+    const pagination = {
+      currentPage: page,
+      totalPages,
+      totalDrafts: total,
+      hasNext: page < totalPages,
+      hasPrev: page > 1
+    };
+
+    return sendSuccessResponse(res, 200, { drafts: draftsWithDaysLeft, pagination }, 'Deleted draft employees retrieved successfully');
 
   } catch (error) {
     console.error('Get deleted draft employees error:', error);

@@ -820,22 +820,44 @@ export const getDeletedCustomers = async (req, res) => {
       return sendErrorResponse(res, 403, 'FORBIDDEN', 'You do not have permission to view deleted customers');
     }
 
-    const deletedCustomers = await Customer.find({ isDeleted: true })
-      .populate('deletedBy', 'employeeName username')
-      .sort({ deletedAt: -1 });
+    const page = Math.max(parseInt(req.query.page) || 1, 1);
+    const limit = Math.min(parseInt(req.query.limit) || 10, 100);
+    const skip = (page - 1) * limit;
+
+    const query = { isDeleted: true };
+
+    const [deletedCustomers, total] = await Promise.all([
+      Customer.find(query)
+        .populate('deletedBy', 'employeeName username')
+        .sort({ deletedAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Customer.countDocuments(query)
+    ]);
 
     const customersWithDaysLeft = deletedCustomers.map(customer => {
       const daysSinceDeletion = Math.floor((new Date() - new Date(customer.deletedAt)) / (1000 * 60 * 60 * 24));
       const daysLeft = 30 - daysSinceDeletion;
       
       return {
-        ...customer.toObject(),
+        ...customer,
         daysUntilPermanentDeletion: daysLeft > 0 ? daysLeft : 0,
         canRestore: daysLeft > 0
       };
     });
 
-    return sendSuccessResponse(res, 200, { customers: customersWithDaysLeft, count: customersWithDaysLeft.length }, 'Deleted customers retrieved successfully');
+    const totalPages = Math.ceil(total / limit);
+
+    const pagination = {
+      currentPage: page,
+      totalPages,
+      totalCustomers: total,
+      hasNext: page < totalPages,
+      hasPrev: page > 1
+    };
+
+    return sendSuccessResponse(res, 200, { customers: customersWithDaysLeft, pagination }, 'Deleted customers retrieved successfully');
 
   } catch (error) {
     console.error('Get Deleted Customers Error:', error);
@@ -850,27 +872,47 @@ export const getDeletedDraftCustomers = async (req, res) => {
 
     const isFinanceDepartment = userDepartment === 'FINANCE' || userEmployeeType === 'SUPERADMIN';
 
+    const page = Math.max(parseInt(req.query.page) || 1, 1);
+    const limit = Math.min(parseInt(req.query.limit) || 10, 100);
+    const skip = (page - 1) * limit;
+
     let query = { isDeleted: true };
     if (!isFinanceDepartment) {
       query.createdBy = req.user.id;
     }
 
-    const deletedDrafts = await customerDraftSchema.find(query)
-      .populate('deletedBy', 'employeeName username')
-      .sort({ deletedAt: -1 });
+    const [deletedDrafts, total] = await Promise.all([
+      customerDraftSchema.find(query)
+        .populate('deletedBy', 'employeeName username')
+        .sort({ deletedAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      customerDraftSchema.countDocuments(query)
+    ]);
 
     const draftsWithDaysLeft = deletedDrafts.map(draft => {
       const daysSinceDeletion = Math.floor((new Date() - new Date(draft.deletedAt)) / (1000 * 60 * 60 * 24));
       const daysLeft = 30 - daysSinceDeletion;
       
       return {
-        ...draft.toObject(),
+        ...draft,
         daysUntilPermanentDeletion: daysLeft > 0 ? daysLeft : 0,
         canRestore: daysLeft > 0
       };
     });
 
-    return sendSuccessResponse(res, 200, { drafts: draftsWithDaysLeft, count: draftsWithDaysLeft.length }, 'Deleted draft customers retrieved successfully');
+    const totalPages = Math.ceil(total / limit);
+
+    const pagination = {
+      currentPage: page,
+      totalPages,
+      totalDrafts: total,
+      hasNext: page < totalPages,
+      hasPrev: page > 1
+    };
+
+    return sendSuccessResponse(res, 200, { drafts: draftsWithDaysLeft, pagination }, 'Deleted draft customers retrieved successfully');
 
   } catch (error) {
     console.error('Get Deleted Draft Customers Error:', error);

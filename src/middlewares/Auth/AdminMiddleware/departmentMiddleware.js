@@ -33,7 +33,7 @@ export const requireSalesFinanceOrSuperAdmin = (req, res, next) => {
   const department = req.user.Department || req.user.Department?.name;
   const employeeType = req.user.EmployeeType;
   
-  if (employeeType === 'SUPERADMIN' ['SALES', 'FINANCE'].includes(department)) {
+  if (employeeType === 'SUPERADMIN' || ['SALES', 'FINANCE'].includes(department)) {
     return next();
   }
   

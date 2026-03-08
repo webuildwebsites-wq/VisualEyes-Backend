@@ -56,8 +56,8 @@ customerRouter.put('/restore-customer/:customerId', ProtectUser, attachDepartmen
 customerRouter.put('/restore-draft-customer/:draftId', ProtectUser, attachDepartmentInfo, restoreDraftCustomer);
 
 // GET DELETED CUSTOMERS (RECYCLE BIN)
-customerRouter.get('/deleted-customers', ProtectUser, attachDepartmentInfo, requireSalesFinanceOrSuperAdmin, getDeletedCustomers);
-customerRouter.get('/deleted-draft-customers', ProtectUser, attachDepartmentInfo, getDeletedDraftCustomers);
+customerRouter.get('/get-deleted-customers', ProtectUser, attachDepartmentInfo, requireSalesFinanceOrSuperAdmin, getDeletedCustomers);
+customerRouter.get('/get-deleted-draft-customers', ProtectUser, attachDepartmentInfo, getDeletedDraftCustomers);
 
 
 export default customerRouter;

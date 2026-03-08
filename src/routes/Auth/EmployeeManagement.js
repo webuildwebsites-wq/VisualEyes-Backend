@@ -31,8 +31,8 @@ employeeManagementRouter.put('/restore-employee/:userId', restoreEmployee);
 employeeManagementRouter.put('/restore-draft-employee/:draftId', restoreEmployeeDraft);
 
 // GET DELETED EMPLOYEES (RECYCLE BIN)
-employeeManagementRouter.get('/deleted-employees', getDeletedEmployees);
-employeeManagementRouter.get('/deleted-draft-employees', getDeletedEmployeeDrafts);
+employeeManagementRouter.get('/get-deleted-employees', getDeletedEmployees);
+employeeManagementRouter.get('/get-deleted-draft-employees', getDeletedEmployeeDrafts);
 
 employeeManagementRouter.get('/supervisors', requireSubAdminOrHigher, getSupervisorsByDepartment);
 

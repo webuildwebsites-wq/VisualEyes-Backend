@@ -1046,23 +1046,45 @@ export const getDeletedEmployees = async (req, res) => {
       return sendErrorResponse(res, 403, "FORBIDDEN", "You don't have permission to view deleted employees");
     }
 
-    const deletedEmployees = await employeeSchema.find({ isDeleted: true })
-      .select('-password -passwordResetToken -passwordResetExpires -twoFactorSecret')
-      .populate('deletedBy', 'employeeName username')
-      .sort({ deletedAt: -1 });
+    const page = Math.max(parseInt(req.query.page) || 1, 1);
+    const limit = Math.min(parseInt(req.query.limit) || 10, 100);
+    const skip = (page - 1) * limit;
+
+    const query = { isDeleted: true };
+
+    const [deletedEmployees, total] = await Promise.all([
+      employeeSchema.find(query)
+        .select('-password -passwordResetToken -passwordResetExpires -twoFactorSecret')
+        .populate('deletedBy', 'employeeName username')
+        .sort({ deletedAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      employeeSchema.countDocuments(query)
+    ]);
 
     const employeesWithDaysLeft = deletedEmployees.map(emp => {
       const daysSinceDeletion = Math.floor((new Date() - new Date(emp.deletedAt)) / (1000 * 60 * 60 * 24));
       const daysLeft = 30 - daysSinceDeletion;
       
       return {
-        ...emp.toObject(),
+        ...emp,
         daysUntilPermanentDeletion: daysLeft > 0 ? daysLeft : 0,
         canRestore: daysLeft > 0
       };
     });
 
-    return sendSuccessResponse(res, 200, { employees: employeesWithDaysLeft, count: employeesWithDaysLeft.length }, 'Deleted employees retrieved successfully');
+    const totalPages = Math.ceil(total / limit);
+
+    const pagination = {
+      currentPage: page,
+      totalPages,
+      totalEmployees: total,
+      hasNext: page < totalPages,
+      hasPrev: page > 1
+    };
+
+    return sendSuccessResponse(res, 200, { employees: employeesWithDaysLeft, pagination }, 'Deleted employees retrieved successfully');
 
   } catch (error) {
     console.error('Get deleted employees error:', error);
