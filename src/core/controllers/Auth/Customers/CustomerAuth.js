@@ -1449,6 +1449,7 @@ export const updateCustomerProfile = async (req, res) => {
     if (updateData.mobileNo1) updateFields.mobileNo1 = updateData.mobileNo1;
     if (updateData.mobileNo2) updateFields.mobileNo2 = updateData.mobileNo2;
     if (updateData.landlineNo) updateFields.landlineNo = updateData.landlineNo;
+    if (updateData.creditUsed) updateFields.creditUsed = updateData.creditUsed;
     if (updateData.businessEmail)
       updateFields.businessEmail = updateData.businessEmail;
 
@@ -1730,5 +1731,67 @@ export const updateCustomerProfile = async (req, res) => {
       return sendErrorResponse(res, 409, "DUPLICATE_FIELD", "Email already exists");
     }
     return sendErrorResponse(res, 500, "INTERNAL_ERROR", "Internal server error during profile update");
+  }
+};
+
+export const resetCustomerCredit = async (req, res) => {
+  try {
+    const { customerId, creditUsed=0 } = req.params;
+    const userDepartment = req.user.Department?.name || req.user.Department;
+    const userEmployeeType = req.user.EmployeeType;
+
+    // Check if user is Finance or SuperAdmin
+    if (userEmployeeType !== 'SUPERADMIN' && userDepartment !== 'FINANCE') {
+      return sendErrorResponse(
+        res,
+        403,
+        'FORBIDDEN',
+        'Only Finance department or SuperAdmin can reset customer credit'
+      );
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(customerId)) {
+      return sendErrorResponse(res, 400, 'INVALID_ID', 'Invalid customer ID');
+    }
+
+    const customer = await Customer.findById(customerId);
+    if (!customer) {
+      return sendErrorResponse(res, 404, 'NOT_FOUND', 'Customer not found');
+    }
+
+    if (customer.isDeleted) {
+      return sendErrorResponse(res, 400, 'CUSTOMER_DELETED', 'Cannot reset credit for deleted customer');
+    }
+
+    const oldCreditUsed = customer.creditUsed;
+
+    // Reset creditUsed to 0
+    customer.creditUsed = creditUsed;
+    await customer.save();
+
+    console.log(`Credit reset for customer ${customer.shopName} (${customerId}): ${oldCreditUsed} -> 0 by ${req.user.employeeName}`);
+
+    return sendSuccessResponse(
+      res,
+      200,
+      {
+        customerId: customer._id,
+        shopName: customer.shopName,
+        previousCreditUsed: oldCreditUsed,
+        currentCreditUsed: customer.creditUsed,
+        creditLimit: customer.creditLimit,
+        resetBy: req.user.employeeName,
+        resetAt: new Date()
+      },
+      'Customer credit reset successfully'
+    );
+  } catch (error) {
+    console.error('Reset customer credit error:', error);
+    return sendErrorResponse(
+      res,
+      500,
+      'INTERNAL_ERROR',
+      'Failed to reset customer credit'
+    );
   }
 };

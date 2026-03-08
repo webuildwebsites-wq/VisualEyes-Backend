@@ -1,5 +1,5 @@
 import express from 'express';
-import { customerForgotPassword, customerLogin,customerResetPassword,customerUpdatePassword, customerBasicRegistration, financeCompleteCustomer, updateCustomerProfile } from '../../core/controllers/Auth/Customers/CustomerAuth.js';
+import { customerForgotPassword, customerLogin,customerResetPassword,customerUpdatePassword, customerBasicRegistration, financeCompleteCustomer, updateCustomerProfile, resetCustomerCredit } from '../../core/controllers/Auth/Customers/CustomerAuth.js';
 import { getAllCustomers, getCustomerById, getCustomerProfile, getDraftCustomers, getPendingFinanceCustomers } from '../../core/controllers/Auth/Customers/customer.get.controller.js';
 import { requireSalesFinanceOrSuperAdmin, attachDepartmentInfo } from '../../middlewares/Auth/AdminMiddleware/departmentMiddleware.js';
 import { protectCustomer } from '../../middlewares/Auth/CustomerMiddleware/customerMiddleware.js';
@@ -21,6 +21,9 @@ customerRouter.put('/:customerId/finance-complete', ProtectUser, attachDepartmen
 
 // UPDATE CUSTOMER PROFILE
 customerRouter.put('/update-profile/:customerId', ProtectUser, updateCustomerProfile);
+
+// RESET CUSTOMER CREDIT (Finance/SuperAdmin only)
+customerRouter.put('/reset-credit/:customerId', ProtectUser, attachDepartmentInfo, resetCustomerCredit);
 
 // FORGOT PASSWORD
 customerRouter.post('/forgot-password',  customerForgotPassword);
