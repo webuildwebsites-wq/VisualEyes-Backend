@@ -1388,6 +1388,10 @@ export const financeCompleteCustomer = async (req, res) => {
       approvalStatus: "APPROVED",
       financeCompletedBy: req.user.id,
       financeCompletedAt: new Date(),
+      Status : {
+        isActive : true,
+        isSuspended : false,
+      }
     };
 
     Object.assign(customer, updateData);
