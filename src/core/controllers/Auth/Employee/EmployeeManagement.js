@@ -6,6 +6,69 @@ import SpecificLab from '../../../../models/Product/SpecificLab.js';
 import mongoose from 'mongoose';
 import employeeDraftSchema from '../../../../models/Auth/EmployeeDraft.js';
 
+const updateHierarchicalRelationships = async (employeeId, supervisorId, teamLeadId) => {
+  try {
+    if (supervisorId) {
+      await employeeSchema.findByIdAndUpdate(
+        supervisorId,
+        { $addToSet: { employees: employeeId } },
+        { new: true }
+      );
+    }
+
+    if (teamLeadId) {
+      await employeeSchema.findByIdAndUpdate(
+        teamLeadId,
+        { $addToSet: { employees: employeeId } },
+        { new: true }
+      );
+
+      if (supervisorId) {
+        await employeeSchema.findByIdAndUpdate(
+          supervisorId,
+          { $addToSet: { teamLeads: teamLeadId } },
+          { new: true }
+        );
+      }
+    }
+  } catch (error) {
+    console.error('Error updating hierarchical relationships:', error);
+    throw error;
+  }
+};
+
+const removeHierarchicalRelationships = async (employeeId, oldSupervisorId, oldTeamLeadId) => {
+  try {
+
+    if (oldSupervisorId) {
+      await employeeSchema.findByIdAndUpdate(
+        oldSupervisorId,
+        { $pull: { employees: employeeId } }
+      );
+    }
+
+    if (oldTeamLeadId) {
+      await employeeSchema.findByIdAndUpdate(
+        oldTeamLeadId,
+        { $pull: { employees: employeeId } }
+      );
+
+      const teamLead = await employeeSchema.findById(oldTeamLeadId);
+
+      if (teamLead?.employees?.length === 0 && oldSupervisorId) {
+        await employeeSchema.findByIdAndUpdate(
+          oldSupervisorId,
+          { $pull: { teamLeads: oldTeamLeadId } }
+        );
+      }
+    }
+
+  } catch (error) {
+    console.error('Error removing hierarchical relationships:', error);
+    throw error;
+  }
+};
+
 export const createEmployee = async (req, res) => {
   try {
     const { employeeType, username, employeeName, email, password, phone, address, department, departmentRefId, country,
@@ -307,6 +370,14 @@ export const createEmployee = async (req, res) => {
     const newUser = new employeeSchema(userData);
     await newUser.save();
 
+    if (employeeType.toUpperCase() === 'EMPLOYEE') {
+      await updateHierarchicalRelationships(
+        newUser._id,
+        assignedSupervisor?._id,
+        assignedTeamLead?._id
+      );
+    }
+
     if (draftEmployeeId) {
       try {
         const deletedDraft = await employeeDraftSchema.findByIdAndDelete(draftEmployeeId);
@@ -565,20 +636,20 @@ export const getAllEmployees = async (req, res) => {
 
     if (searchTerm) {
       const searchConditions = [];
-      
+
       if (!isNaN(searchTerm)) {
         searchConditions.push({ serialNumber: Number(searchTerm) });
       }
-      
+
       searchConditions.push({ employeeName: { $regex: searchTerm, $options: 'i' } });
       searchConditions.push({ username: { $regex: searchTerm, $options: 'i' } });
       searchConditions.push({ phone: { $regex: searchTerm, $options: 'i' } });
       searchConditions.push({ email: { $regex: searchTerm, $options: 'i' } });
-      
+
       if (mongoose.Types.ObjectId.isValid(searchTerm)) {
         searchConditions.push({ 'zone.refId': new mongoose.Types.ObjectId(searchTerm) });
       }
-      
+
       query.$or = searchConditions;
     }
 
@@ -612,11 +683,11 @@ export const getAllEmployees = async (req, res) => {
       }
     }
 
-    if(zone && mongoose.Types.ObjectId.isValid(zone)){
+    if (zone && mongoose.Types.ObjectId.isValid(zone)) {
       query['zone.refId'] = zone;
     }
 
-    console.log("query : ",query)
+    console.log("query : ", query)
 
     const [users, total] = await Promise.all([
       employeeSchema
@@ -693,8 +764,29 @@ export const updateEmployeeDetails = async (req, res) => {
       return sendErrorResponse(res, 404, 'USER_NOT_FOUND', 'Employee not found or not authorized to update');
     }
 
+    const oldSupervisorId = user.supervisor?.refId?.toString();
+    const oldTeamLeadId = user.teamLead?.refId?.toString();
+
+    const newSupervisorId = updates.supervisor?.refId?.toString();
+    const newTeamLeadId = updates.teamLead?.refId?.toString();
+
+    const supervisorChanged = newSupervisorId && newSupervisorId !== oldSupervisorId;
+    const teamLeadChanged = newTeamLeadId && newTeamLeadId !== oldTeamLeadId;
+
+    if (supervisorChanged || teamLeadChanged) {
+      await removeHierarchicalRelationships(userId, oldSupervisorId, oldTeamLeadId);
+    }
+
     Object.assign(user, updates);
     await user.save();
+
+    if (supervisorChanged || teamLeadChanged) {
+      await updateHierarchicalRelationships(
+        userId,
+        newSupervisorId || oldSupervisorId,
+        newTeamLeadId || oldTeamLeadId
+      );
+    }
 
     const userResponse = user.toObject();
     delete userResponse.password;
@@ -744,6 +836,31 @@ export const deactivateEmployee = async (req, res) => {
 
     if (employeeType !== 'SUPERADMIN' && employeeType !== 'ADMIN' && department !== "FINANCE") {
       return sendErrorResponse(res, 403, "FORBIDDEN', 'You don't have permission to deactivate employees");
+    }
+
+    const supervisorId = targetUser.supervisor?.refId?.toString();
+    const teamLeadId = targetUser.teamLead?.refId?.toString();
+
+    if (supervisorId || teamLeadId) {
+      await removeHierarchicalRelationships(userId, supervisorId, teamLeadId);
+    }
+
+    if (targetUser.EmployeeType === 'SUPERVISOR' || targetUser.EmployeeType === 'TEAMLEAD') {
+      if (targetUser.employees && targetUser.employees.length > 0) {
+        await employeeSchema.updateMany(
+          { _id: { $in: targetUser.employees } },
+          {
+            $unset: targetUser.EmployeeType === 'SUPERVISOR' ? { supervisor: "" } : { teamLead: "" }
+          }
+        );
+      }
+
+      if (targetUser.EmployeeType === 'SUPERVISOR' && targetUser.teamLeads && targetUser.teamLeads.length > 0) {
+        await employeeSchema.updateMany(
+          { _id: { $in: targetUser.teamLeads } },
+          { $unset: { supervisor: "" } }
+        );
+      }
     }
 
     targetUser.isActive = false;
@@ -1034,6 +1151,15 @@ export const restoreEmployee = async (req, res) => {
     targetUser.deletedBy = null;
     await targetUser.save({ validateBeforeSave: false });
 
+    if (targetUser.EmployeeType === 'EMPLOYEE') {
+      const supervisorId = targetUser.supervisor?.refId?.toString();
+      const teamLeadId = targetUser.teamLead?.refId?.toString();
+
+      if (supervisorId || teamLeadId) {
+        await updateHierarchicalRelationships(userId, supervisorId, teamLeadId);
+      }
+    }
+
     return sendSuccessResponse(res, 200, null, 'Employee restored successfully');
 
   } catch (error) {
@@ -1071,7 +1197,7 @@ export const getDeletedEmployees = async (req, res) => {
     const employeesWithDaysLeft = deletedEmployees.map(emp => {
       const daysSinceDeletion = Math.floor((new Date() - new Date(emp.deletedAt)) / (1000 * 60 * 60 * 24));
       const daysLeft = 30 - daysSinceDeletion;
-      
+
       return {
         ...emp,
         daysUntilPermanentDeletion: daysLeft > 0 ? daysLeft : 0,
@@ -1094,5 +1220,139 @@ export const getDeletedEmployees = async (req, res) => {
   } catch (error) {
     console.error('Get deleted employees error:', error);
     return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to retrieve deleted employees');
+  }
+};
+
+
+export const getEmployeesUnderSupervisor = async (req, res) => {
+  try {
+    const { supervisorId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(supervisorId)) {
+      return sendErrorResponse(res, 400, 'INVALID_ID', 'Invalid supervisor ID format');
+    }
+
+    const supervisor = await employeeSchema.findOne({
+      _id: supervisorId,
+      EmployeeType: 'SUPERVISOR',
+      isActive: true
+    })
+      .populate('teamLeads', 'employeeName username email phone EmployeeType Department zone')
+      .populate('employees', 'employeeName username email phone EmployeeType Department zone supervisor teamLead');
+
+    if (!supervisor) {
+      return sendErrorResponse(res, 404, 'SUPERVISOR_NOT_FOUND', 'Supervisor not found');
+    }
+
+    const response = {
+      supervisor: {
+        _id: supervisor._id,
+        employeeName: supervisor.employeeName,
+        username: supervisor.username,
+        email: supervisor.email
+      },
+      teamLeads: supervisor.teamLeads || [],
+      employees: supervisor.employees || [],
+      totalTeamLeads: supervisor.teamLeads?.length || 0,
+      totalEmployees: supervisor.employees?.length || 0
+    };
+
+    return sendSuccessResponse(res, 200, response, 'Employees retrieved successfully');
+
+  } catch (error) {
+    console.error('Get employees under supervisor error:', error);
+    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to retrieve employees');
+  }
+};
+
+export const getEmployeesUnderTeamLead = async (req, res) => {
+  try {
+    const { teamLeadId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(teamLeadId)) {
+      return sendErrorResponse(res, 400, 'INVALID_ID', 'Invalid team lead ID format');
+    }
+
+    const teamLead = await employeeSchema.findOne({
+      _id: teamLeadId,
+      EmployeeType: 'TEAMLEAD',
+      isActive: true
+    })
+      .populate('employees', 'employeeName username email phone EmployeeType Department zone supervisor teamLead');
+
+    if (!teamLead) {
+      return sendErrorResponse(res, 404, 'TEAMLEAD_NOT_FOUND', 'Team lead not found');
+    }
+
+    const response = {
+      teamLead: {
+        _id: teamLead._id,
+        employeeName: teamLead.employeeName,
+        username: teamLead.username,
+        email: teamLead.email
+      },
+      employees: teamLead.employees || [],
+      totalEmployees: teamLead.employees?.length || 0
+    };
+
+    return sendSuccessResponse(res, 200, response, 'Employees retrieved successfully');
+
+  } catch (error) {
+    console.error('Get employees under team lead error:', error);
+    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to retrieve employees');
+  }
+};
+
+export const getDepartmentHierarchy = async (req, res) => {
+  try {
+    const { departmentId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(departmentId)) {
+      return sendErrorResponse(res, 400, 'INVALID_ID', 'Invalid department ID format');
+    }
+
+    const supervisors = await employeeSchema.find({
+      'Department.refId': departmentId,
+      EmployeeType: 'SUPERVISOR',
+      isActive: true
+    })
+      .populate('teamLeads', 'employeeName username email EmployeeType')
+      .populate('employees', 'employeeName username email EmployeeType')
+      .select('employeeName username email EmployeeType Department zone teamLeads employees');
+
+    const hierarchy = await Promise.all(supervisors.map(async (supervisor) => {
+      const teamLeadsWithEmployees = await Promise.all(
+        (supervisor.teamLeads || []).map(async (teamLead) => {
+          const teamLeadFull = await employeeSchema.findById(teamLead._id)
+            .populate('employees', 'employeeName username email EmployeeType');
+
+          return {
+            _id: teamLeadFull._id,
+            employeeName: teamLeadFull.employeeName,
+            username: teamLeadFull.username,
+            email: teamLeadFull.email,
+            employees: teamLeadFull.employees || []
+          };
+        })
+      );
+
+      return {
+        supervisor: {
+          _id: supervisor._id,
+          employeeName: supervisor.employeeName,
+          username: supervisor.username,
+          email: supervisor.email,
+          zone: supervisor.zone
+        },
+        teamLeads: teamLeadsWithEmployees,
+        directEmployees: supervisor.employees || []
+      };
+    }));
+
+    return sendSuccessResponse(res, 200, { hierarchy }, 'Department hierarchy retrieved successfully');
+
+  } catch (error) {
+    console.error('Get department hierarchy error:', error);
+    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to retrieve department hierarchy');
   }
 };

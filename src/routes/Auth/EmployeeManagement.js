@@ -1,6 +1,6 @@
 import express from 'express';
 import { ProtectUser } from '../../middlewares/Auth/AdminMiddleware/adminMiddleware.js';
-import { updateEmployeeDetails, deactivateEmployee, getEmployeeDetails, getSupervisorsByDepartment, getAllEmployees, createEmployee, createDraftEmployee, getAllDraftEmployee, getMyDraftEmployee, getDraftEmployeeDetails, restoreEmployee, getDeletedEmployees } from '../../core/controllers/Auth/Employee/EmployeeManagement.js';
+import { updateEmployeeDetails, deactivateEmployee, getEmployeeDetails, getSupervisorsByDepartment, getAllEmployees, createEmployee, createDraftEmployee, getAllDraftEmployee, getMyDraftEmployee, getDraftEmployeeDetails, restoreEmployee, getDeletedEmployees, getEmployeesUnderSupervisor, getEmployeesUnderTeamLead, getDepartmentHierarchy } from '../../core/controllers/Auth/Employee/EmployeeManagement.js';
 import {  deactivateEmployeeDraft, updateDraftEmployee, restoreEmployeeDraft, getDeletedEmployeeDrafts } from '../../core/controllers/Auth/Employee/draft.employee.controller.js';
 import { requireSubAdminOrHigher, canManageEmployee } from '../../middlewares/Auth/AdminMiddleware/roleMiddleware.js';
 
@@ -35,5 +35,10 @@ employeeManagementRouter.get('/get-deleted-employees', getDeletedEmployees);
 employeeManagementRouter.get('/get-deleted-draft-employees', getDeletedEmployeeDrafts);
 
 employeeManagementRouter.get('/supervisors', requireSubAdminOrHigher, getSupervisorsByDepartment);
+
+// HIERARCHICAL ROUTES
+employeeManagementRouter.get('/supervisor/:supervisorId/employees', canManageEmployee, getEmployeesUnderSupervisor);
+employeeManagementRouter.get('/teamlead/:teamLeadId/employees', canManageEmployee, getEmployeesUnderTeamLead);
+employeeManagementRouter.get('/department/:departmentId/hierarchy', canManageEmployee, getDepartmentHierarchy);
 
 export default employeeManagementRouter;

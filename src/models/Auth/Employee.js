@@ -163,6 +163,14 @@ const employee = new mongoose.Schema({
       ref: 'employee'
     }
   },
+  teamLeads: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'employee'
+  }],
+  employees: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'employee'
+  }],
   isActive: {
     type: Boolean,
     default: true
