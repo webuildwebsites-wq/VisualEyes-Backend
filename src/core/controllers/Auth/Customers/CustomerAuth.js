@@ -1386,7 +1386,7 @@ export const financeCompleteCustomer = async (req, res) => {
       courierName: req.body.courierName,
       courierTime: req.body.courierTime,
       approvalStatus: "APPROVED",
-      financeCompletedBy: req.user._id,
+      financeCompletedBy: req.user.id,
       financeCompletedAt: new Date(),
     };
 
@@ -1980,8 +1980,8 @@ export const resubmitCorrectedCustomer = async (req, res) => {
       );
     }
 
-    if (userDepartment === 'SALES' && userEmployeeType !== 'SUPERADMIN') {
-      if (customer.createdBy.toString() !== req.user._id.toString()) {
+    if (userDepartment !== 'SALES' && userEmployeeType !== 'SUPERADMIN') {
+      if (customer.createdBy.toString() !== req.user.id.toString()) {
         return sendErrorResponse(
           res,
           403,

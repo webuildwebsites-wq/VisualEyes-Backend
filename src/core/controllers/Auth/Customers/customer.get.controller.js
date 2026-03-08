@@ -254,7 +254,7 @@ export const getCorrectionRequiredCustomers = async (req, res) => {
     };
 
     if (userDepartment === 'SALES' && userEmployeeType !== 'SUPERADMIN') {
-      query.createdBy = req.user._id;
+      query.createdBy = req.user.id;
     }
 
     const [customers, total] = await Promise.all([

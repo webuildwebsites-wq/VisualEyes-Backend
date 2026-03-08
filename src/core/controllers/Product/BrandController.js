@@ -18,7 +18,7 @@ export const createBrand = async (req, res) => {
     const brand = await Brand.create({
       name: name.toUpperCase(),
       description,
-      createdBy: req.user._id,
+      createdBy: req.user.id,
     });
 
     return sendSuccessResponse(res, 201, brand, "Brand created successfully");

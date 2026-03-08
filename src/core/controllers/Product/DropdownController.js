@@ -44,10 +44,10 @@ const createGenericItem = (Model, itemName) => async (req, res) => {
     }
 
     const itemData = Model.modelName === 'CreditDay'
-      ? { days, description, createdBy: req.user._id }
+      ? { days, description, createdBy: req.user.id }
       : Model.modelName === 'CourierTime'
-      ? { location: location.trim(), time: time.trim(), description, createdBy: req.user._id }
-      : { name: name.trim(), description, createdBy: req.user._id };
+      ? { location: location.trim(), time: time.trim(), description, createdBy: req.user.id }
+      : { name: name.trim(), description, createdBy: req.user.id };
 
     const item = await Model.create(itemData);
 
@@ -259,7 +259,7 @@ export const createBrand = async (req, res) => {
     const brand = await Brand.create({
       name: name.toUpperCase(),
       description,
-      createdBy: req.user._id,
+      createdBy: req.user.id,
     });
 
     return sendSuccessResponse(res, 201, brand, "Brand created successfully");
@@ -402,7 +402,7 @@ export const createCategory = async (req, res) => {
       name,
       brand,
       description,
-      createdBy: req.user._id,
+      createdBy: req.user.id,
     });
 
     const populatedCategory = await Category.findById(category._id).populate('brand', 'name');

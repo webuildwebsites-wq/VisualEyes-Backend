@@ -17,7 +17,7 @@ export const createCustomerType = async (req, res) => {
     const customerType = await CustomerType.create({
       name: name.trim(),
       description,
-      createdBy: req.user._id,
+      createdBy: req.user.id,
     });
 
     return sendSuccessResponse(res, 201, customerType, "Customer type created successfully");
