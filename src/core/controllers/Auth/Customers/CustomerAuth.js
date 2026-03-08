@@ -19,6 +19,10 @@ import CreditDay from "../../../../models/Product/CreditDay.js";
 import CourierName from "../../../../models/Product/CourierName.js";
 import CourierTime from "../../../../models/Product/CourierTime.js";
 import customerTypeSchema from "../../../../models/Product/CustomerType.js"
+import GSTType from "../../../../models/Product/GSTType.js";
+import employeeSchema from "../../../../models/Auth/Employee.js";
+import Brand from "../../../../models/Product/Brand.js";
+import Category from "../../../../models/Product/Category.js";
 import dotenv from "dotenv";
 import crypto from "crypto";
 import mongoose from "mongoose";
@@ -147,7 +151,6 @@ export const customerBasicRegistration = async (req, res) => {
     const isSalesDepartment = userDepartment === "SALES";
     const isFinanceDepartment = userDepartment === "FINANCE" || userEmployeeType === "SUPERADMIN";
 
-    // Validate ObjectId formats
     if (draftCustomerId && !mongoose.Types.ObjectId.isValid(draftCustomerId)) {
       return sendErrorResponse(
         res,
@@ -166,7 +169,6 @@ export const customerBasicRegistration = async (req, res) => {
       );
     }
 
-    // salesPerson is only required for Finance department and SUPERADMIN
     if (
       (isFinanceDepartment || userEmployeeType === "SUPERADMIN") &&
       !salesPerson
@@ -557,7 +559,6 @@ export const customerBasicRegistration = async (req, res) => {
 
     // Validate gstType
     if (gstTypeRefId && gstType) {
-      const GSTType = await import('../../../../models/Product/GSTType.js').then(m => m.default);
       const gstTypeDoc = await GSTType.findById(gstTypeRefId);
       if (!gstTypeDoc) {
         return sendErrorResponse(
@@ -576,10 +577,8 @@ export const customerBasicRegistration = async (req, res) => {
         );
       }
     }
-
     // Validate salesPerson
     if (salesPersonRefId && salesPerson) {
-      const employeeSchema = await import('../../../../models/Auth/Employee.js').then(m => m.default);
       const salesPersonDoc = await employeeSchema.findById(salesPersonRefId);
       if (!salesPersonDoc) {
         return sendErrorResponse(
@@ -601,8 +600,6 @@ export const customerBasicRegistration = async (req, res) => {
 
     // Validate brandCategories
     if (brandCategories && Array.isArray(brandCategories)) {
-      const Brand = await import('../../../../models/Product/Brand.js').then(m => m.default);
-      const Category = await import('../../../../models/Product/Category.js').then(m => m.default);
       
       for (let i = 0; i < brandCategories.length; i++) {
         const brand = brandCategories[i];
@@ -1300,7 +1297,6 @@ export const financeCompleteCustomer = async (req, res) => {
 
     // Validate salesPerson
     if (req.body.salesPerson && req.body.salesPersonRefId) {
-      const employeeSchema = await import('../../../../models/Auth/Employee.js').then(m => m.default);
       const salesPersonDoc = await employeeSchema.findById(req.body.salesPersonRefId);
       if (!salesPersonDoc) {
         return sendErrorResponse(
@@ -1320,10 +1316,6 @@ export const financeCompleteCustomer = async (req, res) => {
       }
     }
 
-    // Validate brandCategories
-    const Brand = await import('../../../../models/Product/Brand.js').then(m => m.default);
-    const Category = await import('../../../../models/Product/Category.js').then(m => m.default);
-    
     for (let i = 0; i < brandCategories.length; i++) {
       const brand = brandCategories[i];
       
@@ -1428,7 +1420,6 @@ export const financeCompleteCustomer = async (req, res) => {
     );
   }
 };
-
 
 export const updateCustomerProfile = async (req, res) => {
   try {
@@ -1740,7 +1731,6 @@ export const resetCustomerCredit = async (req, res) => {
     const userDepartment = req.user.Department?.name || req.user.Department;
     const userEmployeeType = req.user.EmployeeType;
 
-    // Check if user is Finance or SuperAdmin
     if (userEmployeeType !== 'SUPERADMIN' && userDepartment !== 'FINANCE') {
       return sendErrorResponse(
         res,
@@ -1765,7 +1755,6 @@ export const resetCustomerCredit = async (req, res) => {
 
     const oldCreditUsed = customer.creditUsed;
 
-    // Reset creditUsed to 0
     customer.creditUsed = creditUsed;
     await customer.save();
 
@@ -1792,6 +1781,408 @@ export const resetCustomerCredit = async (req, res) => {
       500,
       'INTERNAL_ERROR',
       'Failed to reset customer credit'
+    );
+  }
+};
+
+export const sendCustomerForCorrection = async (req, res) => {
+  try {
+    const { customerId } = req.params;
+    const { fieldsToCorrect, remark } = req.body;
+    
+    const userDepartment = req.user.Department?.name || req.user.Department;
+    const userEmployeeType = req.user.EmployeeType;
+
+    if (userEmployeeType !== 'SUPERADMIN' && userDepartment !== 'FINANCE') {
+      return sendErrorResponse(
+        res,
+        403,
+        'FORBIDDEN',
+        'Only Finance department or SuperAdmin can send customer data back for corrections'
+      );
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(customerId)) {
+      return sendErrorResponse(res, 400, 'INVALID_ID', 'Invalid customer ID format');
+    }
+
+    if (!fieldsToCorrect || !Array.isArray(fieldsToCorrect) || fieldsToCorrect.length === 0) {
+      return sendErrorResponse(
+        res,
+        400,
+        'VALIDATION_ERROR',
+        'fieldsToCorrect must be an array with at least one field name'
+      );
+    }
+
+    if (!remark || remark.trim() === '') {
+      return sendErrorResponse(
+        res,
+        400,
+        'VALIDATION_ERROR',
+        'remark is required to explain what needs to be corrected'
+      );
+    }
+
+    const customer = await Customer.findById(customerId);
+
+    if (!customer) {
+      return sendErrorResponse(res, 404, 'NOT_FOUND', 'Customer not found');
+    }
+
+    if (customer.approvalStatus === 'APPROVED') {
+      return sendErrorResponse(
+        res,
+        400,
+        'ALREADY_APPROVED',
+        'Customer is already approved. Cannot send back for corrections.'
+      );
+    }
+
+    if (customer.approvalStatus !== 'PENDING_FINANCE') {
+      return sendErrorResponse(
+        res,
+        400,
+        'INVALID_STATUS',
+        'Customer must be in PENDING_FINANCE status to send back for corrections'
+      );
+    }
+
+    const allowedFields = [
+      'shopName',
+      'ownerName',
+      'CustomerType',
+      'CustomerTypeRefId',
+      'orderMode',
+      'mobileNo1',
+      'mobileNo2',
+      'landlineNo',
+      'emailId',
+      'businessEmail',
+      'address',
+      'IsGSTRegistered',
+      'GSTNumber',
+      'gstType',
+      'gstTypeRefId',
+      'GSTCertificateImg',
+      'PANCard',
+      'AadharCard',
+      'PANCardImg',
+      'AadharCardImg',
+      // 'zone',
+      // 'zoneRefId',
+      // 'specificLab',
+      // 'specificLabRefId',
+      // 'plant',
+      // 'plantRefId',
+      // 'fittingCenter',
+      // 'fittingCenterRefId',
+      // 'creditDays',
+      // 'creditDaysRefId',
+      // 'creditLimit',
+      // 'courierName',
+      // 'courierNameRefId',
+      // 'courierTime',
+      // 'courierTimeRefId',
+      // 'brandCategories',
+      // 'salesPerson',
+      // 'salesPersonRefId'
+    ];
+
+    const invalidFields = fieldsToCorrect.filter(field => !allowedFields.includes(field));
+    if (invalidFields.length > 0) {
+      return sendErrorResponse(
+        res,
+        400,
+        'INVALID_FIELDS',
+        `Invalid field names: ${invalidFields.join(', ')}. Allowed fields are: ${allowedFields.join(', ')}`
+      );
+    }
+
+    console.log("Anish : ",req.user);
+
+    customer.approvalStatus = 'CORRECTION_REQUIRED';
+    customer.correctionRequest = {
+      fieldsToCorrect: fieldsToCorrect,
+      remark: remark.trim(),
+      requestedBy: req.user.id,
+      requestedEmployeeName : req.user.employeeName,
+      requestedAt: new Date()
+    };
+
+    await customer.save();
+
+    const customerObj = customer.toObject();
+    delete customerObj.password;
+    delete customerObj.emailOtp;
+    delete customerObj.mobileOtp;
+
+    return sendSuccessResponse(
+      res,
+      200,
+      {
+        customer: customerObj,
+        correctionRequest: {
+          fieldsToCorrect: fieldsToCorrect,
+          remark: remark.trim(),
+          requestedBy: req.user.employeeName || req.user.email,
+          requestedAt: customer.correctionRequest.requestedAt
+        }
+      },
+      'Customer sent back to sales for corrections successfully'
+    );
+  } catch (error) {
+    console.error('Send customer for correction error:', error);
+    
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map((err) => err.message);
+      return sendErrorResponse(
+        res,
+        400,
+        'VALIDATION_ERROR',
+        messages.join(', ')
+      );
+    }
+
+    return sendErrorResponse(
+      res,
+      500,
+      'INTERNAL_ERROR',
+      'Failed to send customer for corrections'
+    );
+  }
+};
+
+export const resubmitCorrectedCustomer = async (req, res) => {
+  try {
+    const { customerId } = req.params;
+    const updateData = req.body;
+
+    const userDepartment = req.user?.Department?.name || req.user?.Department;
+    const userEmployeeType = req.user?.EmployeeType;
+
+    if (!mongoose.Types.ObjectId.isValid(customerId)) {
+      return sendErrorResponse(res, 400, 'INVALID_ID', 'Invalid customer ID format');
+    }
+
+    const customer = await Customer.findById(customerId);
+
+    if (!customer) {
+      return sendErrorResponse(res, 404, 'NOT_FOUND', 'Customer not found');
+    }
+
+    if (customer.approvalStatus !== 'CORRECTION_REQUIRED') {
+      return sendErrorResponse(
+        res,
+        400,
+        'INVALID_STATUS',
+        'Customer is not in CORRECTION_REQUIRED status'
+      );
+    }
+
+    if (userDepartment === 'SALES' && userEmployeeType !== 'SUPERADMIN') {
+      if (customer.createdBy.toString() !== req.user._id.toString()) {
+        return sendErrorResponse(
+          res,
+          403,
+          'FORBIDDEN',
+          'You can only resubmit customers you created'
+        );
+      }
+    }
+
+    const fieldsToCorrect = customer.correctionRequest?.fieldsToCorrect || [];
+
+    if (fieldsToCorrect.length === 0) {
+      return sendErrorResponse(
+        res,
+        400,
+        'NO_CORRECTION_REQUEST',
+        'No correction request found for this customer'
+      );
+    }
+
+    const providedFields = Object.keys(updateData);
+    const hasRelevantUpdate = fieldsToCorrect.some(field => providedFields.includes(field));
+
+    if (!hasRelevantUpdate) {
+      return sendErrorResponse(
+        res,
+        400,
+        'MISSING_CORRECTIONS',
+        `Please update at least one of the requested fields: ${fieldsToCorrect.join(', ')}`
+      );
+    }
+
+    const updateFields = {};
+
+    if (updateData.shopName) updateFields.shopName = updateData.shopName.trim();
+    if (updateData.ownerName) updateFields.ownerName = updateData.ownerName.trim();
+    if (updateData.orderMode) updateFields.orderMode = updateData.orderMode;
+    if (updateData.mobileNo1) updateFields.mobileNo1 = updateData.mobileNo1;
+    if (updateData.mobileNo2) updateFields.mobileNo2 = updateData.mobileNo2;
+    if (updateData.landlineNo) updateFields.landlineNo = updateData.landlineNo;
+    if (updateData.businessEmail) updateFields.businessEmail = updateData.businessEmail.toLowerCase().trim();
+    if (updateData.IsGSTRegistered !== undefined) updateFields.IsGSTRegistered = updateData.IsGSTRegistered;
+    if (updateData.GSTNumber) updateFields.GSTNumber = updateData.GSTNumber;
+    if (updateData.GSTCertificateImg) updateFields.GSTCertificateImg = updateData.GSTCertificateImg;
+    if (updateData.PANCard) updateFields.PANCard = updateData.PANCard;
+    if (updateData.AadharCard) updateFields.AadharCard = updateData.AadharCard;
+    if (updateData.PANCardImg) updateFields.PANCardImg = updateData.PANCardImg;
+    if (updateData.AadharCardImg) updateFields.AadharCardImg = updateData.AadharCardImg;
+
+    if (updateData.CustomerType && updateData.CustomerTypeRefId) {
+      const customerType = await customerTypeSchema.findById(updateData.CustomerTypeRefId);
+      if (!customerType) {
+        return sendErrorResponse(
+          res,
+          404,
+          'INVALID_REF_ID',
+          `CustomerType with refId ${updateData.CustomerTypeRefId} does not exist`
+        );
+      }
+      if (customerType.name !== updateData.CustomerType) {
+        return sendErrorResponse(
+          res,
+          400,
+          'NAME_MISMATCH',
+          `Incorrect CustomerType name for refId ${updateData.CustomerTypeRefId}`
+        );
+      }
+      updateFields.CustomerType = {
+        name: updateData.CustomerType,
+        refId: updateData.CustomerTypeRefId,
+      };
+    }
+    
+    // Validate gstType
+    if (updateData.gstType && updateData.gstTypeRefId) {
+      const gstTypeDoc = await GSTType.findById(updateData.gstTypeRefId);
+      if (!gstTypeDoc) {
+        return sendErrorResponse(
+          res,
+          404,
+          'INVALID_REF_ID',
+          `GSTType with refId ${updateData.gstTypeRefId} does not exist`
+        );
+      }
+      if (gstTypeDoc.name !== updateData.gstType) {
+        return sendErrorResponse(
+          res,
+          400,
+          'NAME_MISMATCH',
+          `Incorrect gstType name for refId ${updateData.gstTypeRefId}`
+        );
+      }
+      updateFields.gstType = {
+        name: updateData.gstType,
+        refId: updateData.gstTypeRefId,
+      };
+    }
+
+    // Handle address updates
+    if (updateData.address) {
+      if (!Array.isArray(updateData.address) || updateData.address.length === 0) {
+        return sendErrorResponse(
+          res,
+          400,
+          'VALIDATION_ERROR',
+          'Address must be an array with at least one address'
+        );
+      }
+      for (const addr of updateData.address) {
+        if (
+          !addr.branchAddress ||
+          !addr.contactPerson ||
+          !addr.contactNumber ||
+          !addr.country ||
+          !addr.state ||
+          !addr.city ||
+          !addr.zipCode ||
+          !addr.billingCurrency ||
+          !addr.billingMode
+        ) {
+          return sendErrorResponse(
+            res,
+            400,
+            'VALIDATION_ERROR',
+            'All address fields are required'
+          );
+        }
+      }
+      updateFields.address = updateData.address.map((addr) => ({
+        branchAddress: addr.branchAddress.trim(),
+        contactPerson: addr.contactPerson.trim(),
+        contactNumber: addr.contactNumber.trim(),
+        country: addr.country,
+        state: addr.state,
+        zipCode: addr.zipCode,
+        city: addr.city.trim(),
+        billingCurrency: addr.billingCurrency,
+        billingMode: addr.billingMode,
+      }));
+    }
+
+    // Handle email update
+    if (updateData.emailId) {
+      const existingCustomer = await Customer.findOne({
+        emailId: updateData.emailId.toLowerCase(),
+        _id: { $ne: customerId },
+      });
+      if (existingCustomer) {
+        return sendErrorResponse(
+          res,
+          409,
+          'EMAIL_EXISTS',
+          'Another customer with this email already exists'
+        );
+      }
+      updateFields.emailId = updateData.emailId.toLowerCase().trim();
+    }
+
+    Object.assign(customer, updateFields);
+    customer.approvalStatus = 'PENDING_FINANCE';
+    customer.correctionRequest = undefined;
+    await customer.save();
+
+    const customerObj = customer.toObject();
+    delete customerObj.password;
+    delete customerObj.emailOtp;
+    delete customerObj.mobileOtp;
+
+    return sendSuccessResponse(
+      res,
+      200,
+      { customer: customerObj },
+      'Customer corrections submitted successfully. Pending Finance approval.'
+    );
+  } catch (error) {
+    console.error('Resubmit corrected customer error:', error);
+    
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map((err) => err.message);
+      return sendErrorResponse(
+        res,
+        400,
+        'VALIDATION_ERROR',
+        messages.join(', ')
+      );
+    }
+
+    if (error.code === 11000) {
+      return sendErrorResponse(
+        res,
+        409,
+        'DUPLICATE_FIELD',
+        'Email already exists'
+      );
+    }
+
+    return sendErrorResponse(
+      res,
+      500,
+      'INTERNAL_ERROR',
+      'Failed to resubmit customer corrections'
     );
   }
 };

@@ -1,6 +1,6 @@
 import express from 'express';
-import { customerForgotPassword, customerLogin,customerResetPassword,customerUpdatePassword, customerBasicRegistration, financeCompleteCustomer, updateCustomerProfile, resetCustomerCredit } from '../../core/controllers/Auth/Customers/CustomerAuth.js';
-import { getAllCustomers, getCustomerById, getCustomerProfile, getDraftCustomers, getPendingFinanceCustomers } from '../../core/controllers/Auth/Customers/customer.get.controller.js';
+import { customerForgotPassword, customerLogin,customerResetPassword,customerUpdatePassword, customerBasicRegistration, financeCompleteCustomer, updateCustomerProfile, resetCustomerCredit, sendCustomerForCorrection, resubmitCorrectedCustomer } from '../../core/controllers/Auth/Customers/CustomerAuth.js';
+import { getAllCustomers, getCustomerById, getCustomerProfile, getDraftCustomers, getPendingFinanceCustomers, getCorrectionRequiredCustomers } from '../../core/controllers/Auth/Customers/customer.get.controller.js';
 import { requireSalesFinanceOrSuperAdmin, attachDepartmentInfo } from '../../middlewares/Auth/AdminMiddleware/departmentMiddleware.js';
 import { protectCustomer } from '../../middlewares/Auth/CustomerMiddleware/customerMiddleware.js';
 import { verifyCustomerEmail } from '../../core/controllers/Auth/Customers/VarifyAccount.js';
@@ -18,6 +18,12 @@ customerRouter.post('/draft-register', protectCustomer, attachDepartmentInfo, cu
 
 // FINANCE COMPLETE
 customerRouter.put('/:customerId/finance-complete', ProtectUser, attachDepartmentInfo, financeCompleteCustomer);
+
+// SEND CUSTOMER BACK FOR CORRECTION (Finance/SuperAdmin only)
+customerRouter.put('/:customerId/send-for-correction', ProtectUser, attachDepartmentInfo, sendCustomerForCorrection);
+
+// RESUBMIT CORRECTED CUSTOMER (Sales can resubmit after corrections)
+customerRouter.put('/:customerId/resubmit-correction', ProtectUser, attachDepartmentInfo, resubmitCorrectedCustomer);
 
 // UPDATE CUSTOMER PROFILE
 customerRouter.put('/update-profile/:customerId', ProtectUser, updateCustomerProfile);
@@ -37,6 +43,7 @@ customerRouter.post('/logout', protectCustomer, logout);
 
 // GET ALL THE REQUIRED DETAILS
 customerRouter.get('/customer/pending-finance', ProtectUser, getPendingFinanceCustomers);
+customerRouter.get('/customer/correction-required', ProtectUser, attachDepartmentInfo, getCorrectionRequiredCustomers);
 customerRouter.get('/get-all-customers', ProtectUser, getAllCustomers);
 customerRouter.get('/customers-profile', protectCustomer, getCustomerProfile);
 customerRouter.get('/get-customer/:customerId', getCustomerById);

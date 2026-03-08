@@ -396,9 +396,27 @@ const customerSchema = new mongoose.Schema(
     },
     approvalStatus: {
       type: String,
-      enum: ['PENDING_FINANCE', 'APPROVED'],
+      enum: ['PENDING_FINANCE', 'APPROVED', 'CORRECTION_REQUIRED'],
       default: function () {
         return this.createdByDepartment === 'SALES' ? 'PENDING_FINANCE' : 'APPROVED';
+      }
+    },
+    correctionRequest: {
+      fieldsToCorrect: [{
+        type: String
+      }],
+      remark: {
+        type: String
+      },
+      requestedEmployeeName : {
+        type: String
+      },
+      requestedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "employee",
+      },
+      requestedAt: {
+        type: Date
       }
     },
     financeCompletedBy: {

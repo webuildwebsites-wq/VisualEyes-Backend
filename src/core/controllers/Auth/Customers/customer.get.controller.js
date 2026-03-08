@@ -239,3 +239,58 @@ export const getPendingFinanceCustomers = async (req, res) => {
     );
   }
 };
+
+export const getCorrectionRequiredCustomers = async (req, res) => {
+  try {
+    const page = Math.max(parseInt(req.query.page) || 1, 1);
+    const limit = Math.min(parseInt(req.query.limit) || 10, 100);
+    const skip = (page - 1) * limit;
+
+    const userDepartment = req.user?.Department?.name || req.user?.Department;
+    const userEmployeeType = req.user?.EmployeeType;
+
+    let query = {
+      approvalStatus: 'CORRECTION_REQUIRED'
+    };
+
+    if (userDepartment === 'SALES' && userEmployeeType !== 'SUPERADMIN') {
+      query.createdBy = req.user._id;
+    }
+
+    const [customers, total] = await Promise.all([
+      Customer.find(query)
+        .populate('createdBy', 'username employeeName email Department')
+        .populate('correctionRequest.requestedBy', 'username employeeName email Department')
+        .sort({ 'correctionRequest.requestedAt': -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Customer.countDocuments(query)
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    const pagination = {
+      currentPage: page,
+      totalPages,
+      totalCustomers: total,
+      hasNext: page < totalPages,
+      hasPrev: page > 1
+    };
+
+    return sendSuccessResponse(
+      res,
+      200,
+      { customers, pagination },
+      "Customers requiring corrections retrieved successfully"
+    );
+  } catch (error) {
+    console.error("Get correction required customers error:", error);
+    return sendErrorResponse(
+      res,
+      500,
+      "INTERNAL_ERROR",
+      "Internal server error while fetching correction required customers"
+    );
+  }
+};
