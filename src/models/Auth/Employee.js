@@ -163,11 +163,13 @@ const employee = new mongoose.Schema({
       ref: 'employee'
     }
   },
-  teamLeads: [{
+  // Hierarchical tracking for Supervisors - all Team Leads reporting to this Supervisor
+  teamLeadsUnderMe: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'employee'
   }],
-  employees: [{
+  // Hierarchical tracking for Supervisors and Team Leads - all Employees reporting to them
+  employeesUnderMe: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'employee'
   }],

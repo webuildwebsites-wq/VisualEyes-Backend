@@ -11,7 +11,7 @@ const updateHierarchicalRelationships = async (employeeId, supervisorId, teamLea
     if (supervisorId) {
       await employeeSchema.findByIdAndUpdate(
         supervisorId,
-        { $addToSet: { employees: employeeId } },
+        { $addToSet: { employeesUnderMe: employeeId } },
         { new: true }
       );
     }
@@ -19,14 +19,14 @@ const updateHierarchicalRelationships = async (employeeId, supervisorId, teamLea
     if (teamLeadId) {
       await employeeSchema.findByIdAndUpdate(
         teamLeadId,
-        { $addToSet: { employees: employeeId } },
+        { $addToSet: { employeesUnderMe: employeeId } },
         { new: true }
       );
 
       if (supervisorId) {
         await employeeSchema.findByIdAndUpdate(
           supervisorId,
-          { $addToSet: { teamLeads: teamLeadId } },
+          { $addToSet: { teamLeadsUnderMe: teamLeadId } },
           { new: true }
         );
       }
@@ -43,22 +43,22 @@ const removeHierarchicalRelationships = async (employeeId, oldSupervisorId, oldT
     if (oldSupervisorId) {
       await employeeSchema.findByIdAndUpdate(
         oldSupervisorId,
-        { $pull: { employees: employeeId } }
+        { $pull: { employeesUnderMe: employeeId } }
       );
     }
 
     if (oldTeamLeadId) {
       await employeeSchema.findByIdAndUpdate(
         oldTeamLeadId,
-        { $pull: { employees: employeeId } }
+        { $pull: { employeesUnderMe: employeeId } }
       );
 
       const teamLead = await employeeSchema.findById(oldTeamLeadId);
 
-      if (teamLead?.employees?.length === 0 && oldSupervisorId) {
+      if (teamLead?.employeesUnderMe?.length === 0 && oldSupervisorId) {
         await employeeSchema.findByIdAndUpdate(
           oldSupervisorId,
-          { $pull: { teamLeads: oldTeamLeadId } }
+          { $pull: { teamLeadsUnderMe: oldTeamLeadId } }
         );
       }
     }
@@ -846,18 +846,18 @@ export const deactivateEmployee = async (req, res) => {
     }
 
     if (targetUser.EmployeeType === 'SUPERVISOR' || targetUser.EmployeeType === 'TEAMLEAD') {
-      if (targetUser.employees && targetUser.employees.length > 0) {
+      if (targetUser.employeesUnderMe && targetUser.employeesUnderMe.length > 0) {
         await employeeSchema.updateMany(
-          { _id: { $in: targetUser.employees } },
+          { _id: { $in: targetUser.employeesUnderMe } },
           {
             $unset: targetUser.EmployeeType === 'SUPERVISOR' ? { supervisor: "" } : { teamLead: "" }
           }
         );
       }
 
-      if (targetUser.EmployeeType === 'SUPERVISOR' && targetUser.teamLeads && targetUser.teamLeads.length > 0) {
+      if (targetUser.EmployeeType === 'SUPERVISOR' && targetUser.teamLeadsUnderMe && targetUser.teamLeadsUnderMe.length > 0) {
         await employeeSchema.updateMany(
-          { _id: { $in: targetUser.teamLeads } },
+          { _id: { $in: targetUser.teamLeadsUnderMe } },
           { $unset: { supervisor: "" } }
         );
       }
@@ -1237,8 +1237,8 @@ export const getEmployeesUnderSupervisor = async (req, res) => {
       EmployeeType: 'SUPERVISOR',
       isActive: true
     })
-      .populate('teamLeads', 'employeeName username email phone EmployeeType Department zone')
-      .populate('employees', 'employeeName username email phone EmployeeType Department zone supervisor teamLead');
+      .populate('teamLeadsUnderMe', 'employeeName username email phone EmployeeType Department zone')
+      .populate('employeesUnderMe', 'employeeName username email phone EmployeeType Department zone supervisor teamLead');
 
     if (!supervisor) {
       return sendErrorResponse(res, 404, 'SUPERVISOR_NOT_FOUND', 'Supervisor not found');
@@ -1251,10 +1251,10 @@ export const getEmployeesUnderSupervisor = async (req, res) => {
         username: supervisor.username,
         email: supervisor.email
       },
-      teamLeads: supervisor.teamLeads || [],
-      employees: supervisor.employees || [],
-      totalTeamLeads: supervisor.teamLeads?.length || 0,
-      totalEmployees: supervisor.employees?.length || 0
+      teamLeadsUnderMe: supervisor.teamLeadsUnderMe || [],
+      employeesUnderMe: supervisor.employeesUnderMe || [],
+      totalTeamLeads: supervisor.teamLeadsUnderMe?.length || 0,
+      totalEmployees: supervisor.employeesUnderMe?.length || 0
     };
 
     return sendSuccessResponse(res, 200, response, 'Employees retrieved successfully');
@@ -1278,7 +1278,7 @@ export const getEmployeesUnderTeamLead = async (req, res) => {
       EmployeeType: 'TEAMLEAD',
       isActive: true
     })
-      .populate('employees', 'employeeName username email phone EmployeeType Department zone supervisor teamLead');
+      .populate('employeesUnderMe', 'employeeName username email phone EmployeeType Department zone supervisor teamLead');
 
     if (!teamLead) {
       return sendErrorResponse(res, 404, 'TEAMLEAD_NOT_FOUND', 'Team lead not found');
@@ -1291,8 +1291,8 @@ export const getEmployeesUnderTeamLead = async (req, res) => {
         username: teamLead.username,
         email: teamLead.email
       },
-      employees: teamLead.employees || [],
-      totalEmployees: teamLead.employees?.length || 0
+      employeesUnderMe: teamLead.employeesUnderMe || [],
+      totalEmployees: teamLead.employeesUnderMe?.length || 0
     };
 
     return sendSuccessResponse(res, 200, response, 'Employees retrieved successfully');
@@ -1316,22 +1316,22 @@ export const getDepartmentHierarchy = async (req, res) => {
       EmployeeType: 'SUPERVISOR',
       isActive: true
     })
-      .populate('teamLeads', 'employeeName username email EmployeeType')
-      .populate('employees', 'employeeName username email EmployeeType')
-      .select('employeeName username email EmployeeType Department zone teamLeads employees');
+      .populate('teamLeadsUnderMe', 'employeeName username email EmployeeType')
+      .populate('employeesUnderMe', 'employeeName username email EmployeeType')
+      .select('employeeName username email EmployeeType Department zone teamLeadsUnderMe employeesUnderMe');
 
     const hierarchy = await Promise.all(supervisors.map(async (supervisor) => {
       const teamLeadsWithEmployees = await Promise.all(
-        (supervisor.teamLeads || []).map(async (teamLead) => {
+        (supervisor.teamLeadsUnderMe || []).map(async (teamLead) => {
           const teamLeadFull = await employeeSchema.findById(teamLead._id)
-            .populate('employees', 'employeeName username email EmployeeType');
+            .populate('employeesUnderMe', 'employeeName username email EmployeeType');
 
           return {
             _id: teamLeadFull._id,
             employeeName: teamLeadFull.employeeName,
             username: teamLeadFull.username,
             email: teamLeadFull.email,
-            employees: teamLeadFull.employees || []
+            employeesUnderMe: teamLeadFull.employeesUnderMe || []
           };
         })
       );
@@ -1344,8 +1344,8 @@ export const getDepartmentHierarchy = async (req, res) => {
           email: supervisor.email,
           zone: supervisor.zone
         },
-        teamLeads: teamLeadsWithEmployees,
-        directEmployees: supervisor.employees || []
+        teamLeadsUnderMe: teamLeadsWithEmployees,
+        directEmployees: supervisor.employeesUnderMe || []
       };
     }));
 
