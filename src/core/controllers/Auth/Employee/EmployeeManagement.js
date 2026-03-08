@@ -551,8 +551,11 @@ export const getAllEmployees = async (req, res) => {
     const statusTerm = Array.isArray(status) ? status[0] : status;
 
     let query = {};
-
-    if (departmentTerm) {
+    if (req.user.EmployeeType !== 'SUPERADMIN') {
+      if (req.user.Department) {
+        query['Department.name'] = req.user.Department;
+      }
+    } else if (departmentTerm) {
       query['Department.name'] = departmentTerm.toUpperCase();
     }
 
@@ -612,6 +615,8 @@ export const getAllEmployees = async (req, res) => {
     if(zone && mongoose.Types.ObjectId.isValid(zone)){
       query['zone.refId'] = zone;
     }
+
+    console.log("query : ",query)
 
     const [users, total] = await Promise.all([
       employeeSchema
