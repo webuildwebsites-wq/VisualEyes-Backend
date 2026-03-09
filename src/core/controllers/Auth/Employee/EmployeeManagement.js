@@ -295,6 +295,24 @@ export const createEmployee = async (req, res) => {
       assignedTeamLead = await employeeSchema.findOne(teamLeadQuery);
     }
 
+    if (employeeType.toUpperCase() === 'TEAMLEAD') {
+      const isSalesDepartment = department.toUpperCase() === 'SALES';
+
+      const supervisorQuery = {
+        EmployeeType: 'SUPERVISOR',
+        'Department.name': department.toUpperCase(),
+        isActive: true
+      };
+
+      if (isSalesDepartment && zone) {
+        supervisorQuery['zone.name'] = zone.toUpperCase();
+      } else if (!isSalesDepartment && subRoles && subRoles.length > 0) {
+        supervisorQuery['subRoles.refId'] = { $in: subRoles.map(sr => sr.refId) };
+      }
+
+      assignedSupervisor = await employeeSchema.findOne(supervisorQuery);
+    }
+
     const existingUser = await employeeSchema.findOne({
       $or: [{ email }, { username }]
     });
@@ -367,6 +385,13 @@ export const createEmployee = async (req, res) => {
       }
     }
 
+    if (employeeType.toUpperCase() === 'TEAMLEAD' && assignedSupervisor) {
+      userData.supervisor = {
+        name: assignedSupervisor.employeeName,
+        refId: assignedSupervisor._id
+      };
+    }
+
     const newUser = new employeeSchema(userData);
     await newUser.save();
 
@@ -375,6 +400,14 @@ export const createEmployee = async (req, res) => {
         newUser._id,
         assignedSupervisor?._id,
         assignedTeamLead?._id
+      );
+    }
+
+    if (employeeType.toUpperCase() === 'TEAMLEAD' && assignedSupervisor) {
+      await employeeSchema.findByIdAndUpdate(
+        assignedSupervisor._id,
+        { $addToSet: { teamLeadsUnderMe: newUser._id } },
+        { new: true }
       );
     }
 
@@ -845,6 +878,13 @@ export const deactivateEmployee = async (req, res) => {
       await removeHierarchicalRelationships(userId, supervisorId, teamLeadId);
     }
 
+    if (targetUser.EmployeeType === 'TEAMLEAD' && supervisorId) {
+      await employeeSchema.findByIdAndUpdate(
+        supervisorId,
+        { $pull: { teamLeadsUnderMe: userId } }
+      );
+    }
+
     if (targetUser.EmployeeType === 'SUPERVISOR' || targetUser.EmployeeType === 'TEAMLEAD') {
       if (targetUser.employeesUnderMe && targetUser.employeesUnderMe.length > 0) {
         await employeeSchema.updateMany(
@@ -1157,6 +1197,17 @@ export const restoreEmployee = async (req, res) => {
 
       if (supervisorId || teamLeadId) {
         await updateHierarchicalRelationships(userId, supervisorId, teamLeadId);
+      }
+    }
+
+    if (targetUser.EmployeeType === 'TEAMLEAD') {
+      const supervisorId = targetUser.supervisor?.refId?.toString();
+      
+      if (supervisorId) {
+        await employeeSchema.findByIdAndUpdate(
+          supervisorId,
+          { $addToSet: { teamLeadsUnderMe: userId } }
+        );
       }
     }
 
