@@ -169,17 +169,17 @@ export const customerBasicRegistration = async (req, res) => {
       );
     }
 
-    // if (
-    //   (isFinanceDepartment || userEmployeeType === "SUPERADMIN") &&
-    //   !salesPerson
-    // ) {
-    //   return sendErrorResponse(
-    //     res,
-    //     400,
-    //     "VALIDATION_ERROR",
-    //     "salesPerson is required for FINANCE department and SUPERADMIN Registraion",
-    //   );
-    // }
+    if (
+      (isFinanceDepartment || userEmployeeType === "SUPERADMIN") &&
+      !salesPerson
+    ) {
+      return sendErrorResponse(
+        res,
+        400,
+        "VALIDATION_ERROR",
+        "salesPerson is required for FINANCE department and SUPERADMIN Registraion",
+      );
+    }
 
     if (!Array.isArray(address) || address.length === 0) {
       return sendErrorResponse(
@@ -604,6 +604,11 @@ export const customerBasicRegistration = async (req, res) => {
       for (let i = 0; i < brandCategories.length; i++) {
         const brand = brandCategories[i];
         
+        // Skip empty brand entries (for Sales department)
+        if (!brand.brandId || !brand.brandName || brand.brandId === "" || brand.brandName === "") {
+          continue;
+        }
+        
         // Validate brand
         const brandDoc = await Brand.findById(brand.brandId);
         if (!brandDoc) {
@@ -627,6 +632,11 @@ export const customerBasicRegistration = async (req, res) => {
         if (brand.categories && Array.isArray(brand.categories)) {
           for (let j = 0; j < brand.categories.length; j++) {
             const category = brand.categories[j];
+            
+            // Skip empty category entries
+            if (!category.categoryId || !category.categoryName || category.categoryId === "" || category.categoryName === "") {
+              continue;
+            }
             
             const categoryDoc = await Category.findById(category.categoryId);
             if (!categoryDoc) {
@@ -716,7 +726,18 @@ export const customerBasicRegistration = async (req, res) => {
 
       // Customer Registration - Only for FINANCE department or SUPERADMIN
       password: isFinanceDepartment || userEmployeeType === "SUPERADMIN" ? customerpassword : undefined,
-      brandCategories: (isFinanceDepartment || userEmployeeType === "SUPERADMIN") && brandCategories ? brandCategories : undefined,
+      brandCategories: (isFinanceDepartment || userEmployeeType === "SUPERADMIN") && brandCategories 
+        ? brandCategories
+            .filter(brand => brand.brandId && brand.brandName && brand.brandId !== "" && brand.brandName !== "")
+            .map(brand => ({
+              brandId: brand.brandId,
+              brandName: brand.brandName,
+              categories: brand.categories
+                ? brand.categories.filter(cat => cat.categoryId && cat.categoryName && cat.categoryId !== "" && cat.categoryName !== "")
+                : []
+            }))
+            .filter(brand => brand.categories.length > 0) // Only keep brands with valid categories
+        : undefined,
 
       zone: (isFinanceDepartment || userEmployeeType === "SUPERADMIN") &&
         zone &&
