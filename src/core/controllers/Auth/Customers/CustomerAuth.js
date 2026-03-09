@@ -169,17 +169,17 @@ export const customerBasicRegistration = async (req, res) => {
       );
     }
 
-    if (
-      (isFinanceDepartment || userEmployeeType === "SUPERADMIN") &&
-      !salesPerson
-    ) {
-      return sendErrorResponse(
-        res,
-        400,
-        "VALIDATION_ERROR",
-        "salesPerson is required for FINANCE department and SUPERADMIN",
-      );
-    }
+    // if (
+    //   (isFinanceDepartment || userEmployeeType === "SUPERADMIN") &&
+    //   !salesPerson
+    // ) {
+    //   return sendErrorResponse(
+    //     res,
+    //     400,
+    //     "VALIDATION_ERROR",
+    //     "salesPerson is required for FINANCE department and SUPERADMIN Registraion",
+    //   );
+    // }
 
     if (!Array.isArray(address) || address.length === 0) {
       return sendErrorResponse(
