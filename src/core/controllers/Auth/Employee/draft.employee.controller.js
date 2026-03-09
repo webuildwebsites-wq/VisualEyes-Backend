@@ -70,6 +70,17 @@ export const updateDraftEmployee = async (req, res) => {
     if (updateData.panCardImg) updateFields.panCardImg = updateData.panCardImg;
     if (updateData.isActive !== undefined) updateFields.isActive = updateData.isActive;
 
+    if (updateData.expiry) {
+      const expiryDate = new Date(updateData.expiry);
+      const currentDate = new Date();
+      const oneDayFromNow = new Date(currentDate.getTime() + 24 * 60 * 60 * 1000);
+      
+      if (expiryDate < oneDayFromNow) {
+        return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Expiry date must be at least one day from current time');
+      }
+      updateFields.expiry = updateData.expiry;
+    }
+
     if (updateData.Department && updateData.DepartmentRefId) {
       updateFields.Department = {
         name: updateData.Department,

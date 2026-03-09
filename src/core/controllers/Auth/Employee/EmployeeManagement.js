@@ -80,6 +80,16 @@ export const createEmployee = async (req, res) => {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'All required fields must be provided');
     }
 
+    if (expiry) {
+      const expiryDate = new Date(expiry);
+      const currentDate = new Date();
+      const oneDayFromNow = new Date(currentDate.getTime() + 24 * 60 * 60 * 1000);
+      
+      if (expiryDate < oneDayFromNow) {
+        return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Expiry date must be at least one day from current time');
+      }
+    }
+
     // Validate ObjectId formats
     if (departmentRefId && !mongoose.Types.ObjectId.isValid(departmentRefId)) {
       return sendErrorResponse(res, 400, 'INVALID_ID', 'Invalid department ID format');
@@ -472,6 +482,17 @@ export const createDraftEmployee = async (req, res) => {
       }
     }
 
+    // Validate expiry date - should be at least one day from current time
+    if (expiry) {
+      const expiryDate = new Date(expiry);
+      const currentDate = new Date();
+      const oneDayFromNow = new Date(currentDate.getTime() + 24 * 60 * 60 * 1000);
+      
+      if (expiryDate < oneDayFromNow) {
+        return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Expiry date must be at least one day from current time');
+      }
+    }
+
     const validEmployeeTypes = ['SUPERADMIN', 'ADMIN', 'SUPERVISOR', 'TEAMLEAD', 'EMPLOYEE'];
     if (!validEmployeeTypes.includes(employeeType.toUpperCase())) {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Invalid employee type. Must be ADMIN, SUPERVISOR, TEAMLEAD, or EMPLOYEE');
@@ -774,6 +795,16 @@ export const updateEmployeeDetails = async (req, res) => {
 
     if (Object.keys(updates).length === 0) {
       return sendErrorResponse(res, 400, 'NO_UPDATES', 'No updatable fields supplied');
+    }
+
+    if (updates.expiry) {
+      const expiryDate = new Date(updates.expiry);
+      const currentDate = new Date();
+      const oneDayFromNow = new Date(currentDate.getTime() + 24 * 60 * 60 * 1000);
+      
+      if (expiryDate < oneDayFromNow) {
+        return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Expiry date must be at least one day from current time');
+      }
     }
     let query = { _id: userId, isActive: true };
 
@@ -1350,6 +1381,49 @@ export const getEmployeesUnderTeamLead = async (req, res) => {
 
   } catch (error) {
     console.error('Get employees under team lead error:', error);
+    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to retrieve employees');
+  }
+};
+
+export const getMultipleEmployees = async (req, res) => {
+  try {
+    const { employeeIds } = req.body;
+
+    if (!employeeIds || !Array.isArray(employeeIds) || employeeIds.length === 0) {
+      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Employee IDs array is required');
+    }
+
+    for (const id of employeeIds) {
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return sendErrorResponse(res, 400, 'INVALID_ID', `Invalid employee ID format: ${id}`);
+      }
+    }
+
+    const employees = await employeeSchema.find({
+      _id: { $in: employeeIds },
+      isActive: true,
+      isDeleted: false
+    })
+    .select('employeeName _id EmployeeType email phone employeeProfileImg')
+    .populate('EmployeeType', 'name');
+
+    if (employees.length === 0) {
+      return sendErrorResponse(res, 404, 'EMPLOYEES_NOT_FOUND', 'No active employees found with provided IDs');
+    }
+
+    const employeeData = employees.map(employee => ({
+      id: employee._id,
+      name: employee.employeeName,
+      employeeType: employee.EmployeeType,
+      email: employee.email,
+      phone: employee.phone,
+      image: employee.employeeProfileImg
+    }));
+
+    return sendSuccessResponse(res, 200, { employees: employeeData }, 'Employees retrieved successfully');
+
+  } catch (error) {
+    console.error('Get multiple employees error:', error);
     return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to retrieve employees');
   }
 };
