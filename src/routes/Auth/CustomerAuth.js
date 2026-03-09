@@ -1,5 +1,5 @@
 import express from 'express';
-import { customerForgotPassword, customerLogin,customerResetPassword,customerUpdatePassword, customerBasicRegistration, financeCompleteCustomer, updateCustomerProfile, resetCustomerCredit, sendCustomerForCorrection, resubmitCorrectedCustomer } from '../../core/controllers/Auth/Customers/CustomerAuth.js';
+import { customerForgotPassword, customerLogin,customerResetPassword,customerUpdatePassword, customerBasicRegistration, financeCompleteCustomer, updateCustomerProfile, resetCustomerCredit, sendCustomerForCorrection, resubmitCorrectedCustomer, updateCustomerShipToDetails } from '../../core/controllers/Auth/Customers/CustomerAuth.js';
 import { getAllCustomers, getCustomerById, getCustomerProfile, getDraftCustomers, getPendingFinanceCustomers, getCorrectionRequiredCustomers } from '../../core/controllers/Auth/Customers/customer.get.controller.js';
 import { requireSalesFinanceOrSuperAdmin, attachDepartmentInfo } from '../../middlewares/Auth/AdminMiddleware/departmentMiddleware.js';
 import { protectCustomer } from '../../middlewares/Auth/CustomerMiddleware/customerMiddleware.js';
@@ -27,6 +27,9 @@ customerRouter.put('/:customerId/resubmit-correction', ProtectUser, attachDepart
 
 // UPDATE CUSTOMER PROFILE
 customerRouter.put('/update-profile/:customerId', ProtectUser, updateCustomerProfile);
+
+// UPDATE CUSTOMER SHIP-TO DETAILS (Finance/SuperAdmin only)
+customerRouter.put('/:customerId/update-ship-to-details', ProtectUser, attachDepartmentInfo, updateCustomerShipToDetails);
 
 // RESET CUSTOMER CREDIT (Finance/SuperAdmin only)
 customerRouter.put('/reset-credit/:customerId', ProtectUser, attachDepartmentInfo, resetCustomerCredit);

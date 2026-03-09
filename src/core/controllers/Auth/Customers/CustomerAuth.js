@@ -2211,3 +2211,179 @@ export const resubmitCorrectedCustomer = async (req, res) => {
     );
   }
 };
+
+export const updateCustomerShipToDetails = async (req, res) => {
+  try {
+    const { customerId } = req.params;
+    const { shipToDetails } = req.body;
+    
+    const userEmployeeType = req.user?.EmployeeType;
+    const userDepartment = req.user?.Department?.name || req.user?.Department;
+    
+    if (userEmployeeType !== "SUPERADMIN" && userDepartment !== "FINANCE") {
+      return sendErrorResponse(
+        res,
+        403,
+        "FORBIDDEN",
+        "Only Finance department and SuperAdmin can update ship-to details"
+      );
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(customerId)) {
+      return sendErrorResponse(
+        res,
+        400,
+        "INVALID_ID",
+        "Invalid customer ID format"
+      );
+    }
+
+    if (!shipToDetails || !Array.isArray(shipToDetails)) {
+      return sendErrorResponse(
+        res,
+        400,
+        "VALIDATION_ERROR",
+        "shipToDetails must be an array"
+      );
+    }
+
+    if (shipToDetails.length === 0) {
+      return sendErrorResponse(
+        res,
+        400,
+        "VALIDATION_ERROR",
+        "At least one ship-to address is required"
+      );
+    }
+
+    for (let i = 0; i < shipToDetails.length; i++) {
+      const address = shipToDetails[i];
+      
+      const requiredFields = [
+        'customerName',
+        'customerRefId',
+        'shipToCustomerName',
+        'shipToCustomerEmail',
+        'shipToCustomerContactNumber',
+        'billingAddress',
+        'shipToAddress',
+        'state',
+        'city',
+        'shipToAddressZipCode'
+      ];
+
+      for (const field of requiredFields) {
+        if (!address[field] || address[field].toString().trim() === '') {
+          return sendErrorResponse(
+            res,
+            400,
+            "VALIDATION_ERROR",
+            `shipToDetails[${i}].${field} is required`
+          );
+        }
+      }
+
+      // Validate email format
+      const emailRegex = /^\S+@\S+\.\S+$/;
+      if (!emailRegex.test(address.shipToCustomerEmail)) {
+        return sendErrorResponse(
+          res,
+          400,
+          "VALIDATION_ERROR",
+          `shipToDetails[${i}].shipToCustomerEmail has invalid email format`
+        );
+      }
+
+      const phoneRegex = /^[0-9]{10}$/;
+      if (!phoneRegex.test(address.shipToCustomerContactNumber)) {
+        return sendErrorResponse(
+          res,
+          400,
+          "VALIDATION_ERROR",
+          `shipToDetails[${i}].shipToCustomerContactNumber must be 10 digits`
+        );
+      }
+
+      if (address.customerRefId !== customerId) {
+        return sendErrorResponse(
+          res,
+          400,
+          "VALIDATION_ERROR",
+          `shipToDetails[${i}].customerRefId must match the customer ID`
+        );
+      }
+    }
+
+    const customer = await Customer.findById(customerId);
+    if (!customer) {
+      return sendErrorResponse(
+        res,
+        404,
+        "NOT_FOUND",
+        "Customer not found"
+      );
+    }
+
+    if (customer.approvalStatus !== 'APPROVED') {
+      return sendErrorResponse(
+        res,
+        400,
+        "INVALID_STATUS",
+        "Customer must be approved before updating ship-to details"
+      );
+    }
+
+    const shipToDetailsWithMetadata = shipToDetails.map(address => ({
+      ...address,
+      customerRefId: customerId,
+      createdBy: address._id ? address.createdBy : req.user.id,
+      updatedBy: req.user.id,
+      shipToCustomerEmail: address.shipToCustomerEmail.toLowerCase().trim(),
+      shipToCustomerName: address.shipToCustomerName.trim(),
+      customerName: address.customerName.trim(),
+      shipToCustomerContactNumber : address.shipToCustomerContactNumber.trim(),
+      billingAddress: address.billingAddress.trim(),
+      shipToAddress: address.shipToAddress.trim(),
+      state: address.state.trim(),
+      city: address.city.trim(),
+      shipToAddressZipCode: address.shipToAddressZipCode.trim(),
+      gstNumber: address.gstNumber ? address.gstNumber.toUpperCase().trim() : undefined,
+      gstImage: address.gstImage ? address.gstImage.trim() : undefined
+    }));
+
+    customer.customerShipToDetails = shipToDetailsWithMetadata;
+    await customer.save();
+
+    const customerObj = customer.toObject();
+    delete customerObj.password;
+    delete customerObj.emailOtp;
+    delete customerObj.mobileOtp;
+
+    return sendSuccessResponse(
+      res,
+      200,
+      { customer: customerObj },
+      "Ship-to details updated successfully"
+    );
+
+  } catch (error) {
+    console.error("Update customer ship-to details error:", error);
+    
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map((err) => err.message);
+      return sendErrorResponse(
+        res,
+        400,
+        'VALIDATION_ERROR',
+        messages.join(', ')
+      );
+    }
+
+    return sendErrorResponse(
+      res,
+      500,
+      "INTERNAL_ERROR",
+      "Failed to update ship-to details"
+    );
+  }
+};

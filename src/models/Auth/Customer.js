@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
 import Counter from "./Counter.js";
+import shipToAddressSchema from "./Customer/ShipToAddress.js"
 
 const addressSchema = new mongoose.Schema(
   {
@@ -426,6 +427,7 @@ const customerSchema = new mongoose.Schema(
     financeCompletedAt: {
       type: Date,
     },
+    customerShipToDetails : [shipToAddressSchema],
     emailOtp: String,
     emailOtpExpires: Date,
     mobileOtp: String,
