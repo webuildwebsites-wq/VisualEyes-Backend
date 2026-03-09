@@ -29,7 +29,7 @@ customerRouter.put('/:customerId/resubmit-correction', ProtectUser, attachDepart
 customerRouter.put('/update-profile/:customerId', ProtectUser, updateCustomerProfile);
 
 // UPDATE CUSTOMER SHIP-TO DETAILS (Finance/SuperAdmin only)
-customerRouter.put('/:customerId/update-ship-to-details', ProtectUser, attachDepartmentInfo, updateCustomerShipToDetails);
+customerRouter.put('/update-ship-to-details/:customerId', ProtectUser, attachDepartmentInfo, updateCustomerShipToDetails);
 
 // RESET CUSTOMER CREDIT (Finance/SuperAdmin only)
 customerRouter.put('/reset-credit/:customerId', ProtectUser, attachDepartmentInfo, resetCustomerCredit);

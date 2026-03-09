@@ -2333,23 +2333,33 @@ export const updateCustomerShipToDetails = async (req, res) => {
       );
     }
 
-    const shipToDetailsWithMetadata = shipToDetails.map(address => ({
-      ...address,
-      customerRefId: customerId,
-      createdBy: address._id ? address.createdBy : req.user.id,
-      updatedBy: req.user.id,
-      shipToCustomerEmail: address.shipToCustomerEmail.toLowerCase().trim(),
-      shipToCustomerName: address.shipToCustomerName.trim(),
-      customerName: address.customerName.trim(),
-      shipToCustomerContactNumber : address.shipToCustomerContactNumber.trim(),
-      billingAddress: address.billingAddress.trim(),
-      shipToAddress: address.shipToAddress.trim(),
-      state: address.state.trim(),
-      city: address.city.trim(),
-      shipToAddressZipCode: address.shipToAddressZipCode.trim(),
-      gstNumber: address.gstNumber ? address.gstNumber.toUpperCase().trim() : undefined,
-      gstImage: address.gstImage ? address.gstImage.trim() : undefined
-    }));
+    const shipToDetailsWithMetadata = shipToDetails.map(address => {
+      const normalizedEmail = address.shipToCustomerEmail.toLowerCase().trim();
+      const existingAddress = address._id 
+        ? customer.customerShipToDetails.find(addr => addr._id.toString() === address._id.toString())
+        : customer.customerShipToDetails.find(addr => 
+            addr.shipToCustomerEmail.toLowerCase() === normalizedEmail
+          );
+
+      return {
+        ...address,
+        _id: existingAddress?._id,
+        customerRefId: customerId,
+        createdBy: existingAddress ? existingAddress.createdBy : req.user.id,
+        updatedBy: req.user.id,
+        shipToCustomerEmail: normalizedEmail,
+        shipToCustomerName: address.shipToCustomerName.trim(),
+        customerName: address.customerName.trim(),
+        shipToCustomerContactNumber : address.shipToCustomerContactNumber.trim(),
+        billingAddress: address.billingAddress.trim(),
+        shipToAddress: address.shipToAddress.trim(),
+        state: address.state.trim(),
+        city: address.city.trim(),
+        shipToAddressZipCode: address.shipToAddressZipCode.trim(),
+        gstNumber: address.gstNumber ? address.gstNumber.toUpperCase().trim() : undefined,
+        gstImage: address.gstImage ? address.gstImage.trim() : undefined
+      };
+    });
 
     customer.customerShipToDetails = shipToDetailsWithMetadata;
     await customer.save();
