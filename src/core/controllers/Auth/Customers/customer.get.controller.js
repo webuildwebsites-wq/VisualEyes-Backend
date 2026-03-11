@@ -99,7 +99,14 @@ export const getAllCustomers = async (req, res) => {
     const specificBrandTerm = Array.isArray(specificBrand) ? specificBrand[0] : specificBrand;
     const specificCategoryTerm = Array.isArray(specificCategory) ? specificCategory[0] : specificCategory;
 
+    const userDepartment = req.user?.Department?.name || req.user?.Department;
+    const userEmployeeType = req.user?.EmployeeType;
+
     let query = {};
+
+    if (userDepartment === 'SALES' && userEmployeeType === 'EMPLOYEE') {
+      query.createdBy = req.user.id;
+    }
 
     if (searchTerm) {
       const searchConditions = [];

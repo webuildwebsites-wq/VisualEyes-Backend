@@ -14,7 +14,7 @@ const customerRouter = express.Router();
 customerRouter.post('/login',  customerLogin);
 customerRouter.post('/register', ProtectUser, attachDepartmentInfo, requireSalesFinanceOrSuperAdmin, customerBasicRegistration);
 
-customerRouter.post('/draft-register', protectCustomer, attachDepartmentInfo, customerDraftRegistration);
+customerRouter.post('/draft-register', ProtectUser, attachDepartmentInfo, customerDraftRegistration);
 
 // FINANCE COMPLETE
 customerRouter.put('/:customerId/finance-complete', ProtectUser, attachDepartmentInfo, financeCompleteCustomer);

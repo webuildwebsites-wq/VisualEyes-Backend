@@ -1394,6 +1394,8 @@ export const financeCompleteCustomer = async (req, res) => {
       }
     }
 
+    const addressToUpdate = req.body.address && req.body.address.length > 0  ? req.body.address  : customer.address;
+
     const updateData = {
       password: req.body.password,
       zone: req.body.zone,
@@ -1412,7 +1414,8 @@ export const financeCompleteCustomer = async (req, res) => {
       Status : {
         isActive : true,
         isSuspended : false,
-      }
+      },
+      address : addressToUpdate
     };
 
     Object.assign(customer, updateData);
@@ -1466,6 +1469,7 @@ export const updateCustomerProfile = async (req, res) => {
     if (updateData.mobileNo2) updateFields.mobileNo2 = updateData.mobileNo2;
     if (updateData.landlineNo) updateFields.landlineNo = updateData.landlineNo;
     if (updateData.creditUsed) updateFields.creditUsed = updateData.creditUsed;
+    if (updateData.approvalStatus) updateFields.approvalStatus = updateData.approvalStatus;
     if (updateData.businessEmail)
       updateFields.businessEmail = updateData.businessEmail;
 

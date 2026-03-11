@@ -205,7 +205,7 @@ const employee = new mongoose.Schema({
     CanCreateEmployee: {
       type: Boolean,
       default: function () {
-        return ['SUPERADMIN', 'ADMIN', 'SUPERVISOR'].includes(this.EmployeeType);
+        return ['SUPERADMIN', 'ADMIN',].includes(this.EmployeeType);
       }
     },
     CanManageEmployee: {
@@ -223,7 +223,7 @@ const employee = new mongoose.Schema({
     CanManageAllDepartments: {
       type: Boolean,
       default: function () {
-        return this.EmployeeType === 'ADMIN';
+        return this.EmployeeType === 'SUPERADMIN';
       }
     },
     CanCreateOrders: {
@@ -284,9 +284,7 @@ const employee = new mongoose.Schema({
     },
     CanViewReports: {
       type: Boolean,
-      default: function () {
-        return this.EmployeeType !== 'EMPLOYEE';
-      }
+      default: true
     },
     CanExportReports: {
       type: Boolean,
@@ -295,6 +293,7 @@ const employee = new mongoose.Schema({
       }
     }
   },
+
   profile: {
     dateOfJoining: {
       type: Date,
