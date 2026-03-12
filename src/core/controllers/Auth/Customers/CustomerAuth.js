@@ -1918,13 +1918,19 @@ export const sendCustomerForCorrection = async (req, res) => {
       // 'salesPersonRefId'
     ];
 
-    const invalidFields = fieldsToCorrect.filter(field => !allowedFields.includes(field));
+    const invalidFields = fieldsToCorrect.filter(field => {
+      if (allowedFields.includes(field)) return false;
+      const addressArrayPattern = /^address\[\d+\]\.(branchAddress|contactPerson|contactNumber|city|state|zipCode|country|billingCurrency|billingMode)$/;
+      if (addressArrayPattern.test(field)) return false;
+      return true;
+    });
+
     if (invalidFields.length > 0) {
       return sendErrorResponse(
         res,
         400,
         'INVALID_FIELDS',
-        `Invalid field names: ${invalidFields.join(', ')}. Allowed fields are: ${allowedFields.join(', ')}`
+        `Invalid field names: ${invalidFields.join(', ')}. Allowed fields: ${allowedFields.join(', ')}. For address corrections use format "address[index].fieldName" (e.g., "address[0].branchAddress")`
       );
     }
 
@@ -2030,9 +2036,15 @@ export const resubmitCorrectedCustomer = async (req, res) => {
         'No correction request found for this customer'
       );
     }
-
-    const providedFields = Object.keys(updateData);
-    const hasRelevantUpdate = fieldsToCorrect.some(field => providedFields.includes(field));
+    const hasRelevantUpdate = fieldsToCorrect.some(field => {
+      if (field === 'address') {
+        return updateData.address !== undefined;
+      }
+      if (field.startsWith('address[')) {
+        return updateData.address !== undefined;
+      }
+      return updateData[field] !== undefined;
+    });
 
     if (!hasRelevantUpdate) {
       return sendErrorResponse(
@@ -2119,26 +2131,32 @@ export const resubmitCorrectedCustomer = async (req, res) => {
           'Address must be an array with at least one address'
         );
       }
-      for (const addr of updateData.address) {
-        if (
-          !addr.branchAddress ||
-          !addr.contactPerson ||
-          !addr.contactNumber ||
-          !addr.country ||
-          !addr.state ||
-          !addr.city ||
-          !addr.zipCode ||
-          !addr.billingCurrency ||
-          !addr.billingMode
-        ) {
+
+      for (let i = 0; i < updateData.address.length; i++) {
+        const addr = updateData.address[i];
+        const requiredAddressFields = [
+          'branchAddress',
+          'contactPerson',
+          'contactNumber',
+          'city',
+          'state',
+          'zipCode',
+          'country',
+          'billingCurrency',
+          'billingMode'
+        ];
+
+        const missingFields = requiredAddressFields.filter(field => !addr[field]);
+        if (missingFields.length > 0) {
           return sendErrorResponse(
             res,
             400,
             'VALIDATION_ERROR',
-            'All address fields are required'
+            `Address[${i}] missing required fields: ${missingFields.join(', ')}`
           );
         }
       }
+
       updateFields.address = updateData.address.map((addr) => ({
         branchAddress: addr.branchAddress.trim(),
         contactPerson: addr.contactPerson.trim(),
