@@ -105,6 +105,16 @@ const customerSchema = new mongoose.Schema(
 
 
     // LOGIN DETAILS
+    customerCode: {
+      type: String,
+      unique: true,
+      sparse: true,
+      trim: true,
+      uppercase: true,
+      // required: function () {
+      //   return this.approvalStatus === 'APPROVED';
+      // }
+    },
     password: {
       type: String,
       minlength: 6,

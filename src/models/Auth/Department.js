@@ -29,14 +29,6 @@ const departmentSchema = new mongoose.Schema({
     unique: true,
     uppercase: true,
     trim: true,
-    enum: [
-      'FINANCE',
-      'LAB',
-      'DISPATCH',
-      'SALES',
-      'STORE',
-      'CUSTOMER SUPPORT TEAM'
-    ]
   },
   code: {
     type: String,

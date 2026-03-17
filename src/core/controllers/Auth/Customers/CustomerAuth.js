@@ -7,6 +7,10 @@ import {
   generateToken,
   generateRefreshToken,
 } from "../../../../Utils/Auth/tokenUtils.js";
+import {
+  generateCustomerCode,
+  generateRandomPassword,
+} from "../../../../Utils/Auth/customerAuthUtils.js";
 import CredentialsTemplate from "../../../../Utils/Mail/CredentialsTemplate.js";
 import { sendEmail } from "../../../config/Email/emailService.js";
 import Customer from "../../../../models/Auth/Customer.js";
@@ -30,18 +34,24 @@ dotenv.config();
 
 export const customerLogin = async (req, res) => {
   try {
-    const { emailId, password } = req.body;
+    const { loginId, password } = req.body;
 
-    if (!emailId || !password) {
+    if (!loginId || !password) {
       return sendErrorResponse(
         res,
         400,
         "VALIDATION_ERROR",
-        "Please provide email and password",
+        "Please provide login ID (email or customer code) and password",
       );
     }
 
-    const customer = await Customer.findOne({ emailId, 'Status.isActive': true }).select("+password");
+    const customer = await Customer.findOne({
+      $or: [
+        { emailId: loginId.toLowerCase() },
+        { customerCode: loginId.toUpperCase() }
+      ],
+      'Status.isActive': true
+    }).select("+password");
 
     if (!customer) {
       return sendErrorResponse(
@@ -142,7 +152,6 @@ export const customerBasicRegistration = async (req, res) => {
       AadharCardImg,
       salesPerson,
       salesPersonRefId,
-      customerpassword,
       draftCustomerId,
     } = req.body;
 
@@ -278,15 +287,6 @@ export const customerBasicRegistration = async (req, res) => {
             `${field.name} must be a valid ObjectId (24 hex characters)`,
           );
         }
-      }
-
-      if (!customerpassword) {
-        return sendErrorResponse(
-          res,
-          400,
-          "VALIDATION_ERROR",
-          "Password is required for FINANCE department",
-        );
       }
 
       if (
@@ -672,6 +672,24 @@ export const customerBasicRegistration = async (req, res) => {
     const EmailOtp = Math.floor(100000 + Math.random() * 800000).toString();
     const MobileOtp = Math.floor(100000 + Math.random() * 900000).toString();
 
+    let generatedCustomerCode = null;
+    if (isFinanceDepartment || userEmployeeType === "SUPERADMIN") {
+      let customerCode = generateCustomerCode(shopName);
+      let codeExists = true;
+
+      while (codeExists) {
+        const existing = await Customer.findOne({ customerCode });
+        if (!existing) {
+          codeExists = false;
+          generatedCustomerCode = customerCode;
+        } else {
+          customerCode = generateCustomerCode(shopName);
+        }
+      }
+    }
+
+    const finalPassword = generateRandomPassword();
+
     const customerData = {
       // Customer Info.
       shopName: shopName.trim(),
@@ -725,7 +743,8 @@ export const customerBasicRegistration = async (req, res) => {
       })),
 
       // Customer Registration - Only for FINANCE department or SUPERADMIN
-      password: isFinanceDepartment || userEmployeeType === "SUPERADMIN" ? customerpassword : undefined,
+      customerCode: generatedCustomerCode,
+      password: isFinanceDepartment || userEmployeeType === "SUPERADMIN" ? finalPassword : undefined,
       brandCategories: (isFinanceDepartment || userEmployeeType === "SUPERADMIN") && brandCategories 
         ? brandCategories
             .filter(brand => brand.brandId && brand.brandName && brand.brandId !== "" && brand.brandName !== "")
@@ -835,6 +854,8 @@ export const customerBasicRegistration = async (req, res) => {
       mobileOtpExpires: new Date(Date.now() + 10 * 60 * 1000),
     };
 
+    console.log("customerData  : ",customerData);
+
     const customer = await Customer.create(customerData);
     
     if (draftCustomerId) {
@@ -853,12 +874,12 @@ export const customerBasicRegistration = async (req, res) => {
     // Only send credentials email if password was set (FINANCE department or SUPERADMIN)
     if (
       (isFinanceDepartment || userEmployeeType === "SUPERADMIN") &&
-      customerpassword
+      finalPassword
     ) {
       sendEmail({
         to: emailId,
         subject: "Welcome Mail for choosing VISUAL EYES",
-        html: CredentialsTemplate(ownerName, emailId, customerpassword),
+        html: CredentialsTemplate(ownerName, generatedCustomerCode || emailId, finalPassword),
       }).catch((err) => console.error("Background email error:", err));
     }
 

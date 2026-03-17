@@ -28,6 +28,14 @@ const employee = new mongoose.Schema({
     minlength: [3, 'Username must be at least 3 characters'],
     maxlength: [15, 'Username cannot exceed 15 characters']
   },
+  employeeCode: {
+    type: String,
+    unique: true,
+    sparse: true,
+    trim: true,
+    uppercase: true,
+    required: true
+  },
   email: {
     type: String,
     required: [true, 'Email is required'],
@@ -88,16 +96,16 @@ const employee = new mongoose.Schema({
     }
   },
   subRoles: [subRoleSchema],
-  lab: {
-    name: {
-      type: String,
-      trim: true
-    },
-    refId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Lab'
-    }
-  },
+  // lab: {
+  //   name: {
+  //     type: String,
+  //     trim: true
+  //   },
+  //   refId: {
+  //     type: mongoose.Schema.Types.ObjectId,
+  //     ref: 'Lab'
+  //   }
+  // },
   zone: {
     name: {
       type: String,

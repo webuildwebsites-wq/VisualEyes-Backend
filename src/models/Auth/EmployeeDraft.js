@@ -70,16 +70,16 @@ const employee = new mongoose.Schema(
       },
     },
     subRoles: [subRoleSchema],
-    lab: {
-      name: {
-        type: String,
-        trim: true,
-      },
-      refId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Lab",
-      },
-    },
+    // lab: {
+    //   name: {
+    //     type: String,
+    //     trim: true,
+    //   },
+    //   refId: {
+    //     type: mongoose.Schema.Types.ObjectId,
+    //     ref: "Lab",
+    //   },
+    // },
     zone: {
       name: {
         type: String,

@@ -1,4 +1,5 @@
 import { sendSuccessResponse, sendErrorResponse } from '../../../../Utils/response/responseHandler.js';
+import { generateEmployeeCode, generateRandomPassword } from '../../../../Utils/Auth/customerAuthUtils.js';
 import employeeSchema from '../../../../models/Auth/Employee.js';
 import Department from '../../../../models/Auth/Department.js';
 import Location from '../../../../models/Location/Location.js';
@@ -99,9 +100,9 @@ export const createEmployee = async (req, res) => {
       return sendErrorResponse(res, 400, 'INVALID_ID', 'Invalid zone ID format');
     }
 
-    if (labRefId && !mongoose.Types.ObjectId.isValid(labRefId)) {
-      return sendErrorResponse(res, 400, 'INVALID_ID', 'Invalid lab ID format');
-    }
+    // if (labRefId && !mongoose.Types.ObjectId.isValid(labRefId)) {
+    //   return sendErrorResponse(res, 400, 'INVALID_ID', 'Invalid lab ID format');
+    // }
 
     if (subRoles && Array.isArray(subRoles)) {
       for (const subRole of subRoles) {
@@ -251,25 +252,25 @@ export const createEmployee = async (req, res) => {
       }
     }
 
-    if (lab && labRefId) {
-      const labDoc = await SpecificLab.findById(labRefId);
-      if (!labDoc) {
-        return sendErrorResponse(
-          res,
-          404,
-          'INVALID_REF_ID',
-          `Lab with refId ${labRefId} does not exist`
-        );
-      }
-      if (labDoc.name !== lab) {
-        return sendErrorResponse(
-          res,
-          400,
-          'NAME_MISMATCH',
-          `Incorrect lab name for refId ${labRefId}. Expected: ${labDoc.name}, Received: ${lab}`
-        );
-      }
-    }
+    // if (lab && labRefId) {
+    //   const labDoc = await SpecificLab.findById(labRefId);
+    //   if (!labDoc) {
+    //     return sendErrorResponse(
+    //       res,
+    //       404,
+    //       'INVALID_REF_ID',
+    //       `Lab with refId ${labRefId} does not exist`
+    //     );
+    //   }
+    //   if (labDoc.name !== lab) {
+    //     return sendErrorResponse(
+    //       res,
+    //       400,
+    //       'NAME_MISMATCH',
+    //       `Incorrect lab name for refId ${labRefId}. Expected: ${labDoc.name}, Received: ${lab}`
+    //     );
+    //   }
+    // }
 
     let assignedTeamLead = null;
 
@@ -331,6 +332,19 @@ export const createEmployee = async (req, res) => {
       return sendErrorResponse(res, 409, 'USER_EXISTS', 'Employee with this email or username already exists');
     }
 
+    let employeeCode = generateEmployeeCode(employeeName);
+    let codeExists = true;
+    while (codeExists) {
+      const existing = await employeeSchema.findOne({ employeeCode });
+      if (!existing) {
+        codeExists = false;
+      } else {
+        employeeCode = generateEmployeeCode(employeeName);
+      }
+    }
+
+    // const finalPassword = password || generateRandomPassword();
+
     const userData = {
       username,
       employeeName,
@@ -343,6 +357,7 @@ export const createEmployee = async (req, res) => {
       aadharCard,
       panCard,
       expiry,
+      employeeCode,
       EmployeeType: employeeType.toUpperCase(),
       createdBy: req.user.id,
       isActive: true,
@@ -367,12 +382,12 @@ export const createEmployee = async (req, res) => {
 
     userData.subRoles = subRoles || [];
 
-    if (lab && labRefId) {
-      userData.lab = {
-        name: lab.toUpperCase(),
-        refId: labRefId
-      };
-    }
+    // if (lab && labRefId) {
+    //   userData.lab = {
+    //     name: lab.toUpperCase(),
+    //     refId: labRefId
+    //   };
+    // }
 
     if (zone && zoneRefId) {
       userData.zone = {
@@ -470,9 +485,9 @@ export const createDraftEmployee = async (req, res) => {
       return sendErrorResponse(res, 400, 'INVALID_ID', 'Invalid zone ID format');
     }
 
-    if (labRefId && !mongoose.Types.ObjectId.isValid(labRefId)) {
-      return sendErrorResponse(res, 400, 'INVALID_ID', 'Invalid lab ID format');
-    }
+    // if (labRefId && !mongoose.Types.ObjectId.isValid(labRefId)) {
+    //   return sendErrorResponse(res, 400, 'INVALID_ID', 'Invalid lab ID format');
+    // }
 
     if (subRoles && Array.isArray(subRoles)) {
       for (const subRole of subRoles) {
@@ -602,12 +617,12 @@ export const createDraftEmployee = async (req, res) => {
 
     userData.subRoles = subRoles || [];
 
-    if (lab && labRefId) {
-      userData.lab = {
-        name: lab.toUpperCase(),
-        refId: labRefId
-      };
-    }
+    // if (lab && labRefId) {
+    //   userData.lab = {
+    //     name: lab.toUpperCase(),
+    //     refId: labRefId
+    //   };
+    // }
 
     if (zone && zoneRefId) {
       userData.zone = {
@@ -696,6 +711,7 @@ export const getAllEmployees = async (req, res) => {
       }
 
       searchConditions.push({ employeeName: { $regex: searchTerm, $options: 'i' } });
+      searchConditions.push({ employeeCode: { $regex: searchTerm, $options: 'i' } });
       searchConditions.push({ username: { $regex: searchTerm, $options: 'i' } });
       searchConditions.push({ phone: { $regex: searchTerm, $options: 'i' } });
       searchConditions.push({ email: { $regex: searchTerm, $options: 'i' } });

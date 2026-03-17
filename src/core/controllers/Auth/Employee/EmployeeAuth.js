@@ -7,13 +7,17 @@ dotenv.config();
 
 export const employeeLogin = async (req, res) => {
   try {
-    const { username, password } = req.body;
-    if (!username || !password) {
-      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Please provide username and password');
+    const { loginId, password } = req.body;
+    if (!loginId || !password) {
+      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Please provide login ID (username, email, or employee code) and password');
     }
 
     const user = await employeeSchema.findOne({ 
-      $or: [{ username }, { email: username }],
+      $or: [
+        { username: loginId },
+        { email: loginId.toLowerCase() },
+        { employeeCode: loginId.toUpperCase() }
+      ],
       isActive: true 
     })
     .select('+password')

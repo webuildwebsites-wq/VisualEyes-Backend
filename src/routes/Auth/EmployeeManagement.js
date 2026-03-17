@@ -12,7 +12,7 @@ employeeManagementRouter.post('/create-employee',  createEmployee);
 employeeManagementRouter.post('/create-draft-employee',  createDraftEmployee);
 
 
-employeeManagementRouter.get('/get-all-employees', canManageEmployee, getAllEmployees);
+employeeManagementRouter.get('/get-all-employees', ProtectUser, getAllEmployees);
 
 employeeManagementRouter.get('/get-all-draft-employee', canManageEmployee, getAllDraftEmployee);
 employeeManagementRouter.get('/get-my-draft-employee', ProtectUser, getMyDraftEmployee);

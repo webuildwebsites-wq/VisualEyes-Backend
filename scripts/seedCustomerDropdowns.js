@@ -30,16 +30,16 @@ const seedData = async () => {
 
     const createdBy = superAdmin._id;
 
-    // Customer Types
     const customerTypes = [
+      'Distribution Partners',
       'Retailer',
-      'Corporate Eye Hospital',
-      'Distributor',
-      'Wholesaler',
-      'Dr. Agarwal EH',
-      'Eye Clinic',
-      'Retail Chain',
-      'OEM'
+      'Hospital Chain & Institutions',
+      'Regional Key Account',
+      'National Key Account',
+      'Exports',
+      'OEM',
+      'Private Label',
+      'Ophthalmologist / Eye Clinic'
     ];
 
     console.log('Seeding Customer Types...');

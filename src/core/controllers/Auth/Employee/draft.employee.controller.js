@@ -95,12 +95,12 @@ export const updateDraftEmployee = async (req, res) => {
       }));
     }
 
-    if (updateData.lab && updateData.labRefId) {
-      updateFields.lab = {
-        name: updateData.lab,
-        refId: updateData.labRefId
-      };
-    }
+    // if (updateData.lab && updateData.labRefId) {
+    //   updateFields.lab = {
+    //     name: updateData.lab,
+    //     refId: updateData.labRefId
+    //   };
+    // }
 
     if (updateData.zone && updateData.zoneRefId) {
       updateFields.zone = {
