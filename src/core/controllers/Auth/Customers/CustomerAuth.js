@@ -51,7 +51,7 @@ export const customerLogin = async (req, res) => {
         { customerCode: loginId.toUpperCase() }
       ],
       'Status.isActive': true
-    }).select("+password");
+    }).select("+password -emailOtp -emailOtpExpires -mobileOtp -mobileOtpExpires -GSTNumber -GSTCertificateImg -PANCard -PANCardImg -AadharCard -AadharCardImg -isLocked -failedLoginAttempts -lockUntil -createdByDepartment -approvalStatus -financeCompletedBy -financeCompletedAt");
 
     if (!customer) {
       return sendErrorResponse(
@@ -153,6 +153,11 @@ export const customerBasicRegistration = async (req, res) => {
       salesPerson,
       salesPersonRefId,
       draftCustomerId,
+      yearOfEstablishment,
+      proposedDiscount,
+      currentlyDealtBrands,
+      minSalesValue,
+      finalDiscount,
     } = req.body;
 
     const userEmployeeType = req.user?.EmployeeType;
@@ -236,6 +241,59 @@ export const customerBasicRegistration = async (req, res) => {
           400,
           "VALIDATION_ERROR",
           "PANCard, AadharCard and their images are required when not GST registered",
+        );
+      }
+    }
+
+    if (yearOfEstablishment !== undefined && yearOfEstablishment !== null) {
+      const currentYear = new Date().getFullYear();
+      if (yearOfEstablishment < 1900 || yearOfEstablishment > currentYear) {
+        return sendErrorResponse(
+          res,
+          400,
+          "VALIDATION_ERROR",
+          `yearOfEstablishment must be between 1900 and ${currentYear}`,
+        );
+      }
+    }
+
+    if (proposedDiscount !== undefined && proposedDiscount !== null) {
+      if (proposedDiscount < 0 || proposedDiscount > 100) {
+        return sendErrorResponse(
+          res,
+          400,
+          "VALIDATION_ERROR",
+          "proposedDiscount must be between 0 and 100",
+        );
+      }
+    }
+
+    if (minSalesValue !== undefined && minSalesValue !== null) {
+      if (minSalesValue < 0) {
+        return sendErrorResponse(
+          res,
+          400,
+          "VALIDATION_ERROR",
+          "minSalesValue must be greater than or equal to 0",
+        );
+      }
+    }
+
+    if (isFinanceDepartment || userEmployeeType === "SUPERADMIN") {
+      if (finalDiscount === undefined || finalDiscount === null) {
+        return sendErrorResponse(
+          res,
+          400,
+          "VALIDATION_ERROR",
+          "finalDiscount is required for FINANCE department and SUPERADMIN registration",
+        );
+      }
+      if (finalDiscount < 0 || finalDiscount > 100) {
+        return sendErrorResponse(
+          res,
+          400,
+          "VALIDATION_ERROR",
+          "finalDiscount must be between 0 and 100",
         );
       }
     }
@@ -600,15 +658,15 @@ export const customerBasicRegistration = async (req, res) => {
 
     // Validate brandCategories
     if (brandCategories && Array.isArray(brandCategories)) {
-      
+
       for (let i = 0; i < brandCategories.length; i++) {
         const brand = brandCategories[i];
-        
+
         // Skip empty brand entries (for Sales department)
         if (!brand.brandId || !brand.brandName || brand.brandId === "" || brand.brandName === "") {
           continue;
         }
-        
+
         // Validate brand
         const brandDoc = await Brand.findById(brand.brandId);
         if (!brandDoc) {
@@ -632,12 +690,12 @@ export const customerBasicRegistration = async (req, res) => {
         if (brand.categories && Array.isArray(brand.categories)) {
           for (let j = 0; j < brand.categories.length; j++) {
             const category = brand.categories[j];
-            
+
             // Skip empty category entries
             if (!category.categoryId || !category.categoryName || category.categoryId === "" || category.categoryName === "") {
               continue;
             }
-            
+
             const categoryDoc = await Category.findById(category.categoryId);
             if (!categoryDoc) {
               return sendErrorResponse(
@@ -722,7 +780,7 @@ export const customerBasicRegistration = async (req, res) => {
       AadharCard: !IsGSTRegistered ? AadharCard : undefined,
       PANCardImg: !IsGSTRegistered ? PANCardImg : undefined,
       AadharCardImg: !IsGSTRegistered ? AadharCardImg : undefined,
-      
+
       // Account Status
       Status: {
         isActive: isFinanceDepartment ? true : false,
@@ -745,17 +803,17 @@ export const customerBasicRegistration = async (req, res) => {
       // Customer Registration - Only for FINANCE department or SUPERADMIN
       customerCode: generatedCustomerCode,
       password: isFinanceDepartment || userEmployeeType === "SUPERADMIN" ? finalPassword : undefined,
-      brandCategories: (isFinanceDepartment || userEmployeeType === "SUPERADMIN") && brandCategories 
+      brandCategories: (isFinanceDepartment || userEmployeeType === "SUPERADMIN") && brandCategories
         ? brandCategories
-            .filter(brand => brand.brandId && brand.brandName && brand.brandId !== "" && brand.brandName !== "")
-            .map(brand => ({
-              brandId: brand.brandId,
-              brandName: brand.brandName,
-              categories: brand.categories
-                ? brand.categories.filter(cat => cat.categoryId && cat.categoryName && cat.categoryId !== "" && cat.categoryName !== "")
-                : []
-            }))
-            .filter(brand => brand.categories.length > 0) // Only keep brands with valid categories
+          .filter(brand => brand.brandId && brand.brandName && brand.brandId !== "" && brand.brandName !== "")
+          .map(brand => ({
+            brandId: brand.brandId,
+            brandName: brand.brandName,
+            categories: brand.categories
+              ? brand.categories.filter(cat => cat.categoryId && cat.categoryName && cat.categoryId !== "" && cat.categoryName !== "")
+              : []
+          }))
+          .filter(brand => brand.categories.length > 0) // Only keep brands with valid categories
         : undefined,
 
       zone: (isFinanceDepartment || userEmployeeType === "SUPERADMIN") &&
@@ -852,12 +910,19 @@ export const customerBasicRegistration = async (req, res) => {
       emailOtpExpires: new Date(Date.now() + 10 * 60 * 1000),
       mobileOtp: MobileOtp,
       mobileOtpExpires: new Date(Date.now() + 10 * 60 * 1000),
+
+      // Business Details
+      yearOfEstablishment: yearOfEstablishment || undefined,
+      proposedDiscount: proposedDiscount || undefined,
+      currentlyDealtBrands: currentlyDealtBrands ? currentlyDealtBrands.trim() : undefined,
+      minSalesValue: minSalesValue || undefined,
+      finalDiscount: (isFinanceDepartment || userEmployeeType === "SUPERADMIN") ? finalDiscount : undefined,
     };
 
-    console.log("customerData  : ",customerData);
+    console.log("customerData  : ", customerData);
 
     const customer = await Customer.create(customerData);
-    
+
     if (draftCustomerId) {
       try {
         const deletedDraft = await customerDraftSchema.findByIdAndDelete(draftCustomerId);
@@ -1113,6 +1178,7 @@ export const financeCompleteCustomer = async (req, res) => {
       "brandCategories",
       "specificLab",
       "salesPerson",
+      "finalDiscount",
     ];
 
     const missingFields = requiredFinanceFields.filter((field) => !req.body[field],);
@@ -1123,6 +1189,50 @@ export const financeCompleteCustomer = async (req, res) => {
         400,
         "VALIDATION_ERROR",
         `Missing required fields: ${missingFields.join(", ")}`,
+      );
+    }
+
+    // Validate new business fields
+    if (req.body.yearOfEstablishment !== undefined && req.body.yearOfEstablishment !== null) {
+      const currentYear = new Date().getFullYear();
+      if (req.body.yearOfEstablishment < 1900 || req.body.yearOfEstablishment > currentYear) {
+        return sendErrorResponse(
+          res,
+          400,
+          "VALIDATION_ERROR",
+          `yearOfEstablishment must be between 1900 and ${currentYear}`,
+        );
+      }
+    }
+
+    if (req.body.proposedDiscount !== undefined && req.body.proposedDiscount !== null) {
+      if (req.body.proposedDiscount < 0 || req.body.proposedDiscount > 100) {
+        return sendErrorResponse(
+          res,
+          400,
+          "VALIDATION_ERROR",
+          "proposedDiscount must be between 0 and 100",
+        );
+      }
+    }
+
+    if (req.body.minSalesValue !== undefined && req.body.minSalesValue !== null) {
+      if (req.body.minSalesValue < 0) {
+        return sendErrorResponse(
+          res,
+          400,
+          "VALIDATION_ERROR",
+          "minSalesValue must be greater than or equal to 0",
+        );
+      }
+    }
+
+    if (req.body.finalDiscount < 0 || req.body.finalDiscount > 100) {
+      return sendErrorResponse(
+        res,
+        400,
+        "VALIDATION_ERROR",
+        "finalDiscount must be between 0 and 100",
       );
     }
 
@@ -1360,7 +1470,7 @@ export const financeCompleteCustomer = async (req, res) => {
 
     for (let i = 0; i < brandCategories.length; i++) {
       const brand = brandCategories[i];
-      
+
       // Validate brand
       const brandDoc = await Brand.findById(brand.brandId);
       if (!brandDoc) {
@@ -1384,7 +1494,7 @@ export const financeCompleteCustomer = async (req, res) => {
       if (brand.categories && Array.isArray(brand.categories)) {
         for (let j = 0; j < brand.categories.length; j++) {
           const category = brand.categories[j];
-          
+
           const categoryDoc = await Category.findById(category.categoryId);
           if (!categoryDoc) {
             return sendErrorResponse(
@@ -1415,10 +1525,23 @@ export const financeCompleteCustomer = async (req, res) => {
       }
     }
 
-    const addressToUpdate = req.body.address && req.body.address.length > 0  ? req.body.address  : customer.address;
+    const addressToUpdate = req.body.address && req.body.address.length > 0 ? req.body.address : customer.address;
+    const finalPassword = generateRandomPassword();
+
+    let customerCode = generateCustomerCode(customer.shopName);
+    let codeExists = true;
+
+    while (codeExists) {
+      const existing = await Customer.findOne({ customerCode });
+      if (!existing) {
+        codeExists = false;
+      } else {
+        customerCode = generateCustomerCode(customer.shopName);
+      }
+    }
 
     const updateData = {
-      password: req.body.password,
+      password: finalPassword,
       zone: req.body.zone,
       brandCategories: req.body.brandCategories,
       specificLab: req.body.specificLab,
@@ -1429,23 +1552,29 @@ export const financeCompleteCustomer = async (req, res) => {
       creditLimit: req.body.creditLimit,
       courierName: req.body.courierName,
       courierTime: req.body.courierTime,
+      finalDiscount: req.body.finalDiscount,
+      customerCode: customerCode,
       approvalStatus: "APPROVED",
       financeCompletedBy: req.user.id,
       financeCompletedAt: new Date(),
-      Status : {
-        isActive : true,
-        isSuspended : false,
+      Status: {
+        isActive: true,
+        isSuspended: false,
       },
-      address : addressToUpdate
+      address: addressToUpdate
     };
+
+    console.log("updateData : ", updateData);
 
     Object.assign(customer, updateData);
     await customer.save();
+    const customerObj = customer.toObject();
+    delete customerObj.password;
 
     return sendSuccessResponse(
       res,
       200,
-      customer,
+      customerObj,
       "Customer completed and approved by Finance successfully",
     );
   } catch (error) {
@@ -1493,6 +1622,12 @@ export const updateCustomerProfile = async (req, res) => {
     if (updateData.approvalStatus) updateFields.approvalStatus = updateData.approvalStatus;
     if (updateData.businessEmail)
       updateFields.businessEmail = updateData.businessEmail;
+
+    if (updateData.yearOfEstablishment !== undefined) updateFields.yearOfEstablishment = updateData.yearOfEstablishment;
+    if (updateData.proposedDiscount !== undefined) updateFields.proposedDiscount = updateData.proposedDiscount;
+    if (updateData.currentlyDealtBrands !== undefined) updateFields.currentlyDealtBrands = updateData.currentlyDealtBrands?.trim();
+    if (updateData.minSalesValue !== undefined) updateFields.minSalesValue = updateData.minSalesValue;
+    if (updateData.finalDiscount !== undefined) updateFields.finalDiscount = updateData.finalDiscount;
 
     // Validate CustomerType
     if (updateData.CustomerType && updateData.CustomerTypeRefId) {
@@ -1777,7 +1912,7 @@ export const updateCustomerProfile = async (req, res) => {
 
 export const resetCustomerCredit = async (req, res) => {
   try {
-    const { customerId, creditUsed=0 } = req.params;
+    const { customerId, creditUsed = 0 } = req.params;
     const userDepartment = req.user.Department?.name || req.user.Department;
     const userEmployeeType = req.user.EmployeeType;
 
@@ -1839,7 +1974,7 @@ export const sendCustomerForCorrection = async (req, res) => {
   try {
     const { customerId } = req.params;
     const { fieldsToCorrect, remark } = req.body;
-    
+
     const userDepartment = req.user.Department?.name || req.user.Department;
     const userEmployeeType = req.user.EmployeeType;
 
@@ -1919,6 +2054,10 @@ export const sendCustomerForCorrection = async (req, res) => {
       'AadharCard',
       'PANCardImg',
       'AadharCardImg',
+      'yearOfEstablishment',
+      'proposedDiscount',
+      'currentlyDealtBrands',
+      'minSalesValue',
       // 'zone',
       // 'zoneRefId',
       // 'specificLab',
@@ -1955,14 +2094,14 @@ export const sendCustomerForCorrection = async (req, res) => {
       );
     }
 
-    console.log("Anish : ",req.user);
+    console.log("Anish : ", req.user);
 
     customer.approvalStatus = 'CORRECTION_REQUIRED';
     customer.correctionRequest = {
       fieldsToCorrect: fieldsToCorrect,
       remark: remark.trim(),
       requestedBy: req.user.id,
-      requestedEmployeeName : req.user.employeeName,
+      requestedEmployeeName: req.user.employeeName,
       requestedAt: new Date()
     };
 
@@ -1989,7 +2128,7 @@ export const sendCustomerForCorrection = async (req, res) => {
     );
   } catch (error) {
     console.error('Send customer for correction error:', error);
-    
+
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map((err) => err.message);
       return sendErrorResponse(
@@ -2093,6 +2232,11 @@ export const resubmitCorrectedCustomer = async (req, res) => {
     if (updateData.PANCardImg) updateFields.PANCardImg = updateData.PANCardImg;
     if (updateData.AadharCardImg) updateFields.AadharCardImg = updateData.AadharCardImg;
 
+    if (updateData.yearOfEstablishment !== undefined) updateFields.yearOfEstablishment = updateData.yearOfEstablishment;
+    if (updateData.proposedDiscount !== undefined) updateFields.proposedDiscount = updateData.proposedDiscount;
+    if (updateData.currentlyDealtBrands !== undefined) updateFields.currentlyDealtBrands = updateData.currentlyDealtBrands?.trim();
+    if (updateData.minSalesValue !== undefined) updateFields.minSalesValue = updateData.minSalesValue;
+
     if (updateData.CustomerType && updateData.CustomerTypeRefId) {
       const customerType = await customerTypeSchema.findById(updateData.CustomerTypeRefId);
       if (!customerType) {
@@ -2116,7 +2260,7 @@ export const resubmitCorrectedCustomer = async (req, res) => {
         refId: updateData.CustomerTypeRefId,
       };
     }
-    
+
     // Validate gstType
     if (updateData.gstType && updateData.gstTypeRefId) {
       const gstTypeDoc = await GSTType.findById(updateData.gstTypeRefId);
@@ -2226,7 +2370,7 @@ export const resubmitCorrectedCustomer = async (req, res) => {
     );
   } catch (error) {
     console.error('Resubmit corrected customer error:', error);
-    
+
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map((err) => err.message);
       return sendErrorResponse(
@@ -2259,10 +2403,10 @@ export const updateCustomerShipToDetails = async (req, res) => {
   try {
     const { customerId } = req.params;
     const { shipToDetails } = req.body;
-    
+
     const userEmployeeType = req.user?.EmployeeType;
     const userDepartment = req.user?.Department?.name || req.user?.Department;
-    
+
     if (userEmployeeType !== "SUPERADMIN" && userDepartment !== "FINANCE") {
       return sendErrorResponse(
         res,
@@ -2301,7 +2445,7 @@ export const updateCustomerShipToDetails = async (req, res) => {
 
     for (let i = 0; i < shipToDetails.length; i++) {
       const address = shipToDetails[i];
-      
+
       const requiredFields = [
         'customerName',
         'customerRefId',
@@ -2378,11 +2522,11 @@ export const updateCustomerShipToDetails = async (req, res) => {
 
     const shipToDetailsWithMetadata = shipToDetails.map(address => {
       const normalizedEmail = address.shipToCustomerEmail.toLowerCase().trim();
-      const existingAddress = address._id 
+      const existingAddress = address._id
         ? customer.customerShipToDetails.find(addr => addr._id.toString() === address._id.toString())
-        : customer.customerShipToDetails.find(addr => 
-            addr.shipToCustomerEmail.toLowerCase() === normalizedEmail
-          );
+        : customer.customerShipToDetails.find(addr =>
+          addr.shipToCustomerEmail.toLowerCase() === normalizedEmail
+        );
 
       return {
         ...address,
@@ -2393,7 +2537,7 @@ export const updateCustomerShipToDetails = async (req, res) => {
         shipToCustomerEmail: normalizedEmail,
         shipToCustomerName: address.shipToCustomerName.trim(),
         customerName: address.customerName.trim(),
-        shipToCustomerContactNumber : address.shipToCustomerContactNumber.trim(),
+        shipToCustomerContactNumber: address.shipToCustomerContactNumber.trim(),
         billingAddress: address.billingAddress.trim(),
         shipToAddress: address.shipToAddress.trim(),
         state: address.state.trim(),
@@ -2421,7 +2565,7 @@ export const updateCustomerShipToDetails = async (req, res) => {
 
   } catch (error) {
     console.error("Update customer ship-to details error:", error);
-    
+
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map((err) => err.message);
       return sendErrorResponse(

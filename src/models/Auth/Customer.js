@@ -365,6 +365,36 @@ const customerSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    yearOfEstablishment: {
+      type: Number,
+      required: false,
+      min: 1900,
+      max: new Date().getFullYear()
+    },
+    proposedDiscount: {
+      type: Number,
+      required: false,
+      min: 0,
+      max: 100
+    },
+    currentlyDealtBrands: {
+      type: String,
+      required: false,
+      trim: true
+    },
+    minSalesValue: {
+      type: Number,
+      required: false,
+      min: 0
+    },
+    finalDiscount: {
+      type: Number,
+      required: function () {
+        return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment);
+      },
+      min: 0,
+      max: 100
+    },
     Status: {
       isSuspended: {
         type: Boolean,

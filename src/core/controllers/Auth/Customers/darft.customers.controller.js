@@ -467,6 +467,12 @@ export const updateDraftCustomer = async (req, res) => {
     if (updateData.landlineNo !== undefined) updateFields.landlineNo = updateData.landlineNo;
     if (updateData.emailId) updateFields.emailId = updateData.emailId.toLowerCase().trim();
     if (updateData.businessEmail) updateFields.businessEmail = updateData.businessEmail.toLowerCase().trim();
+    
+    // Business details fields (can be updated by creator)
+    if (updateData.yearOfEstablishment !== undefined) updateFields.yearOfEstablishment = updateData.yearOfEstablishment;
+    if (updateData.proposedDiscount !== undefined) updateFields.proposedDiscount = updateData.proposedDiscount;
+    if (updateData.currentlyDealtBrands !== undefined) updateFields.currentlyDealtBrands = updateData.currentlyDealtBrands?.trim();
+    if (updateData.minSalesValue !== undefined) updateFields.minSalesValue = updateData.minSalesValue;
 
     if (updateData.CustomerType && updateData.CustomerTypeRefId) {
       updateFields.CustomerType = {
@@ -597,6 +603,10 @@ export const updateDraftCustomer = async (req, res) => {
           name: updateData.courierTime,
           refId: updateData.courierTimeRefId
         };
+      }
+
+      if (updateData.finalDiscount !== undefined) {
+        updateFields.finalDiscount = updateData.finalDiscount;
       }
     }
 
