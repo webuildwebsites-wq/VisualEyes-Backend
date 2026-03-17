@@ -224,7 +224,7 @@ customerSchema.index({ region: 1, labMapping: 1 });
 ```env
 NODE_ENV=development
 PORT=8080
-MONGODB_URI=mongodb://localhost:27017/visualeyes-dev
+MONGODB_URL=mongodb://localhost:27017/visualeyes-dev
 JWT_SECRET=dev-secret-key
 JWT_EXPIRE=24h
 ```
@@ -233,7 +233,7 @@ JWT_EXPIRE=24h
 ```env
 NODE_ENV=production
 PORT=8080
-MONGODB_URI=mongodb://production-cluster/visualeyes
+MONGODB_URL=mongodb://production-cluster/visualeyes
 JWT_SECRET=complex-production-secret
 JWT_EXPIRE=1h
 JWT_REFRESH_EXPIRE=7d

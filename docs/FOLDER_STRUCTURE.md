@@ -147,7 +147,7 @@ src/core/
 // connectDb.js
 export default async function connectDB() {
   try {
-    await mongoose.connect(process.env.MONGODB_URI);
+    await mongoose.connect(process.env.MONGODB_URL);
     console.log('MongoDB connected successfully');
   } catch (error) {
     console.error('Database connection failed:', error);

@@ -376,7 +376,7 @@ const seedUnifiedLocations = async () => {
   try {
     console.log('🔧 Starting unified location seeding...\n');
 
-    await mongoose.connect(process.env.MONGODB_URI || process.env.MONGO_URI);
+    await mongoose.connect(process.env.MONGODB_URL || process.env.MONGO_URI);
     console.log('✅ Connected to MongoDB\n');
 
     // Find SuperAdmin

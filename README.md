@@ -269,7 +269,7 @@ NODE_ENV=development
 PORT=8080
 
 # Database
-MONGODB_URI=mongodb://localhost:27017/lens-erp
+MONGODB_URL=mongodb://localhost:27017/lens-erp
 
 # JWT
 JWT_SECRET=your-secret-key

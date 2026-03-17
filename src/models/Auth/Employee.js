@@ -368,7 +368,7 @@ employee.methods.comparePassword = async function (candidatePassword) {
 employee.pre('save', async function () {
   if (this.isNew && !this.serialNumber) {
     try {
-      this.serialNumber = await Counter.getNextSequence('user_serial');
+      this.serialNumber = await Counter.getNextSequence('employee_serial');
     } catch (error) {
       throw error;
     }

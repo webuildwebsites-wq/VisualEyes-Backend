@@ -457,7 +457,7 @@ const customerSchema = new mongoose.Schema(
 customerSchema.pre("save", async function () {
   if (this.isNew && !this.serialNumber) {
     try {
-      this.serialNumber = await Counter.getNextSequence('user_serial');
+      this.serialNumber = await Counter.getNextSequence('customer_serial');
     } catch (error) {
       throw error;
     }

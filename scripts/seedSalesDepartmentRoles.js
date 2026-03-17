@@ -6,7 +6,7 @@ dotenv.config();
 
 const seedSalesDepartmentRoles = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI);
+    await mongoose.connect(process.env.MONGODB_URL);
     console.log('Connected to MongoDB');
 
     // Find the SALES department
