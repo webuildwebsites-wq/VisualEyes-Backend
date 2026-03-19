@@ -212,7 +212,7 @@ export const getPendingFinanceCustomers = async (req, res) => {
 
     const [customers, total] = await Promise.all([
       Customer.find({
-        approvalStatus: 'PENDING_FINANCE'
+        "approvalWorkflow.financeApprovalStatus": 'PENDING'
       })
         .populate('createdBy', 'username employeeName employeeName email Department')
         .sort({ createdAt: -1 })
@@ -220,7 +220,7 @@ export const getPendingFinanceCustomers = async (req, res) => {
         .limit(limit)
         .lean(),
       Customer.countDocuments({
-        approvalStatus: 'PENDING_FINANCE'
+        "approvalWorkflow.financeApprovalStatus": 'PENDING'
       })
     ]);
 
@@ -256,7 +256,7 @@ export const getCorrectionRequiredCustomers = async (req, res) => {
     const userEmployeeType = req.user?.EmployeeType;
 
     let query = {
-      approvalStatus: 'CORRECTION_REQUIRED'
+      "approvalWorkflow.financeApprovalStatus": 'MODIFICATION_REQUIRED'
     };
 
     if (userDepartment === 'SALES' && userEmployeeType !== 'SUPERADMIN') {

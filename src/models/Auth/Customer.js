@@ -1,22 +1,8 @@
 import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
 import Counter from "./Counter.js";
+import billToAddressSchema from "./Customer/BillToAddress.js";
 import shipToAddressSchema from "./Customer/ShipToAddress.js"
-
-const addressSchema = new mongoose.Schema(
-  {
-    branchAddress: { type: String, required: true, trim: true },
-    contactPerson: { type: String, required: true, trim: true },
-    contactNumber: { type: String, required: true },
-    city: { type: String, required: true, trim: true },
-    state: { type: String, required: true },
-    zipCode: { type: String, trim: true },
-    country: { type: String, default: "INDIA" },
-    billingCurrency: { type: String, required: true },
-    billingMode: { type: String, required: true },
-  },
-  { _id: false }
-);
 
 const flatFittingSchema = new mongoose.Schema(
   {
@@ -67,7 +53,7 @@ const customerSchema = new mongoose.Schema(
     },
     orderMode: {
       type: String,
-      required: true,
+      default : "online"
     },
     mobileNo1: {
       type: String,
@@ -88,9 +74,9 @@ const customerSchema = new mongoose.Schema(
     },
 
     // Address details
-    address: {
-      type: [addressSchema],
-      validate: [(val) => val.length > 0, "At least one address is required"],
+    billToAddress: {
+      type: billToAddressSchema,
+      required: true,
     },
 
 
@@ -101,24 +87,15 @@ const customerSchema = new mongoose.Schema(
       sparse: true,
       trim: true,
       uppercase: true,
-      // required: function () {
-      //   return this.approvalStatus === 'APPROVED';
-      // }
     },
     password: {
       type: String,
       minlength: 6,
       select: false,
-      required: function () {
-        return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
-      }
     },
     zone: {
       name: {
         type: String,
-        required: function () {
-          return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
-        }
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -137,44 +114,34 @@ const customerSchema = new mongoose.Schema(
     specificLab: {
       name: {
         type: String,
-        required: function () {
-          return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
-        }
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'SpecificLab',
-        required: function () {
-          return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
-        }
       }
     },
     brandCategories: {
       type: [{
         brandName: {
           type: String,
-          required: true
         },
         brandId: {
           type: mongoose.Schema.Types.ObjectId,
           ref: 'Brand',
-          required: true
         },
         categories: [{
           categoryName: {
             type: String,
-            required: true
           },
           categoryId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Category',
-            required: true
           }
         }]
       }],
       validate: {
         validator: function (value) {
-          if (['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED') {
+          if (['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalWorkflow?.financeApprovalStatus === 'APPROVED') {
             return value && value.length > 0;
           }
           return true;
@@ -185,16 +152,10 @@ const customerSchema = new mongoose.Schema(
     salesPerson: {
       name: {
         type: String,
-        required: function () {
-          return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
-        }
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'employee',
-        required: function () {
-          return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
-        }
       }
     },
 
@@ -260,16 +221,10 @@ const customerSchema = new mongoose.Schema(
     plant: {
       name: {
         type: String,
-        required: function () {
-          return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
-        }
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Plant',
-        required: function () {
-          return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
-        }
       }
     },
     lab: {
@@ -284,16 +239,10 @@ const customerSchema = new mongoose.Schema(
     fittingCenter: {
       name: {
         type: String,
-        required: function () {
-          return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
-        }
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'FittingCenter',
-        required: function () {
-          return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
-        }
       }
     },
     creditLimit: {
@@ -309,46 +258,28 @@ const customerSchema = new mongoose.Schema(
     creditDays: {
       name: {
         type: String,
-        required: function () {
-          return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
-        }
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'CreditDay',
-        required: function () {
-          return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
-        }
       }
     },
     courierName: {
       name: {
         type: String,
-        required: function () {
-          return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
-        }
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'CourierName',
-        required: function () {
-          return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
-        }
       }
     },
     courierTime: {
       name: {
         type: String,
-        required: function () {
-          return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
-        }
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'CourierTime',
-        required: function () {
-          return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalStatus === 'APPROVED';
-        }
       }
     },
     dcWithoutValue: {
@@ -379,12 +310,96 @@ const customerSchema = new mongoose.Schema(
     },
     finalDiscount: {
       type: Number,
-      required: function () {
-        return ['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment);
-      },
       min: 0,
       max: 100
     },
+    proprietorName: {
+      type: String,
+      trim: true,
+      required: true,
+    },
+    firmName: {
+      type: String,
+      trim: true,
+    },
+    chequeDetails: {
+      type: [{
+        chequeNumber: {
+          type: String,
+          required: true,
+          trim: true
+        },
+        chequeImage: {
+          type: String,
+          required: true
+        }
+      }],
+      validate: {
+        validator: function (value) {
+            return value && value.length === 3;
+        },
+        message: 'Exactly 3 cheque entries are required'
+      }
+    },
+    billingCycle: {
+      type: String,
+      enum: ['7_days', '15_days', 'end_of_month', 'custom']
+    },
+    billingMode: {
+      type: String,
+      enum: ['Direct', 'DC'],
+    },
+    // Workflow Status
+    approvalWorkflow: {
+      financeApprovalStatus: {
+        type: String,
+        enum: ['PENDING', 'APPROVED', 'REJECTED', 'MODIFICATION_REQUIRED'],
+        default: 'PENDING'
+      },
+      financeApprovedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'employee'
+      },
+      financeApprovedAt: Date,
+      financeRemark: String,
+      salesHeadApprovalStatus: {
+        type: String,
+        enum: ['PENDING', 'APPROVED', 'REJECTED'],
+        default: 'PENDING'
+      },
+      salesHeadApprovedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'employee'
+      },
+      salesHeadApprovedAt: Date,
+      salesHeadRemark: String,
+      csTeamCompletionStatus: {
+        type: String,
+        enum: ['PENDING', 'COMPLETED'],
+        default: 'PENDING'
+      },
+      csTeamCompletedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'employee'
+      },
+      csTeamCompletedAt: Date
+    },
+    isBlacklisted: {
+      type: Boolean,
+      default: false
+    },
+    blacklistReason: {
+      type: String,
+      trim: true,
+      required: function () {
+        return this.isBlacklisted === true;
+      }
+    },
+    termsAndConditionsAccepted: {
+      type: Boolean,
+      default: false
+    },
+    termsAcceptedAt: Date,
     Status: {
       isSuspended: {
         type: Boolean,
@@ -424,13 +439,6 @@ const customerSchema = new mongoose.Schema(
       type: String,
       enum: ['SALES', 'FINANCE', 'SUPERADMIN'],
       required: true,
-    },
-    approvalStatus: {
-      type: String,
-      enum: ['PENDING_FINANCE', 'APPROVED', 'CORRECTION_REQUIRED'],
-      default: function () {
-        return this.createdByDepartment === 'SALES' ? 'PENDING_FINANCE' : 'APPROVED';
-      }
     },
     correctionRequest: {
       fieldsToCorrect: [{

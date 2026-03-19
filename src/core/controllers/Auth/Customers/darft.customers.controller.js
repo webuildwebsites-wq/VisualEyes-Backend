@@ -171,7 +171,6 @@ export const customerDraftRegistration = async (req, res) => {
       designation: "Customer",
       createdBy: req.user.id,
       createdByDepartment: userDepartment,
-      approvalStatus: isSalesDepartment ? 'PENDING_FINANCE' : 'APPROVED',
     };
 
     const customer = await customerDraftSchema.create(customerData);

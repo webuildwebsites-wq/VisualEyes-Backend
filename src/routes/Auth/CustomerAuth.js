@@ -1,5 +1,6 @@
 import express from 'express';
 import { customerForgotPassword, customerLogin,customerResetPassword,customerUpdatePassword, customerBasicRegistration, financeCompleteCustomer, updateCustomerProfile, resetCustomerCredit, sendCustomerForCorrection, resubmitCorrectedCustomer, updateCustomerShipToDetails } from '../../core/controllers/Auth/Customers/CustomerAuth.js';
+import { financeApproveCustomer, salesHeadApproveCustomer, acceptTermsAndConditions, csTeamCompleteCustomer, getPendingCustomersByStage } from '../../core/controllers/Auth/Customers/CustomerApprovalWorkflow.js';
 import { getAllCustomers, getCustomerById, getCustomerProfile, getDraftCustomers, getPendingFinanceCustomers, getCorrectionRequiredCustomers } from '../../core/controllers/Auth/Customers/customer.get.controller.js';
 import { requireSalesFinanceOrSuperAdmin, attachDepartmentInfo } from '../../middlewares/Auth/AdminMiddleware/departmentMiddleware.js';
 import { protectCustomer } from '../../middlewares/Auth/CustomerMiddleware/customerMiddleware.js';
@@ -18,6 +19,22 @@ customerRouter.post('/draft-register', ProtectUser, attachDepartmentInfo, custom
 
 // FINANCE COMPLETE
 customerRouter.put('/:customerId/finance-complete', ProtectUser, attachDepartmentInfo, financeCompleteCustomer);
+
+// NEW WORKFLOW ROUTES
+// Finance Team Approval
+customerRouter.put('/:customerId/finance-approve', ProtectUser, attachDepartmentInfo, financeApproveCustomer);
+
+// Sales Head Approval
+customerRouter.put('/:customerId/sales-head-approve', ProtectUser, attachDepartmentInfo, salesHeadApproveCustomer);
+
+// Customer: Accept Terms & Conditions
+customerRouter.put('/:customerId/accept-terms', protectCustomer, acceptTermsAndConditions);
+
+// CS Team: Complete Customer Setup
+customerRouter.put('/:customerId/cs-team-complete', ProtectUser, attachDepartmentInfo, csTeamCompleteCustomer);
+
+// Get Pending Customers by Stage
+customerRouter.get('/pending/by-stage', ProtectUser, attachDepartmentInfo, getPendingCustomersByStage);
 
 // SEND CUSTOMER BACK FOR CORRECTION (Finance/SuperAdmin only)
 customerRouter.put('/:customerId/send-for-correction', ProtectUser, attachDepartmentInfo, sendCustomerForCorrection);

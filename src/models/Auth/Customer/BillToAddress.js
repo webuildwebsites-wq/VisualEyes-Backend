@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const shipToAddressSchema = new mongoose.Schema({
+const billToAddressSchema = new mongoose.Schema({
     branchName: {
         type: String,
         required: true,
@@ -60,4 +60,4 @@ const shipToAddressSchema = new mongoose.Schema({
     }
 }, { timestamps: true, _id: true });
 
-export default shipToAddressSchema;
+export default billToAddressSchema;

@@ -119,8 +119,6 @@ export const customerBasicRegistration = async (req, res) => {
       zone,
       zoneRefId,
       brandCategories,
-      specificLab,
-      specificLabRefId,
       businessEmail,
       shopName,
       ownerName,
@@ -128,18 +126,10 @@ export const customerBasicRegistration = async (req, res) => {
       mobileNo2,
       gstType,
       gstTypeRefId,
-      plant,
-      plantRefId,
-      fittingCenter,
-      fittingCenterRefId,
       creditDays,
       creditDaysRefId,
       creditLimit,
-      courierName,
-      courierNameRefId,
-      courierTime,
-      courierTimeRefId,
-      address,
+      billToAddress,
       IsGSTRegistered,
       GSTNumber,
       GSTCertificateImg,
@@ -155,6 +145,11 @@ export const customerBasicRegistration = async (req, res) => {
       currentlyDealtBrands,
       minSalesValue,
       finalDiscount,
+      proprietorName,
+      firmName,
+      chequeDetails,
+      billingCycle,
+      billingMode,
     } = req.body;
 
     const userEmployeeType = req.user?.EmployeeType;
@@ -180,46 +175,42 @@ export const customerBasicRegistration = async (req, res) => {
       );
     }
 
+    if (!salesPerson || !salesPersonRefId) {
+      return sendErrorResponse(
+        res,
+        400,
+        "VALIDATION_ERROR",
+        "salesPerson is required",
+      );
+    }
+
+    if (!billToAddress || typeof billToAddress !== 'object') {
+      return sendErrorResponse(
+        res,
+        400,
+        "VALIDATION_ERROR",
+        "Bill to address is required",
+      );
+    }
+
     if (
-      (isFinanceDepartment || userEmployeeType === "SUPERADMIN") &&
-      !salesPerson
+      !billToAddress.branchName ||
+      !billToAddress.customerContactName ||
+      !billToAddress.customerContactNumber ||
+      !billToAddress.country ||
+      !billToAddress.state ||
+      !billToAddress.city ||
+      !billToAddress.zipCode ||
+      !billToAddress.address ||
+      !billToAddress.billingCurrency ||
+      !billToAddress.billingMode
     ) {
       return sendErrorResponse(
         res,
         400,
         "VALIDATION_ERROR",
-        "salesPerson is required for FINANCE department and SUPERADMIN Registraion",
+        "All bill to address fields are required (branchName, customerContactName, customerContactNumber, country, state, city, zipCode, address, billingCurrency, billingMode)",
       );
-    }
-
-    if (!Array.isArray(address) || address.length === 0) {
-      return sendErrorResponse(
-        res,
-        400,
-        "VALIDATION_ERROR",
-        "At least one address is required",
-      );
-    }
-
-    for (const addr of address) {
-      if (
-        !addr.branchAddress ||
-        !addr.contactPerson ||
-        !addr.contactNumber ||
-        !addr.country ||
-        !addr.state ||
-        !addr.city ||
-        !addr.zipCode ||
-        !addr.billingCurrency ||
-        !addr.billingMode
-      ) {
-        return sendErrorResponse(
-          res,
-          400,
-          "VALIDATION_ERROR",
-          "All address fields are required",
-        );
-      }
     }
 
     if (IsGSTRegistered === true) {
@@ -265,6 +256,17 @@ export const customerBasicRegistration = async (req, res) => {
       }
     }
 
+    if (finalDiscount !== undefined && finalDiscount !== null) {
+      if (finalDiscount < 0 || finalDiscount > 100) {
+        return sendErrorResponse(
+          res,
+          400,
+          "VALIDATION_ERROR",
+          "proposedDiscount must be between 0 and 100",
+        );
+      }
+    }
+
     if (minSalesValue !== undefined && minSalesValue !== null) {
       if (minSalesValue < 0) {
         return sendErrorResponse(
@@ -276,164 +278,115 @@ export const customerBasicRegistration = async (req, res) => {
       }
     }
 
-    if (isFinanceDepartment || userEmployeeType === "SUPERADMIN") {
-      if (finalDiscount === undefined || finalDiscount === null) {
+    if (!proprietorName || proprietorName.trim() === "") {
+      return sendErrorResponse(
+        res,
+        400,
+        "VALIDATION_ERROR",
+        "proprietorName is required for FINANCE department and SUPERADMIN registration",
+      );
+    }
+
+    if (IsGSTRegistered && (!firmName || firmName.trim() === "")) {
+      return sendErrorResponse(
+        res,
+        400,
+        "VALIDATION_ERROR",
+        "firmName is required when GST type is 'Registered'",
+      );
+    }
+
+    if (!chequeDetails || !Array.isArray(chequeDetails) || chequeDetails.length !== 3) {
+      return sendErrorResponse(
+        res,
+        400,
+        "VALIDATION_ERROR",
+        "Exactly 3 cheque entries are required",
+      );
+    }
+
+    for (let i = 0; i < chequeDetails.length; i++) {
+      const cheque = chequeDetails[i];
+      if (!cheque.chequeNumber || !cheque.chequeImage) {
         return sendErrorResponse(
           res,
           400,
           "VALIDATION_ERROR",
-          "finalDiscount is required for FINANCE department and SUPERADMIN registration",
-        );
-      }
-      if (finalDiscount < 0 || finalDiscount > 100) {
-        return sendErrorResponse(
-          res,
-          400,
-          "VALIDATION_ERROR",
-          "finalDiscount must be between 0 and 100",
+          `chequeDetails[${i}]: chequeNumber and chequeImage are required`,
         );
       }
     }
 
-    if (isFinanceDepartment || userEmployeeType === "SUPERADMIN") {
-      const isValidObjectId = (id) => /^[0-9a-fA-F]{24}$/.test(id);
+    if (!billingCycle || !['7_days', '15_days', 'end_of_month', 'custom'].includes(billingCycle)) {
+      return sendErrorResponse(
+        res,
+        400,
+        "VALIDATION_ERROR",
+        "billingCycle must be one of: 7_days, 15_days, end_of_month, or custom",
+      );
+    }
 
-      const requiredRefIds = [
-        { name: "BusinessTypeRefId", value: BusinessTypeRefId },
-        { name: "salesPersonRefId", value: salesPersonRefId },
-      ];
+    if (!billingMode || !['Direct', 'DC'].includes(billingMode)) {
+      return sendErrorResponse(
+        res,
+        400,
+        "VALIDATION_ERROR",
+        "billingMode must be either 'Direct' or 'DC'",
+      );
+    }
 
-      for (const field of requiredRefIds) {
-        if (!field.value) {
-          return sendErrorResponse(
-            res,
-            400,
-            "VALIDATION_ERROR",
-            `${field.name} is required for FINANCE department`,
-          );
-        }
-        if (!isValidObjectId(field.value)) {
-          return sendErrorResponse(
-            res,
-            400,
-            "VALIDATION_ERROR",
-            `${field.name} must be a valid ObjectId (24 hex characters)`,
-          );
-        }
-      }
+    const isValidObjectId = (id) => /^[0-9a-fA-F]{24}$/.test(id);
 
-      const optionalRefIds = [
-        { name: "zoneRefId", value: zoneRefId },
-        { name: "specificLabRefId", value: specificLabRefId },
-        { name: "gstTypeRefId", value: gstTypeRefId },
-        { name: "plantRefId", value: plantRefId },
-        { name: "fittingCenterRefId", value: fittingCenterRefId },
-        { name: "creditDaysRefId", value: creditDaysRefId },
-        { name: "courierNameRefId", value: courierNameRefId },
-        { name: "courierTimeRefId", value: courierTimeRefId },
-      ];
+    const requiredRefIds = [
+      { name: "BusinessTypeRefId", value: BusinessTypeRefId },
+      { name: "salesPersonRefId", value: salesPersonRefId },
+      { name: "zoneRefId", value: zoneRefId },
+      { name: "gstTypeRefId", value: gstTypeRefId },
+      { name: "creditDaysRefId", value: creditDaysRefId },
+    ];
 
-      for (const field of optionalRefIds) {
-        if (field.value && !isValidObjectId(field.value)) {
-          return sendErrorResponse(
-            res,
-            400,
-            "VALIDATION_ERROR",
-            `${field.name} must be a valid ObjectId (24 hex characters)`,
-          );
-        }
-      }
-
-      if (
-        !brandCategories ||
-        !Array.isArray(brandCategories) ||
-        brandCategories.length === 0
-      ) {
+    for (const field of requiredRefIds) {
+      if (!field.value) {
         return sendErrorResponse(
           res,
           400,
           "VALIDATION_ERROR",
-          "brandCategories array with at least one brand is required for FINANCE department",
+          `${field.name} is required for FINANCE department`,
         );
       }
-
-      for (let i = 0; i < brandCategories.length; i++) {
-        const brand = brandCategories[i];
-        if (!brand.brandName || !brand.brandId) {
-          return sendErrorResponse(
-            res,
-            400,
-            "VALIDATION_ERROR",
-            `brandCategories[${i}]: brandName and brandId are required`,
-          );
-        }
-        if (!isValidObjectId(brand.brandId)) {
-          return sendErrorResponse(
-            res,
-            400,
-            "VALIDATION_ERROR",
-            `brandCategories[${i}].brandId must be a valid ObjectId`,
-          );
-        }
-        if (
-          !brand.categories ||
-          !Array.isArray(brand.categories) ||
-          brand.categories.length === 0
-        ) {
-          return sendErrorResponse(
-            res,
-            400,
-            "VALIDATION_ERROR",
-            `brandCategories[${i}]: categories array with at least one category is required`,
-          );
-        }
-        for (let j = 0; j < brand.categories.length; j++) {
-          const category = brand.categories[j];
-          if (!category.categoryName || !category.categoryId) {
-            return sendErrorResponse(
-              res,
-              400,
-              "VALIDATION_ERROR",
-              `brandCategories[${i}].categories[${j}]: categoryName and categoryId are required`,
-            );
-          }
-          if (!isValidObjectId(category.categoryId)) {
-            return sendErrorResponse(
-              res,
-              400,
-              "VALIDATION_ERROR",
-              `brandCategories[${i}].categories[${j}].categoryId must be a valid ObjectId`,
-            );
-          }
-        }
-      }
-
-      if (!salesPerson || !salesPersonRefId) {
+      if (!isValidObjectId(field.value)) {
         return sendErrorResponse(
           res,
           400,
           "VALIDATION_ERROR",
-          "salesPerson and salesPersonRefId are required for FINANCE department",
+          `${field.name} must be a valid ObjectId (24 hex characters)`,
         );
       }
     }
 
-    if (isSalesDepartment) {
-      const isValidObjectId = (id) => /^[0-9a-fA-F]{24}$/.test(id);
 
-      if (BusinessTypeRefId && !isValidObjectId(BusinessTypeRefId)) {
-        return sendErrorResponse(
-          res,
-          400,
-          "VALIDATION_ERROR",
-          `BusinessTypeRefId must be a valid ObjectId (24 hex characters)`,
-        );
-      }
+    if (!brandCategories || !Array.isArray(brandCategories) || brandCategories.length === 0) {
+      return sendErrorResponse(
+        res,
+        400,
+        "VALIDATION_ERROR",
+        "brandCategories array with at least one brand is required for FINANCE department",
+      );
+    }
+
+    if (BusinessTypeRefId && !isValidObjectId(BusinessTypeRefId)) {
+      return sendErrorResponse(
+        res,
+        400,
+        "VALIDATION_ERROR",
+        `BusinessTypeRefId must be a valid ObjectId (24 hex characters)`,
+      );
     }
 
     const existingCustomer = await Customer.findOne({
       businessEmail: businessEmail.toLowerCase(),
     });
+
     if (existingCustomer) {
       return sendErrorResponse(
         res,
@@ -485,69 +438,6 @@ export const customerBasicRegistration = async (req, res) => {
       }
     }
 
-    // Validate specificLab
-    if (specificLabRefId && specificLab) {
-      const specificLabDoc = await SpecificLab.findById(specificLabRefId);
-      if (!specificLabDoc) {
-        return sendErrorResponse(
-          res,
-          404,
-          "INVALID_REF_ID",
-          `SpecificLab with refId ${specificLabRefId} does not exist`
-        );
-      }
-      if (specificLabDoc.name !== specificLab) {
-        return sendErrorResponse(
-          res,
-          400,
-          "NAME_MISMATCH",
-          `Incorrect specificLab name for refId ${specificLabRefId}. Expected: ${specificLabDoc.name}, Received: ${specificLab}`
-        );
-      }
-    }
-
-    // Validate plant
-    if (plantRefId && plant) {
-      const plantDoc = await Plant.findById(plantRefId);
-      if (!plantDoc) {
-        return sendErrorResponse(
-          res,
-          404,
-          "INVALID_REF_ID",
-          `Plant with refId ${plantRefId} does not exist`
-        );
-      }
-      if (plantDoc.name !== plant) {
-        return sendErrorResponse(
-          res,
-          400,
-          "NAME_MISMATCH",
-          `Incorrect plant name for refId ${plantRefId}. Expected: ${plantDoc.name}, Received: ${plant}`
-        );
-      }
-    }
-
-    // Validate fittingCenter
-    if (fittingCenterRefId && fittingCenter) {
-      const fittingCenterDoc = await FittingCenter.findById(fittingCenterRefId);
-      if (!fittingCenterDoc) {
-        return sendErrorResponse(
-          res,
-          404,
-          "INVALID_REF_ID",
-          `FittingCenter with refId ${fittingCenterRefId} does not exist`
-        );
-      }
-      if (fittingCenterDoc.name !== fittingCenter) {
-        return sendErrorResponse(
-          res,
-          400,
-          "NAME_MISMATCH",
-          `Incorrect fittingCenter name for refId ${fittingCenterRefId}. Expected: ${fittingCenterDoc.name}, Received: ${fittingCenter}`
-        );
-      }
-    }
-
     // Validate creditDays
     if (creditDaysRefId && creditDays) {
       const creditDayDoc = await CreditDay.findById(creditDaysRefId);
@@ -565,49 +455,6 @@ export const customerBasicRegistration = async (req, res) => {
           400,
           "NAME_MISMATCH",
           `Incorrect creditDays value for refId ${creditDaysRefId}. Expected: ${creditDayDoc.days}, Received: ${creditDays}`
-        );
-      }
-    }
-
-    // Validate courierName
-    if (courierNameRefId && courierName) {
-      const courierNameDoc = await CourierName.findById(courierNameRefId);
-      if (!courierNameDoc) {
-        return sendErrorResponse(
-          res,
-          404,
-          "INVALID_REF_ID",
-          `CourierName with refId ${courierNameRefId} does not exist`
-        );
-      }
-      if (courierNameDoc.name !== courierName) {
-        return sendErrorResponse(
-          res,
-          400,
-          "NAME_MISMATCH",
-          `Incorrect courierName for refId ${courierNameRefId}. Expected: ${courierNameDoc.name}, Received: ${courierName}`
-        );
-      }
-    }
-
-    // Validate courierTime
-    if (courierTimeRefId && courierTime) {
-      const courierTimeDoc = await CourierTime.findById(courierTimeRefId);
-      if (!courierTimeDoc) {
-        return sendErrorResponse(
-          res,
-          404,
-          "INVALID_REF_ID",
-          `CourierTime with refId ${courierTimeRefId} does not exist`
-        );
-      }
-
-      if (courierTimeDoc.time !== courierTime) {
-        return sendErrorResponse(
-          res,
-          400,
-          "NAME_MISMATCH",
-          `Incorrect courierTime for refId ${courierTimeRefId}. Expected: ${courierTimeDoc.time}, Received: ${courierTime}`
         );
       }
     }
@@ -632,6 +479,7 @@ export const customerBasicRegistration = async (req, res) => {
         );
       }
     }
+
     // Validate salesPerson
     if (salesPersonRefId && salesPerson) {
       const salesPersonDoc = await employeeSchema.findById(salesPersonRefId);
@@ -653,107 +501,33 @@ export const customerBasicRegistration = async (req, res) => {
       }
     }
 
-    // Validate brandCategories
-    if (brandCategories && Array.isArray(brandCategories)) {
-
-      for (let i = 0; i < brandCategories.length; i++) {
-        const brand = brandCategories[i];
-
-        // Skip empty brand entries (for Sales department)
-        if (!brand.brandId || !brand.brandName || brand.brandId === "" || brand.brandName === "") {
-          continue;
-        }
-
-        // Validate brand
-        const brandDoc = await Brand.findById(brand.brandId);
-        if (!brandDoc) {
-          return sendErrorResponse(
-            res,
-            404,
-            "INVALID_REF_ID",
-            `Brand with refId ${brand.brandId} does not exist in brandCategories[${i}]`
-          );
-        }
-        if (brandDoc.name !== brand.brandName.toUpperCase()) {
-          return sendErrorResponse(
-            res,
-            400,
-            "NAME_MISMATCH",
-            `Incorrect brand name for refId ${brand.brandId} in brandCategories[${i}]. Expected: ${brandDoc.name}, Received: ${brand.brandName}`
-          );
-        }
-
-        // Validate categories
-        if (brand.categories && Array.isArray(brand.categories)) {
-          for (let j = 0; j < brand.categories.length; j++) {
-            const category = brand.categories[j];
-
-            // Skip empty category entries
-            if (!category.categoryId || !category.categoryName || category.categoryId === "" || category.categoryName === "") {
-              continue;
-            }
-
-            const categoryDoc = await Category.findById(category.categoryId);
-            if (!categoryDoc) {
-              return sendErrorResponse(
-                res,
-                404,
-                "INVALID_REF_ID",
-                `Category with refId ${category.categoryId} does not exist in brandCategories[${i}].categories[${j}]`
-              );
-            }
-            if (categoryDoc.name !== category.categoryName) {
-              return sendErrorResponse(
-                res,
-                400,
-                "NAME_MISMATCH",
-                `Incorrect category name for refId ${category.categoryId} in brandCategories[${i}].categories[${j}]. Expected: ${categoryDoc.name}, Received: ${category.categoryName}`
-              );
-            }
-            // Verify category belongs to the brand
-            if (categoryDoc.brand.toString() !== brand.brandId) {
-              return sendErrorResponse(
-                res,
-                400,
-                "BRAND_CATEGORY_MISMATCH",
-                `Category "${category.categoryName}" does not belong to brand "${brand.brandName}" in brandCategories[${i}].categories[${j}]`
-              );
-            }
-          }
-        }
-      }
-    }
-
     const EmailOtp = Math.floor(100000 + Math.random() * 800000).toString();
     const MobileOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    const finalPassword = generateRandomPassword();
 
     let generatedCustomerCode = null;
-    if (isFinanceDepartment || userEmployeeType === "SUPERADMIN") {
-      let customerCode = generateCustomerCode(shopName);
-      let codeExists = true;
+    let customerCode = generateCustomerCode(shopName);
+    let codeExists = true;
 
-      while (codeExists) {
-        const existing = await Customer.findOne({ customerCode });
-        if (!existing) {
-          codeExists = false;
-          generatedCustomerCode = customerCode;
-        } else {
-          customerCode = generateCustomerCode(shopName);
-        }
+    while (codeExists) {
+      const existing = await Customer.findOne({ customerCode });
+      if (!existing) {
+        codeExists = false;
+        generatedCustomerCode = customerCode;
+      } else {
+        customerCode = generateCustomerCode(shopName);
       }
     }
-
-    const finalPassword = generateRandomPassword();
 
     const customerData = {
       // Customer Info.
       shopName: shopName.trim(),
       ownerName: ownerName.trim(),
       BusinessType: BusinessTypeRefId ? {
-          name: BusinessType,
-          refId: BusinessTypeRefId,
+        name: BusinessType,
+        refId: BusinessTypeRefId,
       } : undefined,
-      orderMode : "Online",
+      orderMode: "Online",
       mobileNo1,
       mobileNo2,
       businessEmail: businessEmail.toLowerCase().trim(),
@@ -779,22 +553,24 @@ export const customerBasicRegistration = async (req, res) => {
       },
 
       // Address
-      address: address.map((addr) => ({
-        branchAddress: addr.branchAddress.trim(),
-        contactPerson: addr.contactPerson.trim(),
-        contactNumber: addr.contactNumber.trim(),
-        country: addr.country,
-        state: addr.state,
-        zipCode: addr.zipCode,
-        city: addr.city.trim(),
-        billingCurrency: addr.billingCurrency,
-        billingMode: addr.billingMode,
-      })),
+      billToAddress: {
+        branchName: billToAddress.branchName.trim(),
+        customerContactName: billToAddress.customerContactName.trim(),
+        customerContactNumber: billToAddress.customerContactNumber.trim(),
+        country: billToAddress.country,
+        state: billToAddress.state,
+        zipCode: billToAddress.zipCode,
+        city: billToAddress.city.trim(),
+        address: billToAddress.address.trim(),
+        billingCurrency: billToAddress.billingCurrency,
+        billingMode: billToAddress.billingMode,
+        createdBy: req.user.id,
+      },
 
       // Customer Registration - Only for FINANCE department or SUPERADMIN
       customerCode: generatedCustomerCode,
-      password: isFinanceDepartment || userEmployeeType === "SUPERADMIN" ? finalPassword : undefined,
-      brandCategories: (isFinanceDepartment || userEmployeeType === "SUPERADMIN") && brandCategories
+      password: finalPassword,
+      brandCategories: brandCategories
         ? brandCategories
           .filter(brand => brand.brandId && brand.brandName && brand.brandId !== "" && brand.brandName !== "")
           .map(brand => ({
@@ -804,99 +580,30 @@ export const customerBasicRegistration = async (req, res) => {
               ? brand.categories.filter(cat => cat.categoryId && cat.categoryName && cat.categoryId !== "" && cat.categoryName !== "")
               : []
           }))
-          .filter(brand => brand.categories.length > 0) // Only keep brands with valid categories
+          .filter(brand => brand.categories.length > 0)
         : undefined,
 
-      zone: (isFinanceDepartment || userEmployeeType === "SUPERADMIN") &&
-        zone &&
-        zoneRefId
-        ? {
-          name: zone,
-          refId: zoneRefId,
-        }
-        : undefined,
+      zone: zone && zoneRefId ? {
+        name: zone,
+        refId: zoneRefId,
+      } : undefined,
 
-      salesPerson:
-        (isFinanceDepartment || userEmployeeType === "SUPERADMIN") &&
-          salesPerson &&
-          salesPersonRefId
-          ? {
-            name: salesPerson,
-            refId: salesPersonRefId,
-          }
-          : undefined,
+      salesPerson: salesPerson && salesPersonRefId ? {
+        name: salesPerson,
+        refId: salesPersonRefId,
+      } : undefined,
 
-      specificLab:
-        (isFinanceDepartment || userEmployeeType === "SUPERADMIN") &&
-          specificLab &&
-          specificLabRefId
-          ? {
-            name: specificLab,
-            refId: specificLabRefId,
-          }
-          : undefined,
-
-      fittingCenter:
-        (isFinanceDepartment || userEmployeeType === "SUPERADMIN") &&
-          fittingCenter &&
-          fittingCenterRefId
-          ? {
-            name: fittingCenter,
-            refId: fittingCenterRefId,
-          }
-          : undefined,
-
-      plant:
-        (isFinanceDepartment || userEmployeeType === "SUPERADMIN") &&
-          plant &&
-          plantRefId
-          ? {
-            name: plant,
-            refId: plantRefId,
-          }
-          : undefined,
-
-      creditLimit:
-        isFinanceDepartment || userEmployeeType === "SUPERADMIN"
-          ? creditLimit
-          : null,
-
-      creditDays:
-        (isFinanceDepartment || userEmployeeType === "SUPERADMIN") &&
-          creditDays &&
-          creditDaysRefId
-          ? {
-            name: creditDays,
-            refId: creditDaysRefId,
-          }
-          : undefined,
-
-      courierName:
-        (isFinanceDepartment || userEmployeeType === "SUPERADMIN") &&
-          courierName &&
-          courierNameRefId
-          ? {
-            name: courierName,
-            refId: courierNameRefId,
-          }
-          : undefined,
-
-      courierTime:
-        (isFinanceDepartment || userEmployeeType === "SUPERADMIN") &&
-          courierTime &&
-          courierTimeRefId
-          ? {
-            name: courierTime,
-            refId: courierTimeRefId,
-          }
-          : undefined,
+      creditLimit,
+      creditDays: creditDays && creditDaysRefId ? {
+        name: creditDays,
+        refId: creditDaysRefId,
+      } : undefined,
 
       // System Internal details
       dcWithoutValue: false,
       designation: "Customer",
       createdBy: req.user.id,
       createdByDepartment: userDepartment,
-      approvalStatus: isSalesDepartment ? "PENDING_FINANCE" : "APPROVED",
       emailOtp: EmailOtp,
       emailOtpExpires: new Date(Date.now() + 10 * 60 * 1000),
       mobileOtp: MobileOtp,
@@ -907,7 +614,25 @@ export const customerBasicRegistration = async (req, res) => {
       proposedDiscount: proposedDiscount || undefined,
       currentlyDealtBrands: currentlyDealtBrands ? currentlyDealtBrands.trim() : undefined,
       minSalesValue: minSalesValue || undefined,
-      finalDiscount: (isFinanceDepartment || userEmployeeType === "SUPERADMIN") ? finalDiscount : undefined,
+      finalDiscount: finalDiscount,
+
+      // Sales Person Input Fields
+      proprietorName: proprietorName,
+      firmName: (isFinanceDepartment || userEmployeeType === "SUPERADMIN" && IsGSTRegistered) ? firmName.trim() : undefined,
+      chequeDetails: chequeDetails,
+      billingCycle: billingCycle,
+      billingMode: billingMode,
+
+      // Workflow Status
+      approvalWorkflow: {
+        financeApprovalStatus: isSalesDepartment ? "PENDING" : "APPROVED",
+        financeApprovedBy: isFinanceDepartment ? userId : undefined,
+        financeApprovedAt: isFinanceDepartment ? new Date() : undefined,
+        salesHeadApprovalStatus: "PENDING",
+        csTeamCompletionStatus: "PENDING",
+      },
+      isBlacklisted: false,
+      termsAndConditionsAccepted: false,
     };
 
     console.log("customerData  : ", customerData);
@@ -929,7 +654,7 @@ export const customerBasicRegistration = async (req, res) => {
 
     // Only send credentials email if password was set (FINANCE department or SUPERADMIN)
     if (
-      (isFinanceDepartment || userEmployeeType === "SUPERADMIN") &&
+
       finalPassword
     ) {
       sendEmail({
@@ -1150,7 +875,7 @@ export const financeCompleteCustomer = async (req, res) => {
       return sendErrorResponse(res, 404, "NOT_FOUND", "Customer not found");
     }
 
-    if (customer.approvalStatus === "APPROVED") {
+    if (customer.approvalWorkflow?.financeApprovalStatus === "APPROVED") {
       return sendErrorResponse(
         res,
         400,
@@ -1516,7 +1241,7 @@ export const financeCompleteCustomer = async (req, res) => {
       }
     }
 
-    const addressToUpdate = req.body.address && req.body.address.length > 0 ? req.body.address : customer.address;
+    const billToAddressToUpdate = req.body.billToAddress || customer.billToAddress;
     const finalPassword = generateRandomPassword();
 
     let customerCode = generateCustomerCode(customer.shopName);
@@ -1545,14 +1270,13 @@ export const financeCompleteCustomer = async (req, res) => {
       courierTime: req.body.courierTime,
       finalDiscount: req.body.finalDiscount,
       customerCode: customerCode,
-      approvalStatus: "APPROVED",
       financeCompletedBy: req.user.id,
       financeCompletedAt: new Date(),
       Status: {
         isActive: true,
         isSuspended: false,
       },
-      address: addressToUpdate
+      billToAddress: billToAddressToUpdate
     };
 
     console.log("updateData : ", updateData);
@@ -1609,7 +1333,6 @@ export const updateCustomerProfile = async (req, res) => {
     if (updateData.mobileNo1) updateFields.mobileNo1 = updateData.mobileNo1;
     if (updateData.mobileNo2) updateFields.mobileNo2 = updateData.mobileNo2;
     if (updateData.creditUsed) updateFields.creditUsed = updateData.creditUsed;
-    if (updateData.approvalStatus) updateFields.approvalStatus = updateData.approvalStatus;
     if (updateData.businessEmail)
       updateFields.businessEmail = updateData.businessEmail;
 
@@ -1820,46 +1543,48 @@ export const updateCustomerProfile = async (req, res) => {
       };
     }
 
-    if (updateData.address) {
-      if (!Array.isArray(updateData.address) || updateData.address.length === 0) {
+    if (updateData.billToAddress) {
+      if (typeof updateData.billToAddress !== 'object' || Array.isArray(updateData.billToAddress)) {
         return sendErrorResponse(
           res,
           400,
           "VALIDATION_ERROR",
-          "Address must be    an array with at least one address",
+          "Bill to address must be an object",
         );
       }
-      for (const addr of updateData.address) {
-        if (
-          !addr.branchAddress ||
-          !addr.contactPerson ||
-          !addr.contactNumber ||
-          !addr.country ||
-          !addr.state ||
-          !addr.city ||
-          !addr.zipCode ||
-          !addr.billingCurrency ||
-          !addr.billingMode
-        ) {
-          return sendErrorResponse(
-            res,
-            400,
-            "VALIDATION_ERROR",
-            "All address fields are required",
-          );
-        }
+      const addr = updateData.billToAddress;
+      if (
+        !addr.branchName ||
+        !addr.customerContactName ||
+        !addr.customerContactNumber ||
+        !addr.country ||
+        !addr.state ||
+        !addr.city ||
+        !addr.zipCode ||
+        !addr.address ||
+        !addr.billingCurrency ||
+        !addr.billingMode
+      ) {
+        return sendErrorResponse(
+          res,
+          400,
+          "VALIDATION_ERROR",
+          "All bill to address fields are required (branchName, customerContactName, customerContactNumber, country, state, city, zipCode, address, billingCurrency, billingMode)",
+        );
       }
-      updateFields.address = updateData.address.map((addr) => ({
-        branchAddress: addr.branchAddress.trim(),
-        contactPerson: addr.contactPerson.trim(),
-        contactNumber: addr.contactNumber.trim(),
+      updateFields.billToAddress = {
+        branchName: addr.branchName.trim(),
+        customerContactName: addr.customerContactName.trim(),
+        customerContactNumber: addr.customerContactNumber.trim(),
         country: addr.country,
         state: addr.state,
         zipCode: addr.zipCode,
         city: addr.city.trim(),
+        address: addr.address.trim(),
         billingCurrency: addr.billingCurrency,
         billingMode: addr.billingMode,
-      }));
+        createdBy: req.user.id,
+      };
     }
 
     if (updateData.businessEmail) {
@@ -2005,7 +1730,7 @@ export const sendCustomerForCorrection = async (req, res) => {
       return sendErrorResponse(res, 404, 'NOT_FOUND', 'Customer not found');
     }
 
-    if (customer.approvalStatus === 'APPROVED') {
+    if (customer.approvalWorkflow?.financeApprovalStatus === 'APPROVED') {
       return sendErrorResponse(
         res,
         400,
@@ -2014,12 +1739,12 @@ export const sendCustomerForCorrection = async (req, res) => {
       );
     }
 
-    if (customer.approvalStatus !== 'PENDING_FINANCE') {
+    if (customer.approvalWorkflow?.financeApprovalStatus !== 'PENDING') {
       return sendErrorResponse(
         res,
         400,
         'INVALID_STATUS',
-        'Customer must be in PENDING_FINANCE status to send back for corrections'
+        'Customer must be in PENDING status to send back for corrections'
       );
     }
 
@@ -2032,7 +1757,7 @@ export const sendCustomerForCorrection = async (req, res) => {
       'mobileNo1',
       'mobileNo2',
       'businessEmail',
-      'address',
+      'billToAddress',
       'IsGSTRegistered',
       'GSTNumber',
       'gstType',
@@ -2068,8 +1793,8 @@ export const sendCustomerForCorrection = async (req, res) => {
 
     const invalidFields = fieldsToCorrect.filter(field => {
       if (allowedFields.includes(field)) return false;
-      const addressArrayPattern = /^address\[\d+\]\.(branchAddress|contactPerson|contactNumber|city|state|zipCode|country|billingCurrency|billingMode)$/;
-      if (addressArrayPattern.test(field)) return false;
+      const billToAddressFieldPattern = /^billToAddress\.(branchName|customerContactName|customerContactNumber|city|state|zipCode|country|address|billingCurrency|billingMode)$/;
+      if (billToAddressFieldPattern.test(field)) return false;
       return true;
     });
 
@@ -2078,13 +1803,13 @@ export const sendCustomerForCorrection = async (req, res) => {
         res,
         400,
         'INVALID_FIELDS',
-        `Invalid field names: ${invalidFields.join(', ')}. Allowed fields: ${allowedFields.join(', ')}. For address corrections use format "address[index].fieldName" (e.g., "address[0].branchAddress")`
+        `Invalid field names: ${invalidFields.join(', ')}. Allowed fields: ${allowedFields.join(', ')}. For bill to address corrections use format "billToAddress.fieldName" (e.g., "billToAddress.branchName", "billToAddress.billingCurrency")`
       );
     }
 
     console.log("Anish : ", req.user);
 
-    customer.approvalStatus = 'CORRECTION_REQUIRED';
+    customer.approvalWorkflow.financeApprovalStatus = 'MODIFICATION_REQUIRED';
     customer.correctionRequest = {
       fieldsToCorrect: fieldsToCorrect,
       remark: remark.trim(),
@@ -2154,12 +1879,12 @@ export const resubmitCorrectedCustomer = async (req, res) => {
       return sendErrorResponse(res, 404, 'NOT_FOUND', 'Customer not found');
     }
 
-    if (customer.approvalStatus !== 'CORRECTION_REQUIRED') {
+    if (customer.approvalWorkflow?.financeApprovalStatus !== 'MODIFICATION_REQUIRED') {
       return sendErrorResponse(
         res,
         400,
         'INVALID_STATUS',
-        'Customer is not in CORRECTION_REQUIRED status'
+        'Customer is not in MODIFICATION_REQUIRED status'
       );
     }
 
@@ -2185,11 +1910,11 @@ export const resubmitCorrectedCustomer = async (req, res) => {
       );
     }
     const hasRelevantUpdate = fieldsToCorrect.some(field => {
-      if (field === 'address') {
-        return updateData.address !== undefined;
+      if (field === 'billToAddress') {
+        return updateData.billToAddress !== undefined;
       }
-      if (field.startsWith('address[')) {
-        return updateData.address !== undefined;
+      if (field.startsWith('billToAddress[')) {
+        return updateData.billToAddress !== undefined;
       }
       return updateData[field] !== undefined;
     });
@@ -2272,53 +1997,54 @@ export const resubmitCorrectedCustomer = async (req, res) => {
       };
     }
 
-    // Handle address updates
-    if (updateData.address) {
-      if (!Array.isArray(updateData.address) || updateData.address.length === 0) {
+    // Handle bill to address updates
+    if (updateData.billToAddress) {
+      if (typeof updateData.billToAddress !== 'object' || Array.isArray(updateData.billToAddress)) {
         return sendErrorResponse(
           res,
           400,
           'VALIDATION_ERROR',
-          'Address must be an array with at least one address'
+          'Bill to address must be an object'
         );
       }
 
-      for (let i = 0; i < updateData.address.length; i++) {
-        const addr = updateData.address[i];
-        const requiredAddressFields = [
-          'branchAddress',
-          'contactPerson',
-          'contactNumber',
-          'city',
-          'state',
-          'zipCode',
-          'country',
-          'billingCurrency',
-          'billingMode'
-        ];
+      const addr = updateData.billToAddress;
+      const requiredAddressFields = [
+        'branchName',
+        'customerContactName',
+        'customerContactNumber',
+        'city',
+        'state',
+        'zipCode',
+        'country',
+        'address',
+        'billingCurrency',
+        'billingMode'
+      ];
 
-        const missingFields = requiredAddressFields.filter(field => !addr[field]);
-        if (missingFields.length > 0) {
-          return sendErrorResponse(
-            res,
-            400,
-            'VALIDATION_ERROR',
-            `Address[${i}] missing required fields: ${missingFields.join(', ')}`
-          );
-        }
+      const missingFields = requiredAddressFields.filter(field => !addr[field]);
+      if (missingFields.length > 0) {
+        return sendErrorResponse(
+          res,
+          400,
+          'VALIDATION_ERROR',
+          `BillToAddress missing required fields: ${missingFields.join(', ')}`
+        );
       }
 
-      updateFields.address = updateData.address.map((addr) => ({
-        branchAddress: addr.branchAddress.trim(),
-        contactPerson: addr.contactPerson.trim(),
-        contactNumber: addr.contactNumber.trim(),
+      updateFields.billToAddress = {
+        branchName: addr.branchName.trim(),
+        customerContactName: addr.customerContactName.trim(),
+        customerContactNumber: addr.customerContactNumber.trim(),
         country: addr.country,
         state: addr.state,
         zipCode: addr.zipCode,
         city: addr.city.trim(),
+        address: addr.address.trim(),
         billingCurrency: addr.billingCurrency,
         billingMode: addr.billingMode,
-      }));
+        createdBy: req.user.id,
+      };
     }
 
     // Handle email update
@@ -2339,7 +2065,7 @@ export const resubmitCorrectedCustomer = async (req, res) => {
     }
 
     Object.assign(customer, updateFields);
-    customer.approvalStatus = 'PENDING_FINANCE';
+    customer.approvalWorkflow.financeApprovalStatus = 'PENDING';
     customer.correctionRequest = undefined;
     await customer.save();
 
@@ -2442,7 +2168,9 @@ export const updateCustomerShipToDetails = async (req, res) => {
         'shipToAddress',
         'state',
         'city',
-        'shipToAddressZipCode'
+        'shipToAddressZipCode',
+        'billingCurrency',
+        'billingMode'
       ];
 
       for (const field of requiredFields) {
@@ -2497,12 +2225,12 @@ export const updateCustomerShipToDetails = async (req, res) => {
       );
     }
 
-    if (customer.approvalStatus !== 'APPROVED') {
+    if (customer.approvalWorkflow?.salesHeadApprovalStatus !== 'APPROVED') {
       return sendErrorResponse(
         res,
         400,
         "INVALID_STATUS",
-        "Customer must be approved before updating ship-to details"
+        "Customer must be approved by Sales Head before updating ship-to details"
       );
     }
 
@@ -2529,6 +2257,8 @@ export const updateCustomerShipToDetails = async (req, res) => {
         state: address.state.trim(),
         city: address.city.trim(),
         shipToAddressZipCode: address.shipToAddressZipCode.trim(),
+        billingCurrency: address.billingCurrency,
+        billingMode: address.billingMode,
         gstNumber: address.gstNumber ? address.gstNumber.toUpperCase().trim() : undefined,
         gstImage: address.gstImage ? address.gstImage.trim() : undefined
       };
