@@ -193,18 +193,7 @@ export const customerBasicRegistration = async (req, res) => {
       );
     }
 
-    if (
-      !billToAddress.branchName ||
-      !billToAddress.customerContactName ||
-      !billToAddress.customerContactNumber ||
-      !billToAddress.country ||
-      !billToAddress.state ||
-      !billToAddress.city ||
-      !billToAddress.zipCode ||
-      !billToAddress.address ||
-      !billToAddress.billingCurrency ||
-      !billToAddress.billingMode
-    ) {
+    if (!billToAddress.branchName ||!billToAddress.customerContactName ||!billToAddress.customerContactNumber ||!billToAddress.country ||!billToAddress.state ||!billToAddress.city ||!billToAddress.zipCode ||!billToAddress.address ||!billToAddress.billingCurrency ||!billToAddress.billingMode) {
       return sendErrorResponse(
         res,
         400,
@@ -364,7 +353,6 @@ export const customerBasicRegistration = async (req, res) => {
       }
     }
 
-
     if (!brandCategories || !Array.isArray(brandCategories) || brandCategories.length === 0) {
       return sendErrorResponse(
         res,
@@ -501,8 +489,6 @@ export const customerBasicRegistration = async (req, res) => {
       }
     }
 
-    const EmailOtp = Math.floor(100000 + Math.random() * 800000).toString();
-    const MobileOtp = Math.floor(100000 + Math.random() * 900000).toString();
     const finalPassword = generateRandomPassword();
 
     let generatedCustomerCode = null;
@@ -548,7 +534,7 @@ export const customerBasicRegistration = async (req, res) => {
 
       // Account Status
       status: {
-        isActive: isFinanceDepartment ? true : false,
+        isActive:  false,
         isSuspended: false,
       },
 
@@ -606,8 +592,6 @@ export const customerBasicRegistration = async (req, res) => {
       createdByDepartment: userDepartment,
       emailOtp: EmailOtp,
       emailOtpExpires: new Date(Date.now() + 10 * 60 * 1000),
-      mobileOtp: MobileOtp,
-      mobileOtpExpires: new Date(Date.now() + 10 * 60 * 1000),
 
       // Business Details
       yearOfEstablishment: yearOfEstablishment || undefined,
@@ -618,7 +602,7 @@ export const customerBasicRegistration = async (req, res) => {
 
       // Sales Person Input Fields
       proprietorName: proprietorName,
-      firmName: (isFinanceDepartment || userEmployeeType === "SUPERADMIN" && isGSTRegistered) ? firmName.trim() : undefined,
+      firmName:  firmName.trim(),
       chequeDetails: chequeDetails,
       billingCycle: billingCycle,
       billingMode: billingMode,
@@ -652,26 +636,12 @@ export const customerBasicRegistration = async (req, res) => {
       }
     }
 
-    // Only send credentials email if password was set (FINANCE department or SUPERADMIN)
-    if (
-
-      finalPassword
-    ) {
-      sendEmail({
-        to: businessEmail,
-        subject: "Welcome Mail for choosing VISUAL EYES",
-        html: CredentialsTemplate(ownerName, businessEmail, finalPassword),
-      }).catch((err) => console.error("Background email error:", err));
-    }
-
     const customerObj = customer.toObject();
     delete customerObj.password;
     delete customerObj.emailOtp;
     delete customerObj.mobileOtp;
 
-    const message = isSalesDepartment
-      ? "Customer registered successfully. Pending Finance approval."
-      : "Customer registered and approved successfully.";
+    const message = isSalesDepartment ? "Customer registered successfully. Pending Finance approval." : "Customer registered and Pending sales head approval.";
 
     return sendSuccessResponse(res, 201, { customer: customerObj }, message);
   } catch (error) {

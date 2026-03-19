@@ -208,7 +208,6 @@ const customerSchema = new mongoose.Schema(
         return this.isGSTRegistered === false;
       },
     },
-
     aadharCardImg: {
       type: String,
       required: function () {
@@ -428,7 +427,7 @@ const customerSchema = new mongoose.Schema(
       type: Date,
       default: null
     },
-
+    
     // SYSTEM INTERNAL DETAILS
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
