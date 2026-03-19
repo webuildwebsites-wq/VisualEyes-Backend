@@ -50,8 +50,8 @@ export const customerLogin = async (req, res) => {
         { businessEmail: loginId.toLowerCase() },
         { customerCode: loginId.toUpperCase() }
       ],
-      'Status.isActive': true
-    }).select("+password -emailOtp -emailOtpExpires -mobileOtp -mobileOtpExpires -GSTNumber -GSTCertificateImg -PANCard -PANCardImg -AadharCard -AadharCardImg -isLocked -failedLoginAttempts -lockUntil -createdByDepartment -approvalStatus -financeCompletedBy -financeCompletedAt");
+      'status.isActive': true
+    }).select("+password -emailOtp -emailOtpExpires -mobileOtp -mobileOtpExpires -gstNumber -gstCertificateImg -panCard -panCardImg -aadharCard -aadharCardImg -isLocked -failedLoginAttempts -lockUntil -createdByDepartment -approvalStatus -financeCompletedBy -financeCompletedAt");
 
     if (!customer) {
       return sendErrorResponse(
@@ -71,12 +71,12 @@ export const customerLogin = async (req, res) => {
       );
     }
 
-    if (customer.Status.isSuspended) {
+    if (customer.status.isSuspended) {
       return sendErrorResponse(
         res,
         423,
         "ACCOUNT_SUSPENDED",
-        `Account is suspended: ${customer.Status.suspensionReason}`,
+        `Account is suspended: ${customer.status.suspensionReason}`,
       );
     }
 
@@ -114,8 +114,8 @@ export const customerLogin = async (req, res) => {
 export const customerBasicRegistration = async (req, res) => {
   try {
     const {
-      BusinessType,
-      BusinessTypeRefId,
+      businessType,
+      businessTypeRefId,
       zone,
       zoneRefId,
       brandCategories,
@@ -130,13 +130,13 @@ export const customerBasicRegistration = async (req, res) => {
       creditDaysRefId,
       creditLimit,
       billToAddress,
-      IsGSTRegistered,
-      GSTNumber,
-      GSTCertificateImg,
-      PANCard,
-      AadharCard,
-      PANCardImg,
-      AadharCardImg,
+      isGSTRegistered,
+      gstNumber,
+      gstCertificateImg,
+      panCard,
+      aadharCard,
+      panCardImg,
+      aadharCardImg,
       salesPerson,
       salesPersonRefId,
       draftCustomerId,
@@ -166,12 +166,12 @@ export const customerBasicRegistration = async (req, res) => {
       );
     }
 
-    if (!BusinessType || !shopName || !ownerName || !businessEmail) {
+    if (!businessType || !shopName || !ownerName || !businessEmail) {
       return sendErrorResponse(
         res,
         400,
         "VALIDATION_ERROR",
-        "BusinessType, shopName, ownerName, businessEmail and orderMode are required",
+        "businessType, shopName, ownerName, businessEmail and orderMode are required",
       );
     }
 
@@ -213,22 +213,22 @@ export const customerBasicRegistration = async (req, res) => {
       );
     }
 
-    if (IsGSTRegistered === true) {
-      if (!GSTNumber || !gstType || !GSTCertificateImg) {
+    if (isGSTRegistered === true) {
+      if (!gstNumber || !gstType || !gstCertificateImg) {
         return sendErrorResponse(
           res,
           400,
           "VALIDATION_ERROR",
-          "GSTNumber, gstType and GSTCertificateImg are required when GST registered",
+          "gstNumber, gstType and gstCertificateImg are required when GST registered",
         );
       }
     } else {
-      if (!PANCard || !AadharCard || !PANCardImg || !AadharCardImg) {
+      if (!panCard || !aadharCard || !panCardImg || !aadharCardImg) {
         return sendErrorResponse(
           res,
           400,
           "VALIDATION_ERROR",
-          "PANCard, AadharCard and their images are required when not GST registered",
+          "panCard, aadharCard and their images are required when not GST registered",
         );
       }
     }
@@ -287,7 +287,7 @@ export const customerBasicRegistration = async (req, res) => {
       );
     }
 
-    if (IsGSTRegistered && (!firmName || firmName.trim() === "")) {
+    if (isGSTRegistered && (!firmName || firmName.trim() === "")) {
       return sendErrorResponse(
         res,
         400,
@@ -338,7 +338,7 @@ export const customerBasicRegistration = async (req, res) => {
     const isValidObjectId = (id) => /^[0-9a-fA-F]{24}$/.test(id);
 
     const requiredRefIds = [
-      { name: "BusinessTypeRefId", value: BusinessTypeRefId },
+      { name: "BusinessTypeRefId", value: businessTypeRefId },
       { name: "salesPersonRefId", value: salesPersonRefId },
       { name: "zoneRefId", value: zoneRefId },
       { name: "gstTypeRefId", value: gstTypeRefId },
@@ -374,7 +374,7 @@ export const customerBasicRegistration = async (req, res) => {
       );
     }
 
-    if (BusinessTypeRefId && !isValidObjectId(BusinessTypeRefId)) {
+    if (businessTypeRefId && !isValidObjectId(businessTypeRefId)) {
       return sendErrorResponse(
         res,
         400,
@@ -397,22 +397,22 @@ export const customerBasicRegistration = async (req, res) => {
     }
 
     // Validate BusinessType
-    if (BusinessTypeRefId && BusinessType) {
-      const businessType = await BusinessType.findById(BusinessTypeRefId);
+    if (businessTypeRefId && businessType) {
+      const businessType = await businessType.findById(businessTypeRefId);
       if (!businessType) {
         return sendErrorResponse(
           res,
           404,
           "INVALID_REF_ID",
-          `BusinessType with refId ${BusinessTypeRefId} does not exist`
+          `BusinessType with refId ${businessTypeRefId} does not exist`
         );
       }
-      if (businessType.name !== BusinessType) {
+      if (businessType.name !== businessType) {
         return sendErrorResponse(
           res,
           400,
           "NAME_MISMATCH",
-          `Incorrect BusinessType name for refId ${BusinessTypeRefId}. Expected: ${businessType.name}, Received: ${BusinessType}`
+          `Incorrect BusinessType name for refId ${businessTypeRefId}. Expected: ${businessType.name}, Received: ${businessType}`
         );
       }
     }
@@ -523,31 +523,31 @@ export const customerBasicRegistration = async (req, res) => {
       // Customer Info.
       shopName: shopName.trim(),
       ownerName: ownerName.trim(),
-      BusinessType: BusinessTypeRefId ? {
-        name: BusinessType,
-        refId: BusinessTypeRefId,
+      businessType: businessTypeRefId ? {
+        name: businessType,
+        refId: businessTypeRefId,
       } : undefined,
       orderMode: "Online",
       mobileNo1,
       mobileNo2,
       businessEmail: businessEmail.toLowerCase().trim(),
-      IsGSTRegistered,
-      GSTNumber: IsGSTRegistered ? GSTNumber : undefined,
+      isGSTRegistered: isGSTRegistered,
+      gstNumber: isGSTRegistered ? gstNumber : undefined,
       gstType:
-        IsGSTRegistered && gstType
+        isGSTRegistered && gstType
           ? {
             name: gstType,
             refId: gstTypeRefId,
           }
           : undefined,
-      GSTCertificateImg: IsGSTRegistered ? GSTCertificateImg : undefined,
-      PANCard: !IsGSTRegistered ? PANCard : undefined,
-      AadharCard: !IsGSTRegistered ? AadharCard : undefined,
-      PANCardImg: !IsGSTRegistered ? PANCardImg : undefined,
-      AadharCardImg: !IsGSTRegistered ? AadharCardImg : undefined,
+      gstCertificateImg: isGSTRegistered ? gstCertificateImg : undefined,
+      panCard: !isGSTRegistered ? panCard : undefined,
+      aadharCard: !isGSTRegistered ? aadharCard : undefined,
+      panCardImg: !isGSTRegistered ? panCardImg : undefined,
+      aadharCardImg: !isGSTRegistered ? aadharCardImg : undefined,
 
       // Account Status
-      Status: {
+      status: {
         isActive: isFinanceDepartment ? true : false,
         isSuspended: false,
       },
@@ -618,7 +618,7 @@ export const customerBasicRegistration = async (req, res) => {
 
       // Sales Person Input Fields
       proprietorName: proprietorName,
-      firmName: (isFinanceDepartment || userEmployeeType === "SUPERADMIN" && IsGSTRegistered) ? firmName.trim() : undefined,
+      firmName: (isFinanceDepartment || userEmployeeType === "SUPERADMIN" && isGSTRegistered) ? firmName.trim() : undefined,
       chequeDetails: chequeDetails,
       billingCycle: billingCycle,
       billingMode: billingMode,

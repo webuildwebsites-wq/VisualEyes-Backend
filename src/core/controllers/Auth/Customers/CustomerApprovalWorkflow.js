@@ -174,7 +174,7 @@ export const salesHeadApproveCustomer = async (req, res) => {
       customer.approvalWorkflow.salesHeadApprovedBy = userId;
       customer.approvalWorkflow.salesHeadApprovedAt = new Date();
       customer.approvalWorkflow.salesHeadRemark = remark || "";
-      customer.Status.isActive = true;
+      customer.status.isActive = true;
 
       // Send credentials email to customer
       const CredentialsTemplate = (await import("../../../../Utils/Mail/CredentialsTemplate.js")).default;
@@ -210,7 +210,7 @@ export const salesHeadApproveCustomer = async (req, res) => {
       customer.approvalWorkflow.salesHeadApprovalStatus = "APPROVED";
       customer.approvalWorkflow.salesHeadApprovedBy = userId;
       customer.approvalWorkflow.salesHeadApprovedAt = new Date();
-      customer.Status.isActive = false;
+      customer.status.isActive = false;
     }
 
     await customer.save();
@@ -283,7 +283,7 @@ export const acceptTermsAndConditions = async (req, res) => {
 
     customer.termsAndConditionsAccepted = true;
     customer.termsAcceptedAt = new Date();
-    customer.Status.isActive = true;
+    customer.status.isActive = true;
 
     await customer.save();
 

@@ -27,7 +27,7 @@ export const protectCustomer = async (req, res, next) => {
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       const customer = await Customer.findById(decoded.id);
-      if (!customer || !customer.Status.isActive || customer.Status.isSuspended) {
+      if (!customer || !customer.status.isActive || customer.status.isSuspended) {
         return res.status(401).json({
           success: false,
           error: {

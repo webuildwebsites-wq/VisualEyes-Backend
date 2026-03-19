@@ -40,7 +40,7 @@ const customerSchema = new mongoose.Schema(
       trim: true,
       maxlength: 100,
     },
-    BusinessType: {
+    businessType: {
       name: {
         type: String,
         required: false,
@@ -161,7 +161,7 @@ const customerSchema = new mongoose.Schema(
 
 
     // DOCUMENTATION DETAILS
-    IsGSTRegistered: {
+    isGSTRegistered: {
       type: Boolean,
       required: true,
     },
@@ -169,7 +169,7 @@ const customerSchema = new mongoose.Schema(
       name: {
         type: String,
         required: function () {
-          return this.IsGSTRegistered === true;
+          return this.isGSTRegistered === true;
         },
       },
       refId: {
@@ -177,42 +177,42 @@ const customerSchema = new mongoose.Schema(
         ref: 'GSTType'
       }
     },
-    GSTNumber: {
+    gstNumber: {
       type: String,
       uppercase: true,
       required: function () {
-        return this.IsGSTRegistered === true;
+        return this.isGSTRegistered === true;
       },
     },
-    GSTCertificateImg: {
+    gstCertificateImg: {
       type: String,
       required: function () {
-        return this.IsGSTRegistered === true;
+        return this.isGSTRegistered === true;
       },
     },
-    PANCard: {
+    panCard: {
       type: String,
       required: function () {
-        return this.IsGSTRegistered === false;
+        return this.isGSTRegistered === false;
       },
     },
-    AadharCard: {
+    aadharCard: {
       type: String,
       required: function () {
-        return this.IsGSTRegistered === false;
+        return this.isGSTRegistered === false;
       },
     },
-    PANCardImg: {
+    panCardImg: {
       type: String,
       required: function () {
-        return this.IsGSTRegistered === false;
+        return this.isGSTRegistered === false;
       },
     },
 
-    AadharCardImg: {
+    aadharCardImg: {
       type: String,
       required: function () {
-        return this.IsGSTRegistered === false;
+        return this.isGSTRegistered === false;
       },
     },
 
@@ -400,7 +400,7 @@ const customerSchema = new mongoose.Schema(
       default: false
     },
     termsAcceptedAt: Date,
-    Status: {
+    status: {
       isSuspended: {
         type: Boolean,
         default: false

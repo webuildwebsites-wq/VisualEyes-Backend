@@ -18,7 +18,7 @@ export async function verifyCustomerEmail(req, res) {
     const isNotExpired = user.emailOtpExpires > Date.now();
 
     if (isCodeValid && isNotExpired) {
-      user.Status.isActive = true;
+      user.status.isActive = true;
       user.emailOtp = null;
       user.emailOtpExpires = null;
       user.lastLogin = new Date();

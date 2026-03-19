@@ -646,9 +646,9 @@ export const deactivateCustomer = async (req, res) => {
       return sendErrorResponse(res, 404, 'USER_NOT_FOUND', 'Customer not found or already deactivated');
     }
 
-    user.Status.isActive = false;
-    user.Status.isSuspended = true;
-    user.Status.suspensionReason = req?.body?.suspensionReason || 'N/A';
+    user.status.isActive = false;
+    user.status.isSuspended = true;
+    user.status.suspensionReason = req?.body?.suspensionReason || 'N/A';
     user.isDeleted = true;
     user.deletedAt = new Date();
     user.deletedBy = req.user.id;
@@ -742,9 +742,9 @@ export const restoreCustomer = async (req, res) => {
       return sendErrorResponse(res, 400, 'EXPIRED', 'Cannot restore customer. More than 30 days have passed since deletion');
     }
 
-    user.Status.isActive = true;
-    user.Status.isSuspended = false;
-    user.Status.suspensionReason = null;
+    user.status.isActive = true;
+    user.status.isSuspended = false;
+    user.status.suspensionReason = null;
     user.isDeleted = false;
     user.deletedAt = null;
     user.deletedBy = null;
