@@ -11,8 +11,6 @@ import {
   generateCustomerCode,
   generateRandomPassword,
 } from "../../../../Utils/Auth/customerAuthUtils.js";
-import CredentialsTemplate from "../../../../Utils/Mail/CredentialsTemplate.js";
-import { sendEmail } from "../../../config/Email/emailService.js";
 import Customer from "../../../../models/Auth/Customer.js";
 import customerDraftSchema from "../../../../models/Auth/CustomerDraft.js";
 import Location from "../../../../models/Location/Location.js";
@@ -193,7 +191,7 @@ export const customerBasicRegistration = async (req, res) => {
       );
     }
 
-    if (!billToAddress.branchName ||!billToAddress.customerContactName ||!billToAddress.customerContactNumber ||!billToAddress.country ||!billToAddress.state ||!billToAddress.city ||!billToAddress.zipCode ||!billToAddress.address ||!billToAddress.billingCurrency ||!billToAddress.billingMode) {
+    if (!billToAddress.branchName || !billToAddress.customerContactName || !billToAddress.customerContactNumber || !billToAddress.country || !billToAddress.state || !billToAddress.city || !billToAddress.zipCode || !billToAddress.address || !billToAddress.billingCurrency || !billToAddress.billingMode) {
       return sendErrorResponse(
         res,
         400,
@@ -268,12 +266,7 @@ export const customerBasicRegistration = async (req, res) => {
     }
 
     if (!proprietorName || proprietorName.trim() === "") {
-      return sendErrorResponse(
-        res,
-        400,
-        "VALIDATION_ERROR",
-        "proprietorName is required for FINANCE department and SUPERADMIN registration",
-      );
+      return sendErrorResponse(res, 400, "VALIDATION_ERROR", "proprietorName is required");
     }
 
     if (isGSTRegistered && (!firmName || firmName.trim() === "")) {
@@ -286,12 +279,7 @@ export const customerBasicRegistration = async (req, res) => {
     }
 
     if (!chequeDetails || !Array.isArray(chequeDetails) || chequeDetails.length !== 3) {
-      return sendErrorResponse(
-        res,
-        400,
-        "VALIDATION_ERROR",
-        "Exactly 3 cheque entries are required",
-      );
+      return sendErrorResponse( res, 400, "VALIDATION_ERROR", "Exactly 3 cheque entries are required");
     }
 
     for (let i = 0; i < chequeDetails.length; i++) {
@@ -307,12 +295,7 @@ export const customerBasicRegistration = async (req, res) => {
     }
 
     if (!billingCycle || !['7_days', '15_days', 'end_of_month', 'custom'].includes(billingCycle)) {
-      return sendErrorResponse(
-        res,
-        400,
-        "VALIDATION_ERROR",
-        "billingCycle must be one of: 7_days, 15_days, end_of_month, or custom",
-      );
+      return sendErrorResponse( res, 400, "VALIDATION_ERROR", "billingCycle must be one of: 7_days, 15_days, end_of_month, or custom");
     }
 
     if (!billingMode || !['Direct', 'DC'].includes(billingMode)) {
@@ -386,8 +369,8 @@ export const customerBasicRegistration = async (req, res) => {
 
     // Validate BusinessType
     if (businessTypeRefId && businessType) {
-      const businessType = await businessType.findById(businessTypeRefId);
-      if (!businessType) {
+      const businessTypeDoc = await BusinessType.findById(businessTypeRefId);
+      if (!businessTypeDoc) {
         return sendErrorResponse(
           res,
           404,
@@ -395,12 +378,12 @@ export const customerBasicRegistration = async (req, res) => {
           `BusinessType with refId ${businessTypeRefId} does not exist`
         );
       }
-      if (businessType.name !== businessType) {
+      if (businessTypeDoc.name !== businessType) {
         return sendErrorResponse(
           res,
           400,
           "NAME_MISMATCH",
-          `Incorrect BusinessType name for refId ${businessTypeRefId}. Expected: ${businessType.name}, Received: ${businessType}`
+          `Incorrect BusinessType name for refId ${businessTypeRefId}. Expected: ${businessTypeDoc.name}, Received: ${businessType}`
         );
       }
     }
@@ -534,7 +517,7 @@ export const customerBasicRegistration = async (req, res) => {
 
       // Account Status
       status: {
-        isActive:  false,
+        isActive: false,
         isSuspended: false,
       },
 
@@ -590,8 +573,6 @@ export const customerBasicRegistration = async (req, res) => {
       designation: "Customer",
       createdBy: req.user.id,
       createdByDepartment: userDepartment,
-      emailOtp: EmailOtp,
-      emailOtpExpires: new Date(Date.now() + 10 * 60 * 1000),
 
       // Business Details
       yearOfEstablishment: yearOfEstablishment || undefined,
@@ -602,7 +583,7 @@ export const customerBasicRegistration = async (req, res) => {
 
       // Sales Person Input Fields
       proprietorName: proprietorName,
-      firmName:  firmName.trim(),
+      firmName: firmName.trim(),
       chequeDetails: chequeDetails,
       billingCycle: billingCycle,
       billingMode: billingMode,
@@ -610,7 +591,7 @@ export const customerBasicRegistration = async (req, res) => {
       // Workflow Status
       approvalWorkflow: {
         financeApprovalStatus: isSalesDepartment ? "PENDING" : "APPROVED",
-        financeApprovedBy: isFinanceDepartment ? userId : undefined,
+        financeApprovedBy: isFinanceDepartment ? req.user.id : undefined,
         financeApprovedAt: isFinanceDepartment ? new Date() : undefined,
         salesHeadApprovalStatus: "PENDING",
         csTeamCompletionStatus: "PENDING",
@@ -638,8 +619,6 @@ export const customerBasicRegistration = async (req, res) => {
 
     const customerObj = customer.toObject();
     delete customerObj.password;
-    delete customerObj.emailOtp;
-    delete customerObj.mobileOtp;
 
     const message = isSalesDepartment ? "Customer registered successfully. Pending Finance approval." : "Customer registered and Pending sales head approval.";
 
@@ -1578,8 +1557,6 @@ export const updateCustomerProfile = async (req, res) => {
 
     const customerObj = customer.toObject();
     delete customerObj.password;
-    delete customerObj.emailOtp;
-    delete customerObj.mobileOtp;
 
     return sendSuccessResponse(res, 200, { customer: customerObj }, "Customer profile updated successfully");
   } catch (error) {
@@ -1792,8 +1769,6 @@ export const sendCustomerForCorrection = async (req, res) => {
 
     const customerObj = customer.toObject();
     delete customerObj.password;
-    delete customerObj.emailOtp;
-    delete customerObj.mobileOtp;
 
     return sendSuccessResponse(
       res,
@@ -2041,8 +2016,6 @@ export const resubmitCorrectedCustomer = async (req, res) => {
 
     const customerObj = customer.toObject();
     delete customerObj.password;
-    delete customerObj.emailOtp;
-    delete customerObj.mobileOtp;
 
     return sendSuccessResponse(
       res,
@@ -2238,9 +2211,7 @@ export const updateCustomerShipToDetails = async (req, res) => {
     await customer.save();
 
     const customerObj = customer.toObject();
-    delete customerObj.password;
-    delete customerObj.emailOtp;
-    delete customerObj.mobileOtp;
+    delete customerObj.password
 
     return sendSuccessResponse(
       res,
