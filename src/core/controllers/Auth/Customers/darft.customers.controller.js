@@ -15,14 +15,12 @@ export const customerDraftRegistration = async (req, res) => {
       brandCategories,
       specificLab,
       specificLabRefId,
-      emailId,
       businessEmail,
       shopName,
       ownerName,
       orderMode,
       mobileNo1,
       mobileNo2,
-      landlineNo,
       gstType,
       gstTypeRefId,
       plant,
@@ -55,20 +53,20 @@ export const customerDraftRegistration = async (req, res) => {
     const isFinanceDepartment = userDepartment === "FINANCE" || userEmployeeType === "SUPERADMIN";
 
 
-     const normalizedEmail = emailId?.trim().toLowerCase();
+     const normalizedEmail = businessEmail?.trim().toLowerCase();
      console.log("normalizedEmail :  ",normalizedEmail);
 
     if (normalizedEmail) {
       const query = [];
 
       if (normalizedEmail) {
-        query.push({ emailId : normalizedEmail });
+        query.push({ businessEmail : normalizedEmail });
       }
 
       const existingDraft = await customerDraftSchema.findOne({ $or: query });
 
       if (existingDraft) {
-        return sendErrorResponse(res,409,"DRAFT_EXISTS","Draft employee with this email or username already exists");
+        return sendErrorResponse(res,409,"DRAFT_EXISTS","Draft customer with this business email already exists");
       }
     }
     
@@ -83,8 +81,6 @@ export const customerDraftRegistration = async (req, res) => {
       orderMode,
       mobileNo1,
       mobileNo2,
-      landlineNo,
-      emailId: emailId && emailId.trim() ? emailId.toLowerCase().trim() : undefined,
       businessEmail: businessEmail && businessEmail.trim() ? businessEmail.toLowerCase().trim() : undefined,
       IsGSTRegistered,
       GSTNumber: IsGSTRegistered ? GSTNumber : undefined,
@@ -441,17 +437,17 @@ export const updateDraftCustomer = async (req, res) => {
     }
 
     // Check if email is being changed and if it already exists
-    if (updateData.emailId && updateData.emailId.toLowerCase() !== draftCustomer.emailId) {
+    if (updateData.businessEmail && updateData.businessEmail.toLowerCase() !== draftCustomer.businessEmail) {
       const [existingCustomer, existingDraft] = await Promise.all([
-        Customer.findOne({ emailId: updateData.emailId.toLowerCase() }),
+        Customer.findOne({ businessEmail: updateData.businessEmail.toLowerCase() }),
         customerDraftSchema.findOne({
-          emailId: updateData.emailId.toLowerCase(),
+          businessEmail: updateData.businessEmail.toLowerCase(),
           _id: { $ne: draftId }
         })
       ]);
 
       if (existingCustomer || existingDraft) {
-        return sendErrorResponse(res, 409, 'EMAIL_EXISTS', 'Email already exists');
+        return sendErrorResponse(res, 409, 'EMAIL_EXISTS', 'Business email already exists');
       }
     }
 
@@ -464,8 +460,6 @@ export const updateDraftCustomer = async (req, res) => {
     if (updateData.orderMode) updateFields.orderMode = updateData.orderMode;
     if (updateData.mobileNo1) updateFields.mobileNo1 = updateData.mobileNo1;
     if (updateData.mobileNo2) updateFields.mobileNo2 = updateData.mobileNo2;
-    if (updateData.landlineNo !== undefined) updateFields.landlineNo = updateData.landlineNo;
-    if (updateData.emailId) updateFields.emailId = updateData.emailId.toLowerCase().trim();
     if (updateData.businessEmail) updateFields.businessEmail = updateData.businessEmail.toLowerCase().trim();
     
     // Business details fields (can be updated by creator)

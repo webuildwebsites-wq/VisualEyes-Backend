@@ -120,8 +120,6 @@ export const getAllCustomers = async (req, res) => {
       searchConditions.push({ shopName: { $regex: searchTerm, $options: 'i' } });
       searchConditions.push({ mobileNo1: { $regex: searchTerm, $options: 'i' } });
       searchConditions.push({ mobileNo2: { $regex: searchTerm, $options: 'i' } });
-      searchConditions.push({ landlineNo: { $regex: searchTerm, $options: 'i' } });
-      searchConditions.push({ emailId: { $regex: searchTerm, $options: 'i' } });
       searchConditions.push({ businessEmail: { $regex: searchTerm, $options: 'i' } });
       searchConditions.push({ 'salesPerson.name': { $regex: searchTerm, $options: 'i' } });
       

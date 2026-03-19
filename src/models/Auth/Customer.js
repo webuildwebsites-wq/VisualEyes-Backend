@@ -77,19 +77,9 @@ const customerSchema = new mongoose.Schema(
       type: String,
       match: [/^[0-9]{10}$/, "Invalid mobile number"],
     },
-    landlineNo: String,
-    emailId: {
-      type: String,
-      required: true,
-      unique: true,
-      lowercase: true,
-      trim: true,
-      match: [/^\S+@\S+\.\S+$/, "Invalid email"],
-    },
-
     businessEmail: {
       type: String,
-      required: false,
+      required: true,
       unique: true,
       sparse: true,
       trim: true,

@@ -31,7 +31,6 @@ PUT /api/customer/management/update-draft-customer/:draftId
   "orderMode": "string",
   "mobileNo1": "string",
   "mobileNo2": "string",
-  "landlineNo": "string",
   "emailId": "string",
   "businessEmail": "string",
   "IsGSTRegistered": "boolean",

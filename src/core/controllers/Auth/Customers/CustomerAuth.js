@@ -47,7 +47,7 @@ export const customerLogin = async (req, res) => {
 
     const customer = await Customer.findOne({
       $or: [
-        { emailId: loginId.toLowerCase() },
+        { businessEmail: loginId.toLowerCase() },
         { customerCode: loginId.toUpperCase() }
       ],
       'Status.isActive': true
@@ -121,14 +121,11 @@ export const customerBasicRegistration = async (req, res) => {
       brandCategories,
       specificLab,
       specificLabRefId,
-      emailId,
       businessEmail,
       shopName,
       ownerName,
-      orderMode,
       mobileNo1,
       mobileNo2,
-      landlineNo,
       gstType,
       gstTypeRefId,
       plant,
@@ -174,12 +171,12 @@ export const customerBasicRegistration = async (req, res) => {
       );
     }
 
-    if (!BusinessType || !shopName || !ownerName || !emailId || !orderMode) {
+    if (!BusinessType || !shopName || !ownerName || !businessEmail) {
       return sendErrorResponse(
         res,
         400,
         "VALIDATION_ERROR",
-        "BusinessType, shopName, ownerName, emailId and orderMode are required",
+        "BusinessType, shopName, ownerName, businessEmail and orderMode are required",
       );
     }
 
@@ -435,14 +432,14 @@ export const customerBasicRegistration = async (req, res) => {
     }
 
     const existingCustomer = await Customer.findOne({
-      emailId: emailId.toLowerCase(),
+      businessEmail: businessEmail.toLowerCase(),
     });
     if (existingCustomer) {
       return sendErrorResponse(
         res,
         409,
         "CUSTOMER_EXISTS",
-        "Customer with this email already exists",
+        "Customer with this business email already exists",
       );
     }
 
@@ -752,20 +749,14 @@ export const customerBasicRegistration = async (req, res) => {
       // Customer Info.
       shopName: shopName.trim(),
       ownerName: ownerName.trim(),
-      BusinessType: BusinessTypeRefId
-        ? {
+      BusinessType: BusinessTypeRefId ? {
           name: BusinessType,
           refId: BusinessTypeRefId,
-        }
-        : undefined,
-      orderMode,
+      } : undefined,
+      orderMode : "Online",
       mobileNo1,
       mobileNo2,
-      landlineNo,
-      emailId: emailId.toLowerCase().trim(),
-      businessEmail: businessEmail
-        ? businessEmail.toLowerCase().trim()
-        : undefined,
+      businessEmail: businessEmail.toLowerCase().trim(),
       IsGSTRegistered,
       GSTNumber: IsGSTRegistered ? GSTNumber : undefined,
       gstType:
@@ -942,9 +933,9 @@ export const customerBasicRegistration = async (req, res) => {
       finalPassword
     ) {
       sendEmail({
-        to: emailId,
+        to: businessEmail,
         subject: "Welcome Mail for choosing VISUAL EYES",
-        html: CredentialsTemplate(ownerName, generatedCustomerCode || emailId, finalPassword),
+        html: CredentialsTemplate(ownerName, businessEmail, finalPassword),
       }).catch((err) => console.error("Background email error:", err));
     }
 
@@ -1001,7 +992,7 @@ export const customerForgotPassword = async (req, res) => {
     }
 
     const customer = await Customer.findOne({
-      emailId: email,
+      businessEmail: email,
       "Status.isActive": true,
     });
 
@@ -1617,7 +1608,6 @@ export const updateCustomerProfile = async (req, res) => {
     if (updateData.ownerName) updateFields.ownerName = updateData.ownerName;
     if (updateData.mobileNo1) updateFields.mobileNo1 = updateData.mobileNo1;
     if (updateData.mobileNo2) updateFields.mobileNo2 = updateData.mobileNo2;
-    if (updateData.landlineNo) updateFields.landlineNo = updateData.landlineNo;
     if (updateData.creditUsed) updateFields.creditUsed = updateData.creditUsed;
     if (updateData.approvalStatus) updateFields.approvalStatus = updateData.approvalStatus;
     if (updateData.businessEmail)
@@ -1872,9 +1862,9 @@ export const updateCustomerProfile = async (req, res) => {
       }));
     }
 
-    if (updateData.emailId) {
+    if (updateData.businessEmail) {
       const existingCustomer = await Customer.findOne({
-        emailId: updateData.emailId.toLowerCase(),
+        businessEmail: updateData.businessEmail.toLowerCase(),
         _id: { $ne: customerId },
       });
       if (existingCustomer) {
@@ -1882,10 +1872,10 @@ export const updateCustomerProfile = async (req, res) => {
           res,
           409,
           "EMAIL_EXISTS",
-          "Another customer with this email already exists",
+          "Another customer with this business email already exists",
         );
       }
-      updateFields.emailId = updateData.emailId.toLowerCase().trim();
+      updateFields.businessEmail = updateData.businessEmail.toLowerCase().trim();
     }
 
     Object.assign(customer, updateFields);
@@ -2041,8 +2031,6 @@ export const sendCustomerForCorrection = async (req, res) => {
       'orderMode',
       'mobileNo1',
       'mobileNo2',
-      'landlineNo',
-      'emailId',
       'businessEmail',
       'address',
       'IsGSTRegistered',
@@ -2219,10 +2207,8 @@ export const resubmitCorrectedCustomer = async (req, res) => {
 
     if (updateData.shopName) updateFields.shopName = updateData.shopName.trim();
     if (updateData.ownerName) updateFields.ownerName = updateData.ownerName.trim();
-    if (updateData.orderMode) updateFields.orderMode = updateData.orderMode;
     if (updateData.mobileNo1) updateFields.mobileNo1 = updateData.mobileNo1;
     if (updateData.mobileNo2) updateFields.mobileNo2 = updateData.mobileNo2;
-    if (updateData.landlineNo) updateFields.landlineNo = updateData.landlineNo;
     if (updateData.businessEmail) updateFields.businessEmail = updateData.businessEmail.toLowerCase().trim();
     if (updateData.IsGSTRegistered !== undefined) updateFields.IsGSTRegistered = updateData.IsGSTRegistered;
     if (updateData.GSTNumber) updateFields.GSTNumber = updateData.GSTNumber;
@@ -2336,9 +2322,9 @@ export const resubmitCorrectedCustomer = async (req, res) => {
     }
 
     // Handle email update
-    if (updateData.emailId) {
+    if (updateData.businessEmail) {
       const existingCustomer = await Customer.findOne({
-        emailId: updateData.emailId.toLowerCase(),
+        businessEmail: updateData.businessEmail.toLowerCase(),
         _id: { $ne: customerId },
       });
       if (existingCustomer) {
@@ -2346,10 +2332,10 @@ export const resubmitCorrectedCustomer = async (req, res) => {
           res,
           409,
           'EMAIL_EXISTS',
-          'Another customer with this email already exists'
+          'Another customer with this business email already exists'
         );
       }
-      updateFields.emailId = updateData.emailId.toLowerCase().trim();
+      updateFields.businessEmail = updateData.businessEmail.toLowerCase().trim();
     }
 
     Object.assign(customer, updateFields);

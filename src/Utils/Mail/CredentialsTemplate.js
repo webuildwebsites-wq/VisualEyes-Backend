@@ -1,4 +1,4 @@
-const CredentialsTemplate = (username, emailId, customerpassword) => {
+const CredentialsTemplate = (username, businessEmail, customerpassword) => {
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -92,7 +92,7 @@ const CredentialsTemplate = (username, emailId, customerpassword) => {
       </p>
 
       <div class="credentials-box">
-        <p><strong>Email:</strong> ${emailId}</p>
+        <p><strong>Email:</strong> ${businessEmail}</p>
         <p><strong>Password:</strong> ${customerpassword}</p>
       </div>
 
@@ -113,6 +113,6 @@ const CredentialsTemplate = (username, emailId, customerpassword) => {
 </body>
 </html>
   `;
-};
+};;
 
 export default CredentialsTemplate;

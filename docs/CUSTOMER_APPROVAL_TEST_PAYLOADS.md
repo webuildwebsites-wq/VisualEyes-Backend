@@ -35,7 +35,6 @@ You need three different employee tokens:
   "billingMode": "Monthly",
   "mobileNo1": "9876543210",
   "mobileNo2": "9876543211",
-  "landlineNo": "011-12345678",
   "gstType": "REGULAR",
   "plant": "VISUALEYES OPTIK TECHNOLOGIES",
   "lab": "100",

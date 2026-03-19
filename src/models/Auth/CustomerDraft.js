@@ -70,14 +70,6 @@ const customerDraftSchema = new mongoose.Schema(
     mobileNo2: {
       type: String,
     },
-    landlineNo: String,
-    emailId: {
-      type: String,
-      sparse: true,
-      lowercase: true,
-      trim: true,
-    },
-
     businessEmail: {
       type: String,
       required: false,

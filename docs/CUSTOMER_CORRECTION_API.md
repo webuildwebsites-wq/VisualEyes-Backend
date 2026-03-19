@@ -42,7 +42,7 @@ This API allows the Finance team or SuperAdmin to send customer registration dat
 - `ownerName`
 - `CustomerType`, `CustomerTypeRefId`
 - `orderMode`
-- `mobileNo1`, `mobileNo2`, `landlineNo`
+- `mobileNo1`, `mobileNo2`
 - `emailId`, `businessEmail`
 - `address`
 - `IsGSTRegistered`
