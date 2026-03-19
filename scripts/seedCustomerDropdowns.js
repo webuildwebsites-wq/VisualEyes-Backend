@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import CustomerType from '../src/models/Product/CustomerType.js';
+import BusinessType from '../src/models/Product/BusinessType.js';
 import GSTType from '../src/models/Product/GSTType.js';
 import Plant from '../src/models/Product/Plant.js';
 import Lab from '../src/models/Product/Lab.js';
@@ -30,7 +30,7 @@ const seedData = async () => {
 
     const createdBy = superAdmin._id;
 
-    const customerTypes = [
+    const businessTypes = [
       'Distribution Partners',
       'Retailer',
       'Hospital Chain & Institutions',
@@ -42,15 +42,15 @@ const seedData = async () => {
       'Ophthalmologist / Eye Clinic'
     ];
 
-    console.log('Seeding Customer Types...');
-    for (const name of customerTypes) {
-      await CustomerType.findOneAndUpdate(
+    console.log('Seeding Business Types...');
+    for (const name of businessTypes) {
+      await BusinessType.findOneAndUpdate(
         { name },
         { name, createdBy, isActive: true },
         { upsert: true, new: true }
       );
     }
-    console.log(`✓ ${customerTypes.length} Customer Types seeded`);
+    console.log(`✓ ${businessTypes.length} Business Types seeded`);
 
 
     // GST Types

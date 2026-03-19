@@ -90,7 +90,7 @@ try {
    // UPLOAD IMAGE ROUTES
     app.use('/api/bucket/upload-image', imageUploadRouter)
 
-    // PRODUCT ROUTES (All dropdowns including brands, categories, customer-types)
+    // PRODUCT ROUTES (All dropdowns including brands, categories, business-types)
     app.use('/api/product', dropdownRouter);
 
     // LOCATION ROUTES (New unified structure)

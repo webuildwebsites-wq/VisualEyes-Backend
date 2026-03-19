@@ -2,7 +2,7 @@ import express from 'express';
 import {
   createBrand, getAllBrands, getBrandById, updateBrand, deleteBrand,
   createCategory, getAllCategories, getCategoriesByBrand, getCategoryById, updateCategory, deleteCategory,
-  createCustomerType, getAllCustomerTypes, getCustomerTypeById, updateCustomerType, deleteCustomerType,
+  createBusinessType, getAllBusinessTypes, getBusinessTypeById, updateBusinessType, deleteBusinessType,
   createGSTType, getAllGSTTypes, getGSTTypeById, updateGSTType, deleteGSTType,
   createPlant, getAllPlants, getPlantById, updatePlant, deletePlant,
   createLab, getAllLabs, getLabById, updateLab, deleteLab,
@@ -21,12 +21,12 @@ const dropdownRouter = express.Router();
 
 dropdownRouter.use(ProtectUser);
 
-// Customer Type Routes
-dropdownRouter.post('/customer-types', createCustomerType);
-dropdownRouter.get('/customer-types', getAllCustomerTypes);
-dropdownRouter.get('/customer-types/:id', getCustomerTypeById);
-dropdownRouter.put('/customer-types/:id', updateCustomerType);
-dropdownRouter.delete('/customer-types/:id', deleteCustomerType);
+// Business Type Routes
+dropdownRouter.post('/business-types', createBusinessType);
+dropdownRouter.get('/business-types', getAllBusinessTypes);
+dropdownRouter.get('/business-types/:id', getBusinessTypeById);
+dropdownRouter.put('/business-types/:id', updateBusinessType);
+dropdownRouter.delete('/business-types/:id', deleteBusinessType);
 
 // GST Type Routes
 dropdownRouter.post('/gst-types', createGSTType);

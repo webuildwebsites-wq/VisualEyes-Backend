@@ -50,14 +50,14 @@ const customerDraftSchema = new mongoose.Schema(
       trim: true,
 
     },
-    CustomerType: {
+    BusinessType: {
       name: {
         type: String,
         required: false,
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'CustomerType',
+        ref: 'BusinessType',
         required: false
       }
     },

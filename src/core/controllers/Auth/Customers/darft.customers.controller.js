@@ -8,8 +8,8 @@ dotenv.config();
 export const customerDraftRegistration = async (req, res) => {
   try {
     const {
-      CustomerType,
-      CustomerTypeRefId,
+      BusinessType,
+      BusinessTypeRefId,
       zone,
       zoneRefId,
       brandCategories,
@@ -76,9 +76,9 @@ export const customerDraftRegistration = async (req, res) => {
       // Customer Info.
       shopName: shopName.trim(),
       ownerName: ownerName.trim(),
-      CustomerType: CustomerTypeRefId ? {
-        name: CustomerType,
-        refId: CustomerTypeRefId
+      BusinessType: BusinessTypeRefId ? {
+        name: BusinessType,
+        refId: BusinessTypeRefId
       } : undefined,
       orderMode,
       mobileNo1,
@@ -226,7 +226,7 @@ export const getAllDraftCustomers = async (req, res) => {
 
     const { 
       shopName, 
-      customerType, 
+      businessType, 
       status = "active", 
       createdByDepartment, 
       zone, 
@@ -242,8 +242,8 @@ export const getAllDraftCustomers = async (req, res) => {
       query.shopName = { $regex: shopName, $options: 'i' };
     }
 
-    if (customerType) {
-      query['CustomerType.refId'] = customerType;
+    if (businessType) {
+      query['BusinessType.refId'] = businessType;
     }
 
     if (status) {
@@ -326,7 +326,7 @@ export const getMyDraftCustomers = async (req, res) => {
 
     const { 
       shopName, 
-      customerType, 
+      businessType, 
       status, 
       createdByDepartment, 
       zone, 
@@ -342,8 +342,8 @@ export const getMyDraftCustomers = async (req, res) => {
       query.shopName = { $regex: shopName, $options: 'i' };
     }
 
-    if (customerType) {
-      query['CustomerType.refId'] = customerType;
+    if (businessType) {
+      query['BusinessType.refId'] = businessType;
     }
 
     if (status) {
@@ -474,10 +474,10 @@ export const updateDraftCustomer = async (req, res) => {
     if (updateData.currentlyDealtBrands !== undefined) updateFields.currentlyDealtBrands = updateData.currentlyDealtBrands?.trim();
     if (updateData.minSalesValue !== undefined) updateFields.minSalesValue = updateData.minSalesValue;
 
-    if (updateData.CustomerType && updateData.CustomerTypeRefId) {
-      updateFields.CustomerType = {
-        name: updateData.CustomerType,
-        refId: updateData.CustomerTypeRefId
+    if (updateData.BusinessType && updateData.BusinessTypeRefId) {
+      updateFields.BusinessType = {
+        name: updateData.BusinessType,
+        refId: updateData.BusinessTypeRefId
       };
     }
 

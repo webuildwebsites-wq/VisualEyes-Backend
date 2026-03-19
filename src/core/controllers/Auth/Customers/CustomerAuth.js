@@ -22,7 +22,7 @@ import FittingCenter from "../../../../models/Product/FittingCenter.js";
 import CreditDay from "../../../../models/Product/CreditDay.js";
 import CourierName from "../../../../models/Product/CourierName.js";
 import CourierTime from "../../../../models/Product/CourierTime.js";
-import customerTypeSchema from "../../../../models/Product/CustomerType.js"
+import BusinessType from "../../../../models/Product/BusinessType.js"
 import GSTType from "../../../../models/Product/GSTType.js";
 import employeeSchema from "../../../../models/Auth/Employee.js";
 import Brand from "../../../../models/Product/Brand.js";
@@ -114,8 +114,8 @@ export const customerLogin = async (req, res) => {
 export const customerBasicRegistration = async (req, res) => {
   try {
     const {
-      CustomerType,
-      CustomerTypeRefId,
+      BusinessType,
+      BusinessTypeRefId,
       zone,
       zoneRefId,
       brandCategories,
@@ -174,12 +174,12 @@ export const customerBasicRegistration = async (req, res) => {
       );
     }
 
-    if (!CustomerType || !shopName || !ownerName || !emailId || !orderMode) {
+    if (!BusinessType || !shopName || !ownerName || !emailId || !orderMode) {
       return sendErrorResponse(
         res,
         400,
         "VALIDATION_ERROR",
-        "CustomerType, shopName, ownerName, emailId and orderMode are required",
+        "BusinessType, shopName, ownerName, emailId and orderMode are required",
       );
     }
 
@@ -302,7 +302,7 @@ export const customerBasicRegistration = async (req, res) => {
       const isValidObjectId = (id) => /^[0-9a-fA-F]{24}$/.test(id);
 
       const requiredRefIds = [
-        { name: "CustomerTypeRefId", value: CustomerTypeRefId },
+        { name: "BusinessTypeRefId", value: BusinessTypeRefId },
         { name: "salesPersonRefId", value: salesPersonRefId },
       ];
 
@@ -424,12 +424,12 @@ export const customerBasicRegistration = async (req, res) => {
     if (isSalesDepartment) {
       const isValidObjectId = (id) => /^[0-9a-fA-F]{24}$/.test(id);
 
-      if (CustomerTypeRefId && !isValidObjectId(CustomerTypeRefId)) {
+      if (BusinessTypeRefId && !isValidObjectId(BusinessTypeRefId)) {
         return sendErrorResponse(
           res,
           400,
           "VALIDATION_ERROR",
-          `CustomerTypeRefId must be a valid ObjectId (24 hex characters)`,
+          `BusinessTypeRefId must be a valid ObjectId (24 hex characters)`,
         );
       }
     }
@@ -446,23 +446,23 @@ export const customerBasicRegistration = async (req, res) => {
       );
     }
 
-    // Validate CustomerType
-    if (CustomerTypeRefId && CustomerType) {
-      const customerType = await customerTypeSchema.findById(CustomerTypeRefId);
-      if (!customerType) {
+    // Validate BusinessType
+    if (BusinessTypeRefId && BusinessType) {
+      const businessType = await BusinessType.findById(BusinessTypeRefId);
+      if (!businessType) {
         return sendErrorResponse(
           res,
           404,
           "INVALID_REF_ID",
-          `CustomerType with refId ${CustomerTypeRefId} does not exist`
+          `BusinessType with refId ${BusinessTypeRefId} does not exist`
         );
       }
-      if (customerType.name !== CustomerType) {
+      if (businessType.name !== BusinessType) {
         return sendErrorResponse(
           res,
           400,
           "NAME_MISMATCH",
-          `Incorrect CustomerType name for refId ${CustomerTypeRefId}. Expected: ${customerType.name}, Received: ${CustomerType}`
+          `Incorrect BusinessType name for refId ${BusinessTypeRefId}. Expected: ${businessType.name}, Received: ${BusinessType}`
         );
       }
     }
@@ -752,10 +752,10 @@ export const customerBasicRegistration = async (req, res) => {
       // Customer Info.
       shopName: shopName.trim(),
       ownerName: ownerName.trim(),
-      CustomerType: CustomerTypeRefId
+      BusinessType: BusinessTypeRefId
         ? {
-          name: CustomerType,
-          refId: CustomerTypeRefId,
+          name: BusinessType,
+          refId: BusinessTypeRefId,
         }
         : undefined,
       orderMode,
@@ -1629,28 +1629,28 @@ export const updateCustomerProfile = async (req, res) => {
     if (updateData.minSalesValue !== undefined) updateFields.minSalesValue = updateData.minSalesValue;
     if (updateData.finalDiscount !== undefined) updateFields.finalDiscount = updateData.finalDiscount;
 
-    // Validate CustomerType
-    if (updateData.CustomerType && updateData.CustomerTypeRefId) {
-      const customerType = await customerTypeSchema.findById(updateData.CustomerTypeRefId);
-      if (!customerType) {
+    // Validate BusinessType
+    if (updateData.BusinessType && updateData.BusinessTypeRefId) {
+      const businessType = await BusinessType.findById(updateData.BusinessTypeRefId);
+      if (!businessType) {
         return sendErrorResponse(
           res,
           404,
           "INVALID_REF_ID",
-          `CustomerType with refId ${updateData.CustomerTypeRefId} does not exist`
+          `BusinessType with refId ${updateData.BusinessTypeRefId} does not exist`
         );
       }
-      if (customerType.name !== updateData.CustomerType) {
+      if (businessType.name !== updateData.BusinessType) {
         return sendErrorResponse(
           res,
           400,
           "NAME_MISMATCH",
-          `Incorrect CustomerType name for refId ${updateData.CustomerTypeRefId}. Expected: ${customerType.name}, Received: ${updateData.CustomerType}`
+          `Incorrect BusinessType name for refId ${updateData.BusinessTypeRefId}. Expected: ${businessType.name}, Received: ${updateData.BusinessType}`
         );
       }
-      updateFields.CustomerType = {
-        name: updateData.CustomerType,
-        refId: updateData.CustomerTypeRefId,
+      updateFields.BusinessType = {
+        name: updateData.BusinessType,
+        refId: updateData.BusinessTypeRefId,
       };
     }
 
@@ -2036,8 +2036,8 @@ export const sendCustomerForCorrection = async (req, res) => {
     const allowedFields = [
       'shopName',
       'ownerName',
-      'CustomerType',
-      'CustomerTypeRefId',
+      'BusinessType',
+      'BusinessTypeRefId',
       'orderMode',
       'mobileNo1',
       'mobileNo2',
@@ -2237,27 +2237,27 @@ export const resubmitCorrectedCustomer = async (req, res) => {
     if (updateData.currentlyDealtBrands !== undefined) updateFields.currentlyDealtBrands = updateData.currentlyDealtBrands?.trim();
     if (updateData.minSalesValue !== undefined) updateFields.minSalesValue = updateData.minSalesValue;
 
-    if (updateData.CustomerType && updateData.CustomerTypeRefId) {
-      const customerType = await customerTypeSchema.findById(updateData.CustomerTypeRefId);
-      if (!customerType) {
+    if (updateData.BusinessType && updateData.BusinessTypeRefId) {
+      const businessType = await BusinessType.findById(updateData.BusinessTypeRefId);
+      if (!businessType) {
         return sendErrorResponse(
           res,
           404,
           'INVALID_REF_ID',
-          `CustomerType with refId ${updateData.CustomerTypeRefId} does not exist`
+          `BusinessType with refId ${updateData.BusinessTypeRefId} does not exist`
         );
       }
-      if (customerType.name !== updateData.CustomerType) {
+      if (businessType.name !== updateData.BusinessType) {
         return sendErrorResponse(
           res,
           400,
           'NAME_MISMATCH',
-          `Incorrect CustomerType name for refId ${updateData.CustomerTypeRefId}`
+          `Incorrect BusinessType name for refId ${updateData.BusinessTypeRefId}`
         );
       }
-      updateFields.CustomerType = {
-        name: updateData.CustomerType,
-        refId: updateData.CustomerTypeRefId,
+      updateFields.BusinessType = {
+        name: updateData.BusinessType,
+        refId: updateData.BusinessTypeRefId,
       };
     }
 

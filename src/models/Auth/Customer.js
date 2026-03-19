@@ -54,14 +54,14 @@ const customerSchema = new mongoose.Schema(
       trim: true,
       maxlength: 100,
     },
-    CustomerType: {
+    BusinessType: {
       name: {
         type: String,
         required: false,
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'CustomerType',
+        ref: 'BusinessType',
         required: false
       }
     },

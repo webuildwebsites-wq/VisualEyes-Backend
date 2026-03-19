@@ -1,6 +1,6 @@
 import Brand from "../../../models/Product/Brand.js";
 import Category from "../../../models/Product/Category.js";
-import CustomerType from "../../../models/Product/CustomerType.js";
+import BusinessType from "../../../models/Product/BusinessType.js";
 import GSTType from "../../../models/Product/GSTType.js";
 import Plant from "../../../models/Product/Plant.js";
 import Lab from "../../../models/Product/Lab.js";
@@ -532,9 +532,9 @@ export const deleteCategory = async (req, res) => {
   }
 };
 
-// Customer Type
-export const createCustomerType = createGenericItem(CustomerType, "Customer type");
-export const getAllCustomerTypes = getAllGenericItems(CustomerType, "Customer type");
-export const getCustomerTypeById = getGenericItemById(CustomerType, "Customer type");
-export const updateCustomerType = updateGenericItem(CustomerType, "Customer type");
-export const deleteCustomerType = deleteGenericItem(CustomerType, "Customer type");
+// Business Type
+export const createBusinessType = createGenericItem(BusinessType, "Business type");
+export const getAllBusinessTypes = getAllGenericItems(BusinessType, "Business type");
+export const getBusinessTypeById = getGenericItemById(BusinessType, "Business type");
+export const updateBusinessType = updateGenericItem(BusinessType, "Business type");
+export const deleteBusinessType = deleteGenericItem(BusinessType, "Business type");

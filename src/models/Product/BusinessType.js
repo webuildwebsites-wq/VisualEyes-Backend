@@ -1,12 +1,12 @@
 import mongoose from "mongoose";
 
-const customerTypeSchema = new mongoose.Schema(
+const businessTypeSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: [true, "Customer type name is required"],
+      required: [true, "Business type name is required"],
       trim: true,
-      maxlength: [100, "Customer type name cannot exceed 100 characters"],
+      maxlength: [100, "Business type name cannot exceed 100 characters"],
     },
     description: {
       type: String,
@@ -42,7 +42,7 @@ const customerTypeSchema = new mongoose.Schema(
   }
 );
 
-customerTypeSchema.index({ name: 1 }, { unique: true });
-customerTypeSchema.index({ isActive: 1 });
+businessTypeSchema.index({ name: 1 }, { unique: true });
+businessTypeSchema.index({ isActive: 1 });
 
-export default mongoose.model("CustomerType", customerTypeSchema);
+export default mongoose.model("BusinessType", businessTypeSchema);

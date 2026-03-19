@@ -80,7 +80,7 @@ export const getAllCustomers = async (req, res) => {
     const skip = (page - 1) * limit;
 
     const {
-      customerType,
+      businessType,
       status = "active",
       createdByDepartment,
       zone,
@@ -92,7 +92,7 @@ export const getAllCustomers = async (req, res) => {
     } = req.query;
 
     const searchTerm = Array.isArray(search) ? search[0] : search;
-    const customerTypeTerm = Array.isArray(customerType) ? customerType[0] : customerType;
+    const businessTypeTerm = Array.isArray(businessType) ? businessType[0] : businessType;
     const statusTerm = Array.isArray(status) ? status[0] : status;
     const createdByDepartmentTerm = Array.isArray(createdByDepartment) ? createdByDepartment[0] : createdByDepartment;
     const zoneTerm = Array.isArray(zone) ? zone[0] : zone;
@@ -128,8 +128,8 @@ export const getAllCustomers = async (req, res) => {
       query.$or = searchConditions;
     }
 
-    if (customerTypeTerm) {
-      query['CustomerType.refId'] = customerTypeTerm;
+    if (businessTypeTerm) {
+      query['BusinessType.refId'] = businessTypeTerm;
     }
 
     if (statusTerm) {
