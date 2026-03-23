@@ -1,20 +1,7 @@
 import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
-
-const addressDraftSchema = new mongoose.Schema(
-  {
-    branchAddress: { type: String, trim: true },
-    contactPerson: { type: String, trim: true },
-    contactNumber: { type: String },
-    city: { type: String, trim: true },
-    state: { type: String },
-    zipCode: { type: String, trim: true },
-    country: { type: String, default: "INDIA" },
-    billingCurrency: { type: String },
-    billingMode: { type: String },
-  },
-  { _id: false }
-);
+import draftBillToAddressSchema from "./Customer/Draft/DraftBillToAddress.js";
+import draftShipToAddressSchema from "./Customer/Draft/DraftShipToAddress.js";
 
 const flatFittingDraftSchema = new mongoose.Schema(
   {
@@ -43,14 +30,12 @@ const customerDraftSchema = new mongoose.Schema(
     shopName: {
       type: String,
       trim: true,
-
     },
     ownerName: {
       type: String,
       trim: true,
-
     },
-    BusinessType: {
+    businessType: {
       name: {
         type: String,
         required: false,
@@ -63,12 +48,15 @@ const customerDraftSchema = new mongoose.Schema(
     },
     orderMode: {
       type: String,
+      default: "online"
     },
     mobileNo1: {
       type: String,
+      match: [/^[0-9]{10}$/, "Invalid mobile number"],
     },
     mobileNo2: {
       type: String,
+      match: [/^[0-9]{10}$/, "Invalid mobile number"],
     },
     businessEmail: {
       type: String,
@@ -76,23 +64,31 @@ const customerDraftSchema = new mongoose.Schema(
       sparse: true,
       trim: true,
       lowercase: true,
+      match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid businessEmail']
     },
 
     // Address details
-    address: {
-      type: [addressDraftSchema],
+    billToAddress: {
+      type: draftBillToAddressSchema,
+      required: false,
     },
 
-
     // LOGIN DETAILS
+    customerCode: {
+      type: String,
+      unique: true,
+      sparse: true,
+      trim: true,
+      uppercase: true,
+    },
     password: {
       type: String,
+      minlength: 6,
       select: false,
     },
     zone: {
       name: {
         type: String,
-
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -111,34 +107,28 @@ const customerDraftSchema = new mongoose.Schema(
     specificLab: {
       name: {
         type: String,
-
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'SpecificLab',
-
       }
     },
     brandCategories: {
       type: [{
         brandName: {
           type: String,
-
         },
         brandId: {
           type: mongoose.Schema.Types.ObjectId,
           ref: 'Brand',
-
         },
         categories: [{
           categoryName: {
             type: String,
-
           },
           categoryId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Category',
-
           }
         }]
       }],
@@ -146,7 +136,6 @@ const customerDraftSchema = new mongoose.Schema(
     salesPerson: {
       name: {
         type: String,
-
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -154,9 +143,8 @@ const customerDraftSchema = new mongoose.Schema(
       }
     },
 
-
     // DOCUMENTATION DETAILS
-    IsGSTRegistered: {
+    isGSTRegistered: {
       type: Boolean,
     },
     gstType: {
@@ -168,27 +156,25 @@ const customerDraftSchema = new mongoose.Schema(
         ref: 'GSTType'
       }
     },
-    GSTNumber: {
+    gstNumber: {
       type: String,
       uppercase: true,
     },
-    GSTCertificateImg: {
+    gstCertificateImg: {
       type: String,
     },
-    PANCard: {
+    panCard: {
       type: String,
     },
-    AadharCard: {
+    aadharCard: {
       type: String,
     },
-    PANCardImg: {
+    panCardImg: {
       type: String,
     },
-
-    AadharCardImg: {
+    aadharCardImg: {
       type: String,
     },
-
 
     // BUSINESS DETAILS
     plant: {
@@ -223,6 +209,11 @@ const customerDraftSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
+    creditUsed: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     creditDays: {
       name: {
         type: String,
@@ -235,30 +226,128 @@ const customerDraftSchema = new mongoose.Schema(
     courierName: {
       name: {
         type: String,
-
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'CourierName',
-
       }
     },
     courierTime: {
       name: {
         type: String,
-
       },
       refId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'CourierTime',
-
       }
     },
     dcWithoutValue: {
       type: Boolean,
       default: false,
     },
-    Status: {
+    yearOfEstablishment: {
+      type: Number,
+      required: false,
+      min: 1900,
+      max: new Date().getFullYear()
+    },
+    proposedDiscount: {
+      type: Number,
+      required: false,
+      min: 0,
+      max: 100
+    },
+    currentlyDealtBrands: {
+      type: String,
+      required: false,
+      trim: true
+    },
+    minSalesValue: {
+      type: Number,
+      required: false,
+      min: 0
+    },
+    finalDiscount: {
+      type: Number,
+      min: 0,
+      max: 100
+    },
+    proprietorName: {
+      type: String,
+      trim: true,
+    },
+    firmName: {
+      type: String,
+      trim: true,
+    },
+    chequeDetails: {
+      type: [{
+        chequeNumber: {
+          type: String,
+          trim: true
+        },
+        chequeImage: {
+          type: String,
+        }
+      }],
+    },
+    billingCycle: {
+      type: String,
+      enum: ['7_days', '15_days', 'end_of_month', 'custom']
+    },
+    billingMode: {
+      type: String,
+      enum: ['Direct', 'DC'],
+    },
+    // Workflow Status
+    approvalWorkflow: {
+      financeApprovalStatus: {
+        type: String,
+        enum: ['PENDING', 'APPROVED', 'REJECTED', 'MODIFICATION_REQUIRED'],
+        default: 'PENDING'
+      },
+      financeApprovedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'employee'
+      },
+      financeApprovedAt: Date,
+      financeRemark: String,
+      salesHeadApprovalStatus: {
+        type: String,
+        enum: ['PENDING', 'APPROVED', 'REJECTED'],
+        default: 'PENDING'
+      },
+      salesHeadApprovedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'employee'
+      },
+      salesHeadApprovedAt: Date,
+      salesHeadRemark: String,
+      csTeamCompletionStatus: {
+        type: String,
+        enum: ['PENDING', 'COMPLETED'],
+        default: 'PENDING'
+      },
+      csTeamCompletedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'employee'
+      },
+      csTeamCompletedAt: Date
+    },
+    isBlacklisted: {
+      type: Boolean,
+      default: false
+    },
+    blacklistReason: {
+      type: String,
+      trim: true,
+    },
+    termsAndConditionsAccepted: {
+      type: Boolean,
+      default: false
+    },
+    termsAcceptedAt: Date,
+    status: {
       isSuspended: {
         type: Boolean,
         default: false
@@ -294,9 +383,25 @@ const customerDraftSchema = new mongoose.Schema(
     },
     createdByDepartment: {
       type: String,
+      enum: ['SALES', 'FINANCE', 'SUPERADMIN'],
     },
-    approvalStatus: {
-      type: String,
+    correctionRequest: {
+      fieldsToCorrect: [{
+        type: String
+      }],
+      remark: {
+        type: String
+      },
+      requestedEmployeeName: {
+        type: String
+      },
+      requestedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "employee",
+      },
+      requestedAt: {
+        type: Date
+      }
     },
     financeCompletedBy: {
       type: mongoose.Schema.Types.ObjectId,
@@ -305,6 +410,7 @@ const customerDraftSchema = new mongoose.Schema(
     financeCompletedAt: {
       type: Date,
     },
+    customerShipToDetails: [draftShipToAddressSchema],
     emailOtp: String,
     emailOtpExpires: Date,
     mobileOtp: String,
@@ -312,6 +418,11 @@ const customerDraftSchema = new mongoose.Schema(
     designation: {
       type: String,
       default: "Customer",
+    },
+    serialNumber: {
+      type: Number,
+      unique: true,
+      sparse: true
     },
   },
   { timestamps: true }
@@ -334,15 +445,15 @@ customerDraftSchema.pre('save', function () {
       expiryDate.setDate(expiryDate.getDate() + 30);
       this.expireAt = expiryDate;
 
-      console.log(`Customer Draft will be automatically deleted on ${expiryDate.toISOString()}`);
+      console.log(`Customer Draft ${this.shopName} will be automatically deleted on ${expiryDate.toISOString()}`);
     }
 
     if (this.isModified('isDeleted') && this.isDeleted === false) {
       this.expireAt = null;
-      console.log(`Customer Draft restored - automatic deletion cancelled`);
+      console.log(`Customer Draft ${this.shopName} restored - automatic deletion cancelled`);
     }
   } catch (error) {
-    console.log("eror : ", error);
+    console.log("Error : ", error);
     throw error;
   }
 });

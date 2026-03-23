@@ -549,7 +549,6 @@ export const customerBasicRegistration = async (req, res) => {
               ? brand.categories.filter(cat => cat.categoryId && cat.categoryName && cat.categoryId !== "" && cat.categoryName !== "")
               : []
           }))
-          .filter(brand => brand.categories.length > 0)
         : undefined,
 
       zone: zone && zoneRefId ? {

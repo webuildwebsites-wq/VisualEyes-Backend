@@ -8,43 +8,52 @@ dotenv.config();
 export const customerDraftRegistration = async (req, res) => {
   try {
     const {
-      BusinessType,
-      BusinessTypeRefId,
+      businessType,
+      businessTypeRefId,
       zone,
       zoneRefId,
       brandCategories,
-      specificLab,
-      specificLabRefId,
       businessEmail,
       shopName,
       ownerName,
-      orderMode,
       mobileNo1,
       mobileNo2,
       gstType,
       gstTypeRefId,
+      creditDays,
+      creditDaysRefId,
+      creditLimit,
+      billToAddress,
+      isGSTRegistered,
+      gstNumber,
+      gstCertificateImg,
+      panCard,
+      aadharCard,
+      panCardImg,
+      aadharCardImg,
+      salesPerson,
+      salesPersonRefId,
+      customerpassword,
       plant,
       plantRefId,
       fittingCenter,
       fittingCenterRefId,
-      creditDays,
-      creditDaysRefId,
-      creditLimit,
       courierName,
       courierNameRefId,
       courierTime,
       courierTimeRefId,
-      address,
-      IsGSTRegistered,
-      GSTNumber,
-      GSTCertificateImg,
-      PANCard,
-      AadharCard,
-      PANCardImg,
-      AadharCardImg,
-      salesPerson,
-      salesPersonRefId,
-      customerpassword,
+      specificLab,
+      specificLabRefId,
+      yearOfEstablishment,
+      proposedDiscount,
+      currentlyDealtBrands,
+      minSalesValue,
+      finalDiscount,
+      proprietorName,
+      firmName,
+      chequeDetails,
+      billingCycle,
+      billingMode,
     } = req.body;
 
     const userEmployeeType = req.user?.EmployeeType;
@@ -52,118 +61,125 @@ export const customerDraftRegistration = async (req, res) => {
     const isSalesDepartment = userDepartment === "SALES";
     const isFinanceDepartment = userDepartment === "FINANCE" || userEmployeeType === "SUPERADMIN";
 
+    if (billToAddress && typeof billToAddress !== 'object') {
+      return sendErrorResponse(res, 400, "VALIDATION_ERROR", "billToAddress must be an object");
+    }
 
-     const normalizedEmail = businessEmail?.trim().toLowerCase();
-     console.log("normalizedEmail :  ",normalizedEmail);
+    const normalizedEmail = businessEmail?.trim().toLowerCase();
+    console.log("normalizedEmail :  ", normalizedEmail);
 
     if (normalizedEmail) {
-      const query = [];
-
-      if (normalizedEmail) {
-        query.push({ businessEmail : normalizedEmail });
-      }
-
-      const existingDraft = await customerDraftSchema.findOne({ $or: query });
+      const existingDraft = await customerDraftSchema.findOne({ 
+        businessEmail: normalizedEmail,
+        isDeleted: false 
+      });
 
       if (existingDraft) {
-        return sendErrorResponse(res,409,"DRAFT_EXISTS","Draft customer with this business email already exists");
+        return sendErrorResponse(res, 409, "DRAFT_EXISTS", "Draft customer with this business email already exists");
+      }
+
+      const existingCustomer = await Customer.findOne({ 
+        businessEmail: normalizedEmail 
+      });
+
+      if (existingCustomer) {
+        return sendErrorResponse(res, 409, "CUSTOMER_EXISTS", "Customer with this business email already exists");
       }
     }
-    
+
     const customerData = {
       // Customer Info.
-      shopName: shopName.trim(),
-      ownerName: ownerName.trim(),
-      BusinessType: BusinessTypeRefId ? {
-        name: BusinessType,
-        refId: BusinessTypeRefId
+      shopName: shopName?.trim(),
+      ownerName: ownerName?.trim(),
+      businessType: businessTypeRefId ? {
+        name: businessType,
+        refId: businessTypeRefId
       } : undefined,
-      orderMode,
+      orderMode: "Online",
       mobileNo1,
       mobileNo2,
       businessEmail: businessEmail && businessEmail.trim() ? businessEmail.toLowerCase().trim() : undefined,
-      IsGSTRegistered,
-      GSTNumber: IsGSTRegistered ? GSTNumber : undefined,
-      gstType: IsGSTRegistered && gstType ? {
+      isGSTRegistered: isGSTRegistered,
+      gstNumber: isGSTRegistered ? gstNumber : undefined,
+      gstType: isGSTRegistered && gstType ? {
         name: gstType,
         refId: gstTypeRefId
       } : undefined,
-      GSTCertificateImg: IsGSTRegistered ? GSTCertificateImg : undefined,
-      PANCard: !IsGSTRegistered ? PANCard : undefined,
-      AadharCard: !IsGSTRegistered ? AadharCard : undefined,
-      PANCardImg: !IsGSTRegistered ? PANCardImg : undefined,
-      AadharCardImg: !IsGSTRegistered ? AadharCardImg : undefined,
+      gstCertificateImg: isGSTRegistered ? gstCertificateImg : undefined,
+      panCard: !isGSTRegistered ? panCard : undefined,
+      aadharCard: !isGSTRegistered ? aadharCard : undefined,
+      panCardImg: !isGSTRegistered ? panCardImg : undefined,
+      aadharCardImg: !isGSTRegistered ? aadharCardImg : undefined,
 
       // Address
-      address: address.map((addr) => ({
-        branchAddress: addr.branchAddress.trim(),
-        contactPerson: addr.contactPerson.trim(),
-        contactNumber: addr.contactNumber.trim(),
-        country: addr.country,
-        state: addr.state,
-        zipCode: addr.zipCode,
-        city: addr.city.trim(),
-        billingCurrency: addr.billingCurrency,
-        billingMode: addr.billingMode,
-      })),
+      billToAddress: billToAddress ? {
+        branchName: billToAddress.branchName?.trim(),
+        customerContactName: billToAddress.customerContactName?.trim(),
+        customerContactNumber: billToAddress.customerContactNumber?.trim(),
+        country: billToAddress.country,
+        state: billToAddress.state,
+        zipCode: billToAddress.zipCode,
+        city: billToAddress.city?.trim(),
+        address: billToAddress.address?.trim(),
+        billingCurrency: billToAddress.billingCurrency,
+        billingMode: billToAddress.billingMode,
+        createdBy: req.user.id,
+      } : undefined,
 
-      // Customer Registration - Only for FINANCE department or SUPERADMIN
-      password: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') ? customerpassword : undefined,
-      brandCategories: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') && brandCategories 
+      // Customer Registration
+      password: customerpassword,
+      brandCategories: brandCategories
         ? brandCategories
-            .filter(bc => bc.brandId && bc.brandId.trim() !== '')
-            .map(bc => ({
-              brandName: bc.brandName,
-              brandId: bc.brandId,
-              categories: bc.categories
-                .filter(cat => cat.categoryId && cat.categoryId.trim() !== '')
-                .map(cat => ({
-                  categoryName: cat.categoryName,
-                  categoryId: cat.categoryId
-                }))
-            }))
+          .filter(brand => brand.brandId && brand.brandName && brand.brandId !== "" && brand.brandName !== "")
+          .map(brand => ({
+            brandId: brand.brandId,
+            brandName: brand.brandName,
+            categories: brand.categories
+              ? brand.categories.filter(cat => cat.categoryId && cat.categoryName && cat.categoryId !== "" && cat.categoryName !== "")
+              : []
+          }))
         : undefined,
 
-      zone: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') && zone && zoneRefId ? {
+      zone: zone && zoneRefId ? {
         name: zone,
-        refId: zoneRefId
+        refId: zoneRefId,
       } : undefined,
-      
-      salesPerson: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') && salesPerson && salesPersonRefId ? {
+
+      salesPerson: salesPerson && salesPersonRefId ? {
         name: salesPerson,
-        refId: salesPersonRefId
+        refId: salesPersonRefId,
       } : undefined,
-      
-      specificLab: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') && specificLab && specificLabRefId ? {
+
+      specificLab: specificLab && specificLabRefId ? {
         name: specificLab,
-        refId: specificLabRefId
+        refId: specificLabRefId,
       } : undefined,
 
-      fittingCenter: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') && fittingCenter && fittingCenterRefId ? {
+      fittingCenter: fittingCenter && fittingCenterRefId ? {
         name: fittingCenter,
-        refId: fittingCenterRefId
+        refId: fittingCenterRefId,
       } : undefined,
 
-      plant: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') && plant && plantRefId ? {
+      plant: plant && plantRefId ? {
         name: plant,
-        refId: plantRefId
+        refId: plantRefId,
       } : undefined,
 
-      creditLimit: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') ? creditLimit : null,
+      creditLimit: creditLimit || 0,
 
-      creditDays: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') && creditDays && creditDaysRefId ? {
+      creditDays: creditDays && creditDaysRefId ? {
         name: creditDays,
-        refId: creditDaysRefId
+        refId: creditDaysRefId,
       } : undefined,
 
-      courierName: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') && courierName && courierNameRefId ? {
+      courierName: courierName && courierNameRefId ? {
         name: courierName,
-        refId: courierNameRefId
+        refId: courierNameRefId,
       } : undefined,
 
-      courierTime: (isFinanceDepartment || userEmployeeType === 'SUPERADMIN') && courierTime && courierTimeRefId ? {
+      courierTime: courierTime && courierTimeRefId ? {
         name: courierTime,
-        refId: courierTimeRefId
+        refId: courierTimeRefId,
       } : undefined,
 
       // System Internal details
@@ -171,21 +187,48 @@ export const customerDraftRegistration = async (req, res) => {
       designation: "Customer",
       createdBy: req.user.id,
       createdByDepartment: userDepartment,
+      status: {
+        isActive: false,
+        isSuspended: false,
+      },
+
+      // Business Details
+      yearOfEstablishment: yearOfEstablishment || undefined,
+      proposedDiscount: proposedDiscount || undefined,
+      currentlyDealtBrands: currentlyDealtBrands ? currentlyDealtBrands.trim() : undefined,
+      minSalesValue: minSalesValue || undefined,
+      finalDiscount: finalDiscount,
+
+      // Sales Person Input Fields
+      proprietorName: proprietorName,
+      firmName: firmName ? firmName.trim() : undefined,
+      chequeDetails: chequeDetails,
+      billingCycle: billingCycle,
+      billingMode: billingMode,
+
+      // Workflow Status
+      approvalWorkflow: {
+        financeApprovalStatus: isSalesDepartment ? "PENDING" : "APPROVED",
+        financeApprovedBy: isFinanceDepartment ? req.user.id : undefined,
+        financeApprovedAt: isFinanceDepartment ? new Date() : undefined,
+        salesHeadApprovalStatus: "PENDING",
+        csTeamCompletionStatus: "PENDING",
+      },
+      isBlacklisted: false,
+      termsAndConditionsAccepted: false,
     };
+
+    console.log("customerDraftData  : ", customerData);
 
     const customer = await customerDraftSchema.create(customerData);
     const customerObj = customer.toObject();
     delete customerObj.password;
-    delete customerObj.emailOtp;
-    delete customerObj.mobileOtp;
 
-    const message = isSalesDepartment
-      ? "Customer registered successfully. Pending Finance approval."
-      : "Customer registered and approved successfully.";
+    const message = isSalesDepartment ? "Draft customer registered successfully. Pending Finance approval." : "Draft customer registered and Pending sales head approval.";
 
     return sendSuccessResponse(res, 201, { customer: customerObj }, message);
   } catch (error) {
-    console.error("Customer registration error:", error);
+    console.error("Customer draft registration error:", error);
     if (error.name === "ValidationError") {
       const messages = Object.values(error.errors).map((err) => err.message);
       return sendErrorResponse(
@@ -208,7 +251,7 @@ export const customerDraftRegistration = async (req, res) => {
       res,
       500,
       "INTERNAL_ERROR",
-      "Customer registration failed",
+      "Customer draft registration failed",
     );
   }
 };
@@ -231,24 +274,24 @@ export const getAllDraftCustomers = async (req, res) => {
       toDate 
     } = req.query;
 
-    let query = {};
+    let query = { isDeleted: false };
 
     if (shopName) {
       query.shopName = { $regex: shopName, $options: 'i' };
     }
 
     if (businessType) {
-      query['BusinessType.refId'] = businessType;
+      query['businessType.refId'] = businessType;
     }
 
     if (status) {
       if (status.toLowerCase() === 'active') {
-        query['Status.isActive'] = true;
-        query['Status.isSuspended'] = false;
+        query['status.isActive'] = true;
+        query['status.isSuspended'] = false;
       } else if (status.toLowerCase() === 'suspended') {
-        query['Status.isSuspended'] = true;
+        query['status.isSuspended'] = true;
       } else if (status.toLowerCase() === 'inactive') {
-        query['Status.isActive'] = false;
+        query['status.isActive'] = false;
       }
     }
 
@@ -304,11 +347,11 @@ export const getAllDraftCustomers = async (req, res) => {
       hasPrev: page > 1
     };
 
-    return sendSuccessResponse(res, 200, { customers, pagination }, 'Customers retrieved successfully');
+    return sendSuccessResponse(res, 200, { customers, pagination }, 'Draft customers retrieved successfully');
 
   } catch (error) {
-    console.error('Get filtered customers error:', error);
-    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to retrieve customers');
+    console.error('Get draft customers error:', error);
+    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to retrieve draft customers');
   }
 };
 
@@ -331,24 +374,24 @@ export const getMyDraftCustomers = async (req, res) => {
       toDate 
     } = req.query;
 
-    let query = { createdBy: userId };
+    let query = { createdBy: userId, isDeleted: false };
 
     if (shopName) {
       query.shopName = { $regex: shopName, $options: 'i' };
     }
 
     if (businessType) {
-      query['BusinessType.refId'] = businessType;
+      query['businessType.refId'] = businessType;
     }
 
     if (status) {
       if (status.toLowerCase() === 'active') {
-        query['Status.isActive'] = true;
-        query['Status.isSuspended'] = false;
+        query['status.isActive'] = true;
+        query['status.isSuspended'] = false;
       } else if (status.toLowerCase() === 'suspended') {
-        query['Status.isSuspended'] = true;
+        query['status.isSuspended'] = true;
       } else if (status.toLowerCase() === 'inactive') {
-        query['Status.isActive'] = false;
+        query['status.isActive'] = false;
       }
     }
 
@@ -436,11 +479,11 @@ export const updateDraftCustomer = async (req, res) => {
     }
 
     // Check if email is being changed and if it already exists
-    if (updateData.businessEmail && updateData.businessEmail.toLowerCase() !== draftCustomer.businessEmail) {
+    if (updateData?.businessEmail && updateData?.businessEmail.toLowerCase() !== draftCustomer.businessEmail) {
       const [existingCustomer, existingDraft] = await Promise.all([
-        Customer.findOne({ businessEmail: updateData.businessEmail.toLowerCase() }),
+        Customer.findOne({ businessEmail: updateData?.businessEmail.toLowerCase() }),
         customerDraftSchema.findOne({
-          businessEmail: updateData.businessEmail.toLowerCase(),
+          businessEmail: updateData?.businessEmail.toLowerCase(),
           _id: { $ne: draftId }
         })
       ]);
@@ -454,152 +497,163 @@ export const updateDraftCustomer = async (req, res) => {
     const updateFields = {};
 
     // Basic fields that can be updated by creator
-    if (updateData.shopName) updateFields.shopName = updateData.shopName.trim();
-    if (updateData.ownerName) updateFields.ownerName = updateData.ownerName.trim();
-    if (updateData.orderMode) updateFields.orderMode = updateData.orderMode;
-    if (updateData.mobileNo1) updateFields.mobileNo1 = updateData.mobileNo1;
-    if (updateData.mobileNo2) updateFields.mobileNo2 = updateData.mobileNo2;
-    if (updateData.businessEmail) updateFields.businessEmail = updateData.businessEmail.toLowerCase().trim();
+    if (updateData?.shopName) updateFields.shopName = updateData?.shopName.trim();
+    if (updateData?.ownerName) updateFields.ownerName = updateData?.ownerName.trim();
+    if (updateData?.orderMode) updateFields.orderMode = updateData?.orderMode;
+    if (updateData?.mobileNo1) updateFields.mobileNo1 = updateData?.mobileNo1;
+    if (updateData?.mobileNo2) updateFields.mobileNo2 = updateData?.mobileNo2;
+    if (updateData?.businessEmail) updateFields.businessEmail = updateData?.businessEmail.toLowerCase().trim();
     
     // Business details fields (can be updated by creator)
-    if (updateData.yearOfEstablishment !== undefined) updateFields.yearOfEstablishment = updateData.yearOfEstablishment;
-    if (updateData.proposedDiscount !== undefined) updateFields.proposedDiscount = updateData.proposedDiscount;
-    if (updateData.currentlyDealtBrands !== undefined) updateFields.currentlyDealtBrands = updateData.currentlyDealtBrands?.trim();
-    if (updateData.minSalesValue !== undefined) updateFields.minSalesValue = updateData.minSalesValue;
+    if (updateData?.yearOfEstablishment !== undefined) updateFields.yearOfEstablishment = updateData?.yearOfEstablishment;
+    if (updateData?.proposedDiscount !== undefined) updateFields.proposedDiscount = updateData?.proposedDiscount;
+    if (updateData?.currentlyDealtBrands !== undefined) updateFields.currentlyDealtBrands = updateData?.currentlyDealtBrands?.trim();
+    if (updateData?.minSalesValue !== undefined) updateFields.minSalesValue = updateData?.minSalesValue;
+    if (updateData?.proprietorName) updateFields.proprietorName = updateData?.proprietorName.trim();
+    if (updateData?.firmName) updateFields.firmName = updateData?.firmName.trim();
+    if (updateData?.finalDiscount !== undefined) updateFields.finalDiscount = updateData?.finalDiscount;
 
-    if (updateData.BusinessType && updateData.BusinessTypeRefId) {
-      updateFields.BusinessType = {
-        name: updateData.BusinessType,
-        refId: updateData.BusinessTypeRefId
+    if (updateData?.businessType && updateData?.businessTypeRefId) {
+      updateFields.businessType = {
+        name: updateData?.businessType,
+        refId: updateData?.businessTypeRefId
       };
     }
 
-    if (updateData.IsGSTRegistered !== undefined) {
-      updateFields.IsGSTRegistered = updateData.IsGSTRegistered;
+    if (updateData?.isGSTRegistered !== undefined) {
+      updateFields.isGSTRegistered = updateData?.isGSTRegistered;
 
-      if (updateData.IsGSTRegistered) {
-        if (updateData.GSTNumber) updateFields.GSTNumber = updateData.GSTNumber;
-        if (updateData.GSTCertificateImg) updateFields.GSTCertificateImg = updateData.GSTCertificateImg;
-        if (updateData.gstType && updateData.gstTypeRefId) {
+      if (updateData?.isGSTRegistered) {
+        if (updateData?.gstNumber) updateFields.gstNumber = updateData?.gstNumber;
+        if (updateData?.gstCertificateImg) updateFields.gstCertificateImg = updateData?.gstCertificateImg;
+        if (updateData?.gstType && updateData?.gstTypeRefId) {
           updateFields.gstType = {
-            name: updateData.gstType,
-            refId: updateData.gstTypeRefId
+            name: updateData?.gstType,
+            refId: updateData?.gstTypeRefId
           };
         }
         // Clear non-GST fields
-        updateFields.PANCard = undefined;
-        updateFields.AadharCard = undefined;
-        updateFields.PANCardImg = undefined;
-        updateFields.AadharCardImg = undefined;
+        updateFields.panCard = undefined;
+        updateFields.aadharCard = undefined;
+        updateFields.panCardImg = undefined;
+        updateFields.aadharCardImg = undefined;
       } else {
-        if (updateData.PANCard) updateFields.PANCard = updateData.PANCard;
-        if (updateData.AadharCard) updateFields.AadharCard = updateData.AadharCard;
-        if (updateData.PANCardImg) updateFields.PANCardImg = updateData.PANCardImg;
-        if (updateData.AadharCardImg) updateFields.AadharCardImg = updateData.AadharCardImg;
+        if (updateData?.panCard) updateFields.panCard = updateData?.panCard;
+        if (updateData?.aadharCard) updateFields.aadharCard = updateData?.aadharCard;
+        if (updateData?.panCardImg) updateFields.panCardImg = updateData?.panCardImg;
+        if (updateData?.aadharCardImg) updateFields.aadharCardImg = updateData?.aadharCardImg;
         // Clear GST fields
-        updateFields.GSTNumber = undefined;
-        updateFields.GSTCertificateImg = undefined;
+        updateFields.gstNumber = undefined;
+        updateFields.gstCertificateImg = undefined;
         updateFields.gstType = undefined;
       }
     }
 
-    if (updateData.address && Array.isArray(updateData.address)) {
-      updateFields.address = updateData.address.map((addr) => ({
-        branchAddress: addr.branchAddress?.trim(),
-        contactPerson: addr.contactPerson?.trim(),
-        contactNumber: addr.contactNumber?.trim(),
-        country: addr.country,
-        state: addr.state,
-        zipCode: addr.zipCode,
-        city: addr.city?.trim(),
-        billingCurrency: addr.billingCurrency,
-        billingMode: addr.billingMode,
-      }));
+    if (updateData?.billToAddress && typeof updateData?.billToAddress === 'object') {
+      updateFields.billToAddress = {
+        branchName: updateData?.billToAddress.branchName?.trim(),
+        customerContactName: updateData?.billToAddress.customerContactName?.trim(),
+        customerContactNumber: updateData?.billToAddress.customerContactNumber?.trim(),
+        country: updateData?.billToAddress.country,
+        state: updateData?.billToAddress.state,
+        zipCode: updateData?.billToAddress.zipCode,
+        city: updateData?.billToAddress.city?.trim(),
+        address: updateData?.billToAddress.address?.trim(),
+        billingCurrency: updateData?.billToAddress.billingCurrency,
+        billingMode: updateData?.billToAddress.billingMode,
+        createdBy: draftCustomer.billToAddress?.createdBy || req.user.id,
+        updatedBy: req.user.id,
+      };
     }
 
     // Finance-only fields
     if (isFinanceDepartment) {
-      if (updateData.customerpassword) {
-        updateFields.password = updateData.customerpassword;
+      if (updateData?.customerpassword) {
+        updateFields.password = updateData?.customerpassword;
       }
 
-      if (updateData.brandCategories) {
-        updateFields.brandCategories = updateData.brandCategories
-          .filter(bc => bc.brandId && bc.brandId.trim() !== '')
-          .map(bc => ({
-            brandName: bc.brandName,
-            brandId: bc.brandId,
-            categories: bc.categories
-              .filter(cat => cat.categoryId && cat.categoryId.trim() !== '')
-              .map(cat => ({
-                categoryName: cat.categoryName,
-                categoryId: cat.categoryId
-              }))
+      if (updateData?.brandCategories) {
+        updateFields.brandCategories = updateData?.brandCategories
+          .filter(brand => brand.brandId && brand.brandName && brand.brandId !== "" && brand.brandName !== "")
+          .map(brand => ({
+            brandId: brand.brandId,
+            brandName: brand.brandName,
+            categories: brand.categories
+              ? brand.categories.filter(cat => cat.categoryId && cat.categoryName && cat.categoryId !== "" && cat.categoryName !== "")
+              : []
           }));
       }
 
-      if (updateData.zone && updateData.zoneRefId) {
+      if (updateData?.zone && updateData?.zoneRefId) {
         updateFields.zone = {
-          name: updateData.zone,
-          refId: updateData.zoneRefId
+          name: updateData?.zone,
+          refId: updateData?.zoneRefId
         };
       }
 
-      if (updateData.salesPerson && updateData.salesPersonRefId) {
+      if (updateData?.salesPerson && updateData?.salesPersonRefId) {
         updateFields.salesPerson = {
-          name: updateData.salesPerson,
-          refId: updateData.salesPersonRefId
+          name: updateData?.salesPerson,
+          refId: updateData?.salesPersonRefId
         };
       }
 
-      if (updateData.specificLab && updateData.specificLabRefId) {
+      if (updateData?.specificLab && updateData?.specificLabRefId) {
         updateFields.specificLab = {
-          name: updateData.specificLab,
-          refId: updateData.specificLabRefId
+          name: updateData?.specificLab,
+          refId: updateData?.specificLabRefId
         };
       }
 
-      if (updateData.fittingCenter && updateData.fittingCenterRefId) {
+      if (updateData?.fittingCenter && updateData?.fittingCenterRefId) {
         updateFields.fittingCenter = {
-          name: updateData.fittingCenter,
-          refId: updateData.fittingCenterRefId
+          name: updateData?.fittingCenter,
+          refId: updateData?.fittingCenterRefId
         };
       }
 
-      if (updateData.plant && updateData.plantRefId) {
+      if (updateData?.plant && updateData?.plantRefId) {
         updateFields.plant = {
-          name: updateData.plant,
-          refId: updateData.plantRefId
+          name: updateData?.plant,
+          refId: updateData?.plantRefId
         };
       }
 
-      if (updateData.creditLimit !== undefined) {
-        updateFields.creditLimit = updateData.creditLimit;
+      if (updateData?.creditLimit !== undefined) {
+        updateFields.creditLimit = updateData?.creditLimit;
       }
 
-      if (updateData.creditDays && updateData.creditDaysRefId) {
+      if (updateData?.creditDays && updateData?.creditDaysRefId) {
         updateFields.creditDays = {
-          name: updateData.creditDays,
-          refId: updateData.creditDaysRefId
+          name: updateData?.creditDays,
+          refId: updateData?.creditDaysRefId
         };
       }
 
-      if (updateData.courierName && updateData.courierNameRefId) {
+      if (updateData?.courierName && updateData?.courierNameRefId) {
         updateFields.courierName = {
-          name: updateData.courierName,
-          refId: updateData.courierNameRefId
+          name: updateData?.courierName,
+          refId: updateData?.courierNameRefId
         };
       }
 
-      if (updateData.courierTime && updateData.courierTimeRefId) {
+      if (updateData?.courierTime && updateData?.courierTimeRefId) {
         updateFields.courierTime = {
-          name: updateData.courierTime,
-          refId: updateData.courierTimeRefId
+          name: updateData?.courierTime,
+          refId: updateData?.courierTimeRefId
         };
       }
 
-      if (updateData.finalDiscount !== undefined) {
-        updateFields.finalDiscount = updateData.finalDiscount;
+      if (updateData?.chequeDetails && Array.isArray(updateData?.chequeDetails)) {
+        updateFields.chequeDetails = updateData?.chequeDetails;
+      }
+
+      if (updateData?.billingCycle) {
+        updateFields.billingCycle = updateData?.billingCycle;
+      }
+
+      if (updateData?.billingMode) {
+        updateFields.billingMode = updateData?.billingMode;
       }
     }
 
@@ -679,23 +733,23 @@ export const deactivateDraftCustomer = async (req, res) => {
 
     const isFinanceDepartment = userDepartment === 'FINANCE' || userEmployeeType === 'SUPERADMIN';
 
-    const draftCustomer = await customerDraftSchema.findOne({ _id: draftId, 'Status.isActive': true, isDeleted: false });
+    const draftCustomer = await customerDraftSchema.findOne({ _id: draftId, 'status.isActive': true, isDeleted: false });
     if (!draftCustomer) {
       return sendErrorResponse(res, 404, 'DRAFT_NOT_FOUND', 'Draft customer not found or already deactivated');
     }
 
     if (draftCustomer.createdBy.toString() !== req.user.id.toString() && !isFinanceDepartment) {
       return sendErrorResponse(
-      res,
-      403,
-      'FORBIDDEN',
-      'You do not have permission to delete this draft customer'
-    );
-  }
+        res,
+        403,
+        'FORBIDDEN',
+        'You do not have permission to delete this draft customer'
+      );
+    }
 
-    draftCustomer.Status.isActive = false;
-    draftCustomer.Status.isSuspended = true;
-    draftCustomer.Status.suspensionReason = req?.body?.suspensionReason || 'N/A';
+    draftCustomer.status.isActive = false;
+    draftCustomer.status.isSuspended = true;
+    draftCustomer.status.suspensionReason = req?.body?.suspensionReason || 'N/A';
     draftCustomer.isDeleted = true;
     draftCustomer.deletedAt = new Date();
     draftCustomer.deletedBy = req.user.id;
@@ -790,9 +844,9 @@ export const restoreDraftCustomer = async (req, res) => {
       return sendErrorResponse(res, 400, 'EXPIRED', 'Cannot restore draft. More than 30 days have passed since deletion');
     }
 
-    draftCustomer.Status.isActive = true;
-    draftCustomer.Status.isSuspended = false;
-    draftCustomer.Status.suspensionReason = null;
+    draftCustomer.status.isActive = true;
+    draftCustomer.status.isSuspended = false;
+    draftCustomer.status.suspensionReason = null;
     draftCustomer.isDeleted = false;
     draftCustomer.deletedAt = null;
     draftCustomer.deletedBy = null;
