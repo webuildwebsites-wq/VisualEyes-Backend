@@ -246,6 +246,46 @@ export const getAllCustomers = async (req, res) => {
 //   }
 // };
 
+export const getPendingTermsCustomers = async (req, res) => {
+  try {
+    const page = Math.max(parseInt(req.query.page) || 1, 1);
+    const limit = Math.min(parseInt(req.query.limit) || 10, 100);
+    const skip = (page - 1) * limit;
+
+    const query = {
+      "approvalWorkflow.salesHeadApprovalStatus": "APPROVED",
+      "termsAndConditionsAccepted": false,
+      "isBlacklisted": false,
+      "status.isActive": true
+    };
+
+    const [customers, total] = await Promise.all([
+      Customer.find(query)
+        .select("-password -emailOtp -mobileOtp")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Customer.countDocuments(query)
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    const pagination = {
+      currentPage: page,
+      totalPages,
+      totalCustomers: total,
+      hasNext: page < totalPages,
+      hasPrev: page > 1
+    };
+
+    return sendSuccessResponse(res, 200, { customers, pagination }, "Customers pending T&C acceptance retrieved successfully");
+  } catch (error) {
+    console.error("Get pending terms customers error:", error);
+    return sendErrorResponse(res, 500, "INTERNAL_ERROR", "Failed to retrieve customers pending T&C");
+  }
+}; 
+
 export const getCorrectionRequiredCustomers = async (req, res) => {
   try {
     const page = Math.max(parseInt(req.query.page) || 1, 1);
