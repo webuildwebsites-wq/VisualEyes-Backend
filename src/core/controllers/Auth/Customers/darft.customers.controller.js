@@ -188,7 +188,7 @@ export const customerDraftRegistration = async (req, res) => {
       createdBy: req.user.id,
       createdByDepartment: userDepartment,
       status: {
-        isActive: false,
+        isActive: true,
         isSuspended: false,
       },
 
@@ -224,7 +224,7 @@ export const customerDraftRegistration = async (req, res) => {
     const customerObj = customer.toObject();
     delete customerObj.password;
 
-    const message = isSalesDepartment ? "Draft customer registered successfully. Pending Finance approval." : "Draft customer registered and Pending sales head approval.";
+    const message = "Draft customer registered successfully."
 
     return sendSuccessResponse(res, 201, { customer: customerObj }, message);
   } catch (error) {
@@ -265,7 +265,6 @@ export const getAllDraftCustomers = async (req, res) => {
     const { 
       shopName, 
       businessType, 
-      status = "active", 
       createdByDepartment, 
       zone, 
       specificBrand, 
@@ -282,17 +281,6 @@ export const getAllDraftCustomers = async (req, res) => {
 
     if (businessType) {
       query['businessType.refId'] = businessType;
-    }
-
-    if (status) {
-      if (status.toLowerCase() === 'active') {
-        query['status.isActive'] = true;
-        query['status.isSuspended'] = false;
-      } else if (status.toLowerCase() === 'suspended') {
-        query['status.isSuspended'] = true;
-      } else if (status.toLowerCase() === 'inactive') {
-        query['status.isActive'] = false;
-      }
     }
 
     if (createdByDepartment) {
@@ -326,6 +314,8 @@ export const getAllDraftCustomers = async (req, res) => {
         query.createdAt.$lte = endDate;
       }
     }
+
+    console.log("query : ", query);
 
     const [customers, total] = await Promise.all([
       customerDraftSchema
