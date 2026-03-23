@@ -1,7 +1,7 @@
 import express from 'express';
-import { customerForgotPassword, customerLogin,customerResetPassword,customerUpdatePassword, customerBasicRegistration, financeCompleteCustomer, updateCustomerProfile, resetCustomerCredit, sendCustomerForCorrection, resubmitCorrectedCustomer, updateCustomerShipToDetails } from '../../core/controllers/Auth/Customers/CustomerAuth.js';
-import { financeApproveCustomer, salesHeadApproveCustomer, acceptTermsAndConditions, csTeamCompleteCustomer, getPendingCustomersByStage } from '../../core/controllers/Auth/Customers/CustomerApprovalWorkflow.js';
-import { getAllCustomers, getCustomerById, getCustomerProfile, getDraftCustomers, getPendingFinanceCustomers, getCorrectionRequiredCustomers } from '../../core/controllers/Auth/Customers/customer.get.controller.js';
+import { customerForgotPassword, customerLogin,customerResetPassword,customerUpdatePassword, customerBasicRegistration, updateCustomerProfile, resetCustomerCredit, sendCustomerForCorrection, resubmitCorrectedCustomer, updateCustomerShipToDetails } from '../../core/controllers/Auth/Customers/CustomerAuth.js';
+import { financeApproveCustomer, salesHeadApproveCustomer, acceptTermsAndConditions, getPendingCustomersByStage } from '../../core/controllers/Auth/Customers/CustomerApprovalWorkflow.js';
+import { getAllCustomers, getCustomerById, getCustomerProfile, getDraftCustomers, getCorrectionRequiredCustomers } from '../../core/controllers/Auth/Customers/customer.get.controller.js';
 import { requireSalesFinanceOrSuperAdmin, attachDepartmentInfo } from '../../middlewares/Auth/AdminMiddleware/departmentMiddleware.js';
 import { protectCustomer } from '../../middlewares/Auth/CustomerMiddleware/customerMiddleware.js';
 import { verifyCustomerEmail } from '../../core/controllers/Auth/Customers/VarifyAccount.js';
@@ -18,35 +18,26 @@ customerRouter.post('/register', ProtectUser, attachDepartmentInfo, requireSales
 customerRouter.post('/draft-register', ProtectUser, attachDepartmentInfo, customerDraftRegistration);
 
 // FINANCE COMPLETE
-customerRouter.put('/:customerId/finance-complete', ProtectUser, attachDepartmentInfo, financeCompleteCustomer);
+// customerRouter.put('/:customerId/finance-complete', ProtectUser, attachDepartmentInfo, financeCompleteCustomer);
+
 
 // NEW WORKFLOW ROUTES
-// Finance Team Approval
 customerRouter.put('/:customerId/finance-approve', ProtectUser, attachDepartmentInfo, financeApproveCustomer);
-
-// Sales Head Approval
 customerRouter.put('/:customerId/sales-head-approve', ProtectUser, attachDepartmentInfo, salesHeadApproveCustomer);
-
-// Customer: Accept Terms & Conditions
 customerRouter.put('/:customerId/accept-terms', protectCustomer, acceptTermsAndConditions);
 
-// CS Team: Complete Customer Setup
-customerRouter.put('/:customerId/cs-team-complete', ProtectUser, attachDepartmentInfo, csTeamCompleteCustomer);
 
 // Get Pending Customers by Stage
-customerRouter.get('/pending/by-stage', ProtectUser, attachDepartmentInfo, getPendingCustomersByStage);
+customerRouter.get('/pending-stage', ProtectUser, attachDepartmentInfo, getPendingCustomersByStage);
 
-// SEND CUSTOMER BACK FOR CORRECTION (Finance/SuperAdmin only)
+
 customerRouter.put('/:customerId/send-for-correction', ProtectUser, attachDepartmentInfo, sendCustomerForCorrection);
-
-// RESUBMIT CORRECTED CUSTOMER (Sales can resubmit after corrections)
 customerRouter.put('/:customerId/resubmit-correction', ProtectUser, attachDepartmentInfo, resubmitCorrectedCustomer);
 
-// UPDATE CUSTOMER PROFILE
-customerRouter.put('/update-profile/:customerId', ProtectUser, updateCustomerProfile);
 
-// UPDATE CUSTOMER SHIP-TO DETAILS (Finance/SuperAdmin only)
+customerRouter.put('/update-profile/:customerId', ProtectUser, updateCustomerProfile);
 customerRouter.put('/update-ship-to-details/:customerId', ProtectUser, attachDepartmentInfo, updateCustomerShipToDetails);
+
 
 // RESET CUSTOMER CREDIT (Finance/SuperAdmin only)
 customerRouter.put('/reset-credit/:customerId', ProtectUser, attachDepartmentInfo, resetCustomerCredit);
@@ -62,7 +53,8 @@ customerRouter.post('/refresh', refreshToken);
 customerRouter.post('/logout', protectCustomer, logout);
 
 // GET ALL THE REQUIRED DETAILS
-customerRouter.get('/customer/pending-finance', ProtectUser, getPendingFinanceCustomers);
+// customerRouter.get('/customer/pending-finance', ProtectUser, getPendingFinanceCustomers);
+
 customerRouter.get('/customer/correction-required', ProtectUser, attachDepartmentInfo, getCorrectionRequiredCustomers);
 customerRouter.get('/get-all-customers', ProtectUser, getAllCustomers);
 customerRouter.get('/customers-profile', protectCustomer, getCustomerProfile);

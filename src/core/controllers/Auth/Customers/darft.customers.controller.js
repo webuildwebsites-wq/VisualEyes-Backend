@@ -212,7 +212,6 @@ export const customerDraftRegistration = async (req, res) => {
         financeApprovedBy: isFinanceDepartment ? req.user.id : undefined,
         financeApprovedAt: isFinanceDepartment ? new Date() : undefined,
         salesHeadApprovalStatus: "PENDING",
-        csTeamCompletionStatus: "PENDING",
       },
       isBlacklisted: false,
       termsAndConditionsAccepted: false,

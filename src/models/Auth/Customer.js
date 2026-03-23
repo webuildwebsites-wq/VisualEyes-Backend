@@ -361,9 +361,10 @@ const customerSchema = new mongoose.Schema(
       },
       financeApprovedAt: Date,
       financeRemark: String,
+
       salesHeadApprovalStatus: {
         type: String,
-        enum: ['PENDING', 'APPROVED', 'REJECTED'],
+        enum: ['PENDING', 'APPROVED', 'REJECTED', 'MODIFICATION_REQUIRED'],
         default: 'PENDING'
       },
       salesHeadApprovedBy: {
@@ -372,16 +373,6 @@ const customerSchema = new mongoose.Schema(
       },
       salesHeadApprovedAt: Date,
       salesHeadRemark: String,
-      csTeamCompletionStatus: {
-        type: String,
-        enum: ['PENDING', 'COMPLETED'],
-        default: 'PENDING'
-      },
-      csTeamCompletedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'employee'
-      },
-      csTeamCompletedAt: Date
     },
     isBlacklisted: {
       type: Boolean,
@@ -427,6 +418,7 @@ const customerSchema = new mongoose.Schema(
       type: Date,
       default: null
     },
+  
     
     // SYSTEM INTERNAL DETAILS
     createdBy: {
@@ -455,14 +447,11 @@ const customerSchema = new mongoose.Schema(
       },
       requestedAt: {
         type: Date
+      },
+      correctionNeededBy: {
+        type: String,
+        enum: ['SALES', 'FINANCE'],
       }
-    },
-    financeCompletedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "employee",
-    },
-    financeCompletedAt: {
-      type: Date,
     },
     customerShipToDetails : [shipToAddressSchema],
     emailOtp: String,

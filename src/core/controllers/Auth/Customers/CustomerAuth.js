@@ -49,7 +49,7 @@ export const customerLogin = async (req, res) => {
         { customerCode: loginId.toUpperCase() }
       ],
       'status.isActive': true
-    }).select("+password -emailOtp -emailOtpExpires -mobileOtp -mobileOtpExpires -gstNumber -gstCertificateImg -panCard -panCardImg -aadharCard -aadharCardImg -isLocked -failedLoginAttempts -lockUntil -createdByDepartment -approvalStatus -financeCompletedBy -financeCompletedAt");
+    }).select("+password -emailOtp -emailOtpExpires -mobileOtp -mobileOtpExpires -gstNumber -gstCertificateImg -panCard -panCardImg -aadharCard -aadharCardImg -isLocked -failedLoginAttempts -lockUntil -createdByDepartment -approvalStatus");
 
     if (!customer) {
       return sendErrorResponse(
@@ -279,7 +279,7 @@ export const customerBasicRegistration = async (req, res) => {
     }
 
     if (!chequeDetails || !Array.isArray(chequeDetails) || chequeDetails.length !== 3) {
-      return sendErrorResponse( res, 400, "VALIDATION_ERROR", "Exactly 3 cheque entries are required");
+      return sendErrorResponse(res, 400, "VALIDATION_ERROR", "Exactly 3 cheque entries are required");
     }
 
     for (let i = 0; i < chequeDetails.length; i++) {
@@ -295,7 +295,7 @@ export const customerBasicRegistration = async (req, res) => {
     }
 
     if (!billingCycle || !['7_days', '15_days', 'end_of_month', 'custom'].includes(billingCycle)) {
-      return sendErrorResponse( res, 400, "VALIDATION_ERROR", "billingCycle must be one of: 7_days, 15_days, end_of_month, or custom");
+      return sendErrorResponse(res, 400, "VALIDATION_ERROR", "billingCycle must be one of: 7_days, 15_days, end_of_month, or custom");
     }
 
     if (!billingMode || !['Direct', 'DC'].includes(billingMode)) {
@@ -593,7 +593,6 @@ export const customerBasicRegistration = async (req, res) => {
         financeApprovedBy: isFinanceDepartment ? req.user.id : undefined,
         financeApprovedAt: isFinanceDepartment ? new Date() : undefined,
         salesHeadApprovalStatus: "PENDING",
-        csTeamCompletionStatus: "PENDING",
       },
       isBlacklisted: false,
       termsAndConditionsAccepted: false,
@@ -808,459 +807,457 @@ export const customerUpdatePassword = async (req, res) => {
   }
 };
 
-export const financeCompleteCustomer = async (req, res) => {
-  try {
-    const { customerId } = req.params;
-    const userDepartment = req.user.Department?.name || req.user.Department;
+// export const financeCompleteCustomer = async (req, res) => {
+//   try {
+//     const { customerId } = req.params;
+//     const userDepartment = req.user.Department?.name || req.user.Department;
 
-    if (userDepartment !== 'FINANCE' && userDepartment !== 'SUPERADMIN') {
-      return sendErrorResponse(res, 403, "FORBIDDEN", "Only Finance department can complete customer registration");
-    }
+//     if (userDepartment !== 'FINANCE' && userDepartment !== 'SUPERADMIN') {
+//       return sendErrorResponse(res, 403, "FORBIDDEN", "Only Finance department can complete customer registration");
+//     }
 
-    const customer = await Customer.findById(customerId);
+//     const customer = await Customer.findById(customerId);
 
-    if (!customer) {
-      return sendErrorResponse(res, 404, "NOT_FOUND", "Customer not found");
-    }
+//     if (!customer) {
+//       return sendErrorResponse(res, 404, "NOT_FOUND", "Customer not found");
+//     }
 
-    if (customer.approvalWorkflow?.financeApprovalStatus === "APPROVED") {
-      return sendErrorResponse(
-        res,
-        400,
-        "ALREADY_APPROVED",
-        "Customer is already approved. Cannot update.",
-      );
-    }
+//     if (customer.approvalWorkflow?.financeApprovalStatus === "APPROVED") {
+//       return sendErrorResponse(
+//         res,
+//         400,
+//         "ALREADY_APPROVED",
+//         "Customer is already approved. Cannot update.",
+//       );
+//     }
 
-    const requiredFinanceFields = [
-      "zone",
-      "plant",
-      "fittingCenter",
-      "creditDays",
-      "courierName",
-      "courierTime",
-      "brandCategories",
-      "specificLab",
-      "salesPerson",
-      "finalDiscount",
-    ];
+//     const requiredFinanceFields = [
+//       "zone",
+//       "plant",
+//       "fittingCenter",
+//       "creditDays",
+//       "courierName",
+//       "courierTime",
+//       "brandCategories",
+//       "specificLab",
+//       "salesPerson",
+//       "finalDiscount",
+//     ];
 
-    const missingFields = requiredFinanceFields.filter((field) => !req.body[field],);
+//     const missingFields = requiredFinanceFields.filter((field) => !req.body[field],);
 
-    if (missingFields.length > 0) {
-      return sendErrorResponse(
-        res,
-        400,
-        "VALIDATION_ERROR",
-        `Missing required fields: ${missingFields.join(", ")}`,
-      );
-    }
+//     if (missingFields.length > 0) {
+//       return sendErrorResponse(
+//         res,
+//         400,
+//         "VALIDATION_ERROR",
+//         `Missing required fields: ${missingFields.join(", ")}`,
+//       );
+//     }
 
-    // Validate new business fields
-    if (req.body.yearOfEstablishment !== undefined && req.body.yearOfEstablishment !== null) {
-      const currentYear = new Date().getFullYear();
-      if (req.body.yearOfEstablishment < 1900 || req.body.yearOfEstablishment > currentYear) {
-        return sendErrorResponse(
-          res,
-          400,
-          "VALIDATION_ERROR",
-          `yearOfEstablishment must be between 1900 and ${currentYear}`,
-        );
-      }
-    }
+//     // Validate new business fields
+//     if (req.body.yearOfEstablishment !== undefined && req.body.yearOfEstablishment !== null) {
+//       const currentYear = new Date().getFullYear();
+//       if (req.body.yearOfEstablishment < 1900 || req.body.yearOfEstablishment > currentYear) {
+//         return sendErrorResponse(
+//           res,
+//           400,
+//           "VALIDATION_ERROR",
+//           `yearOfEstablishment must be between 1900 and ${currentYear}`,
+//         );
+//       }
+//     }
 
-    if (req.body.proposedDiscount !== undefined && req.body.proposedDiscount !== null) {
-      if (req.body.proposedDiscount < 0 || req.body.proposedDiscount > 100) {
-        return sendErrorResponse(
-          res,
-          400,
-          "VALIDATION_ERROR",
-          "proposedDiscount must be between 0 and 100",
-        );
-      }
-    }
+//     if (req.body.proposedDiscount !== undefined && req.body.proposedDiscount !== null) {
+//       if (req.body.proposedDiscount < 0 || req.body.proposedDiscount > 100) {
+//         return sendErrorResponse(
+//           res,
+//           400,
+//           "VALIDATION_ERROR",
+//           "proposedDiscount must be between 0 and 100",
+//         );
+//       }
+//     }
 
-    if (req.body.minSalesValue !== undefined && req.body.minSalesValue !== null) {
-      if (req.body.minSalesValue < 0) {
-        return sendErrorResponse(
-          res,
-          400,
-          "VALIDATION_ERROR",
-          "minSalesValue must be greater than or equal to 0",
-        );
-      }
-    }
+//     if (req.body.minSalesValue !== undefined && req.body.minSalesValue !== null) {
+//       if (req.body.minSalesValue < 0) {
+//         return sendErrorResponse(
+//           res,
+//           400,
+//           "VALIDATION_ERROR",
+//           "minSalesValue must be greater than or equal to 0",
+//         );
+//       }
+//     }
 
-    if (req.body.finalDiscount < 0 || req.body.finalDiscount > 100) {
-      return sendErrorResponse(
-        res,
-        400,
-        "VALIDATION_ERROR",
-        "finalDiscount must be between 0 and 100",
-      );
-    }
+//     if (req.body.finalDiscount < 0 || req.body.finalDiscount > 100) {
+//       return sendErrorResponse(
+//         res,
+//         400,
+//         "VALIDATION_ERROR",
+//         "finalDiscount must be between 0 and 100",
+//       );
+//     }
 
-    const { brandCategories } = req.body;
-    const isValidObjectId = (id) => /^[0-9a-fA-F]{24}$/.test(id);
+//     const { brandCategories } = req.body;
+//     const isValidObjectId = (id) => /^[0-9a-fA-F]{24}$/.test(id);
 
-    if (!Array.isArray(brandCategories) || brandCategories.length === 0) {
-      return sendErrorResponse(
-        res,
-        400,
-        "VALIDATION_ERROR",
-        "brandCategories must be an array with at least one brand",
-      );
-    }
+//     if (!Array.isArray(brandCategories) || brandCategories.length === 0) {
+//       return sendErrorResponse(
+//         res,
+//         400,
+//         "VALIDATION_ERROR",
+//         "brandCategories must be an array with at least one brand",
+//       );
+//     }
 
-    for (let i = 0; i < brandCategories.length; i++) {
-      const brand = brandCategories[i];
-      if (!brand.brandName || !brand.brandId) {
-        return sendErrorResponse(
-          res,
-          400,
-          "VALIDATION_ERROR",
-          `brandCategories[${i}]: brandName and brandId are required`,
-        );
-      }
-      if (!isValidObjectId(brand.brandId)) {
-        return sendErrorResponse(
-          res,
-          400,
-          "VALIDATION_ERROR",
-          `brandCategories[${i}].brandId must be a valid ObjectId`,
-        );
-      }
-      if (
-        !brand.categories ||
-        !Array.isArray(brand.categories) ||
-        brand.categories.length === 0
-      ) {
-        return sendErrorResponse(
-          res,
-          400,
-          "VALIDATION_ERROR",
-          `brandCategories[${i}]: categories array with at least one category is required`,
-        );
-      }
-      for (let j = 0; j < brand.categories.length; j++) {
-        const category = brand.categories[j];
-        if (!category.categoryName || !category.categoryId) {
-          return sendErrorResponse(
-            res,
-            400,
-            "VALIDATION_ERROR",
-            `brandCategories[${i}].categories[${j}]: categoryName and categoryId are required`,
-          );
-        }
-        if (!isValidObjectId(category.categoryId)) {
-          return sendErrorResponse(
-            res,
-            400,
-            "VALIDATION_ERROR",
-            `brandCategories[${i}].categories[${j}].categoryId must be a valid ObjectId`,
-          );
-        }
-      }
-    }
+//     for (let i = 0; i < brandCategories.length; i++) {
+//       const brand = brandCategories[i];
+//       if (!brand.brandName || !brand.brandId) {
+//         return sendErrorResponse(
+//           res,
+//           400,
+//           "VALIDATION_ERROR",
+//           `brandCategories[${i}]: brandName and brandId are required`,
+//         );
+//       }
+//       if (!isValidObjectId(brand.brandId)) {
+//         return sendErrorResponse(
+//           res,
+//           400,
+//           "VALIDATION_ERROR",
+//           `brandCategories[${i}].brandId must be a valid ObjectId`,
+//         );
+//       }
+//       if (
+//         !brand.categories ||
+//         !Array.isArray(brand.categories) ||
+//         brand.categories.length === 0
+//       ) {
+//         return sendErrorResponse(
+//           res,
+//           400,
+//           "VALIDATION_ERROR",
+//           `brandCategories[${i}]: categories array with at least one category is required`,
+//         );
+//       }
+//       for (let j = 0; j < brand.categories.length; j++) {
+//         const category = brand.categories[j];
+//         if (!category.categoryName || !category.categoryId) {
+//           return sendErrorResponse(
+//             res,
+//             400,
+//             "VALIDATION_ERROR",
+//             `brandCategories[${i}].categories[${j}]: categoryName and categoryId are required`,
+//           );
+//         }
+//         if (!isValidObjectId(category.categoryId)) {
+//           return sendErrorResponse(
+//             res,
+//             400,
+//             "VALIDATION_ERROR",
+//             `brandCategories[${i}].categories[${j}].categoryId must be a valid ObjectId`,
+//           );
+//         }
+//       }
+//     }
 
-    // Validate zone
-    if (req.body.zone && req.body.zoneRefId) {
-      const location = await Location.findById(req.body.zoneRefId);
-      if (!location) {
-        return sendErrorResponse(
-          res,
-          404,
-          "INVALID_REF_ID",
-          `Zone with refId ${req.body.zoneRefId} does not exist`
-        );
-      }
-      if (location.zone !== req.body.zone.toUpperCase()) {
-        return sendErrorResponse(
-          res,
-          400,
-          "NAME_MISMATCH",
-          `Incorrect zone name for refId ${req.body.zoneRefId}. Expected: ${location.zone}, Received: ${req.body.zone}`
-        );
-      }
-    }
+//     // Validate zone
+//     if (req.body.zone && req.body.zoneRefId) {
+//       const location = await Location.findById(req.body.zoneRefId);
+//       if (!location) {
+//         return sendErrorResponse(
+//           res,
+//           404,
+//           "INVALID_REF_ID",
+//           `Zone with refId ${req.body.zoneRefId} does not exist`
+//         );
+//       }
+//       if (location.zone !== req.body.zone.toUpperCase()) {
+//         return sendErrorResponse(
+//           res,
+//           400,
+//           "NAME_MISMATCH",
+//           `Incorrect zone name for refId ${req.body.zoneRefId}. Expected: ${location.zone}, Received: ${req.body.zone}`
+//         );
+//       }
+//     }
 
-    // Validate specificLab
-    if (req.body.specificLab && req.body.specificLabRefId) {
-      const specificLabDoc = await SpecificLab.findById(req.body.specificLabRefId);
-      if (!specificLabDoc) {
-        return sendErrorResponse(
-          res,
-          404,
-          "INVALID_REF_ID",
-          `SpecificLab with refId ${req.body.specificLabRefId} does not exist`
-        );
-      }
-      if (specificLabDoc.name !== req.body.specificLab) {
-        return sendErrorResponse(
-          res,
-          400,
-          "NAME_MISMATCH",
-          `Incorrect specificLab name for refId ${req.body.specificLabRefId}. Expected: ${specificLabDoc.name}, Received: ${req.body.specificLab}`
-        );
-      }
-    }
+//     // Validate specificLab
+//     if (req.body.specificLab && req.body.specificLabRefId) {
+//       const specificLabDoc = await SpecificLab.findById(req.body.specificLabRefId);
+//       if (!specificLabDoc) {
+//         return sendErrorResponse(
+//           res,
+//           404,
+//           "INVALID_REF_ID",
+//           `SpecificLab with refId ${req.body.specificLabRefId} does not exist`
+//         );
+//       }
+//       if (specificLabDoc.name !== req.body.specificLab) {
+//         return sendErrorResponse(
+//           res,
+//           400,
+//           "NAME_MISMATCH",
+//           `Incorrect specificLab name for refId ${req.body.specificLabRefId}. Expected: ${specificLabDoc.name}, Received: ${req.body.specificLab}`
+//         );
+//       }
+//     }
 
-    // Validate plant
-    if (req.body.plant && req.body.plantRefId) {
-      const plantDoc = await Plant.findById(req.body.plantRefId);
-      if (!plantDoc) {
-        return sendErrorResponse(
-          res,
-          404,
-          "INVALID_REF_ID",
-          `Plant with refId ${req.body.plantRefId} does not exist`
-        );
-      }
-      if (plantDoc.name !== req.body.plant) {
-        return sendErrorResponse(
-          res,
-          400,
-          "NAME_MISMATCH",
-          `Incorrect plant name for refId ${req.body.plantRefId}. Expected: ${plantDoc.name}, Received: ${req.body.plant}`
-        );
-      }
-    }
+//     // Validate plant
+//     if (req.body.plant && req.body.plantRefId) {
+//       const plantDoc = await Plant.findById(req.body.plantRefId);
+//       if (!plantDoc) {
+//         return sendErrorResponse(
+//           res,
+//           404,
+//           "INVALID_REF_ID",
+//           `Plant with refId ${req.body.plantRefId} does not exist`
+//         );
+//       }
+//       if (plantDoc.name !== req.body.plant) {
+//         return sendErrorResponse(
+//           res,
+//           400,
+//           "NAME_MISMATCH",
+//           `Incorrect plant name for refId ${req.body.plantRefId}. Expected: ${plantDoc.name}, Received: ${req.body.plant}`
+//         );
+//       }
+//     }
 
-    // Validate fittingCenter
-    if (req.body.fittingCenter && req.body.fittingCenterRefId) {
-      const fittingCenterDoc = await FittingCenter.findById(req.body.fittingCenterRefId);
-      if (!fittingCenterDoc) {
-        return sendErrorResponse(
-          res,
-          404,
-          "INVALID_REF_ID",
-          `FittingCenter with refId ${req.body.fittingCenterRefId} does not exist`
-        );
-      }
-      if (fittingCenterDoc.name !== req.body.fittingCenter) {
-        return sendErrorResponse(
-          res,
-          400,
-          "NAME_MISMATCH",
-          `Incorrect fittingCenter name for refId ${req.body.fittingCenterRefId}. Expected: ${fittingCenterDoc.name}, Received: ${req.body.fittingCenter}`
-        );
-      }
-    }
+//     // Validate fittingCenter
+//     if (req.body.fittingCenter && req.body.fittingCenterRefId) {
+//       const fittingCenterDoc = await FittingCenter.findById(req.body.fittingCenterRefId);
+//       if (!fittingCenterDoc) {
+//         return sendErrorResponse(
+//           res,
+//           404,
+//           "INVALID_REF_ID",
+//           `FittingCenter with refId ${req.body.fittingCenterRefId} does not exist`
+//         );
+//       }
+//       if (fittingCenterDoc.name !== req.body.fittingCenter) {
+//         return sendErrorResponse(
+//           res,
+//           400,
+//           "NAME_MISMATCH",
+//           `Incorrect fittingCenter name for refId ${req.body.fittingCenterRefId}. Expected: ${fittingCenterDoc.name}, Received: ${req.body.fittingCenter}`
+//         );
+//       }
+//     }
 
-    // Validate creditDays
-    if (req.body.creditDays && req.body.creditDaysRefId) {
-      const creditDayDoc = await CreditDay.findById(req.body.creditDaysRefId);
-      if (!creditDayDoc) {
-        return sendErrorResponse(
-          res,
-          404,
-          "INVALID_REF_ID",
-          `CreditDays with refId ${req.body.creditDaysRefId} does not exist`
-        );
-      }
-      if (creditDayDoc.days.toString() !== req.body.creditDays.toString()) {
-        return sendErrorResponse(
-          res,
-          400,
-          "NAME_MISMATCH",
-          `Incorrect creditDays value for refId ${req.body.creditDaysRefId}. Expected: ${creditDayDoc.days}, Received: ${req.body.creditDays}`
-        );
-      }
-    }
+//     // Validate creditDays
+//     if (req.body.creditDays && req.body.creditDaysRefId) {
+//       const creditDayDoc = await CreditDay.findById(req.body.creditDaysRefId);
+//       if (!creditDayDoc) {
+//         return sendErrorResponse(
+//           res,
+//           404,
+//           "INVALID_REF_ID",
+//           `CreditDays with refId ${req.body.creditDaysRefId} does not exist`
+//         );
+//       }
+//       if (creditDayDoc.days.toString() !== req.body.creditDays.toString()) {
+//         return sendErrorResponse(
+//           res,
+//           400,
+//           "NAME_MISMATCH",
+//           `Incorrect creditDays value for refId ${req.body.creditDaysRefId}. Expected: ${creditDayDoc.days}, Received: ${req.body.creditDays}`
+//         );
+//       }
+//     }
 
-    // Validate courierName
-    if (req.body.courierName && req.body.courierNameRefId) {
-      const courierNameDoc = await CourierName.findById(req.body.courierNameRefId);
-      if (!courierNameDoc) {
-        return sendErrorResponse(
-          res,
-          404,
-          "INVALID_REF_ID",
-          `CourierName with refId ${req.body.courierNameRefId} does not exist`
-        );
-      }
-      if (courierNameDoc.name !== req.body.courierName) {
-        return sendErrorResponse(
-          res,
-          400,
-          "NAME_MISMATCH",
-          `Incorrect courierName for refId ${req.body.courierNameRefId}. Expected: ${courierNameDoc.name}, Received: ${req.body.courierName}`
-        );
-      }
-    }
+//     // Validate courierName
+//     if (req.body.courierName && req.body.courierNameRefId) {
+//       const courierNameDoc = await CourierName.findById(req.body.courierNameRefId);
+//       if (!courierNameDoc) {
+//         return sendErrorResponse(
+//           res,
+//           404,
+//           "INVALID_REF_ID",
+//           `CourierName with refId ${req.body.courierNameRefId} does not exist`
+//         );
+//       }
+//       if (courierNameDoc.name !== req.body.courierName) {
+//         return sendErrorResponse(
+//           res,
+//           400,
+//           "NAME_MISMATCH",
+//           `Incorrect courierName for refId ${req.body.courierNameRefId}. Expected: ${courierNameDoc.name}, Received: ${req.body.courierName}`
+//         );
+//       }
+//     }
 
-    // Validate courierTime
-    if (req.body.courierTime && req.body.courierTimeRefId) {
-      const courierTimeDoc = await CourierTime.findById(req.body.courierTimeRefId);
-      if (!courierTimeDoc) {
-        return sendErrorResponse(
-          res,
-          404,
-          "INVALID_REF_ID",
-          `CourierTime with refId ${req.body.courierTimeRefId} does not exist`
-        );
-      }
+//     // Validate courierTime
+//     if (req.body.courierTime && req.body.courierTimeRefId) {
+//       const courierTimeDoc = await CourierTime.findById(req.body.courierTimeRefId);
+//       if (!courierTimeDoc) {
+//         return sendErrorResponse(
+//           res,
+//           404,
+//           "INVALID_REF_ID",
+//           `CourierTime with refId ${req.body.courierTimeRefId} does not exist`
+//         );
+//       }
 
-      if (courierTimeDoc.time !== req.body.courierTime) {
-        return sendErrorResponse(
-          res,
-          400,
-          "NAME_MISMATCH",
-          `Incorrect courierTime for refId ${req.body.courierTimeRefId}. Expected: ${courierTimeDoc.time}, Received: ${req.body.courierTime}`
-        );
-      }
-    }
+//       if (courierTimeDoc.time !== req.body.courierTime) {
+//         return sendErrorResponse(
+//           res,
+//           400,
+//           "NAME_MISMATCH",
+//           `Incorrect courierTime for refId ${req.body.courierTimeRefId}. Expected: ${courierTimeDoc.time}, Received: ${req.body.courierTime}`
+//         );
+//       }
+//     }
 
-    // Validate salesPerson
-    if (req.body.salesPerson && req.body.salesPersonRefId) {
-      const salesPersonDoc = await employeeSchema.findById(req.body.salesPersonRefId);
-      if (!salesPersonDoc) {
-        return sendErrorResponse(
-          res,
-          404,
-          "INVALID_REF_ID",
-          `SalesPerson with refId ${req.body.salesPersonRefId} does not exist`
-        );
-      }
-      if (salesPersonDoc.employeeName !== req.body.salesPerson) {
-        return sendErrorResponse(
-          res,
-          400,
-          "NAME_MISMATCH",
-          `Incorrect salesPerson name for refId ${req.body.salesPersonRefId}. Expected: ${salesPersonDoc.employeeName}, Received: ${req.body.salesPerson}`
-        );
-      }
-    }
+//     // Validate salesPerson
+//     if (req.body.salesPerson && req.body.salesPersonRefId) {
+//       const salesPersonDoc = await employeeSchema.findById(req.body.salesPersonRefId);
+//       if (!salesPersonDoc) {
+//         return sendErrorResponse(
+//           res,
+//           404,
+//           "INVALID_REF_ID",
+//           `SalesPerson with refId ${req.body.salesPersonRefId} does not exist`
+//         );
+//       }
+//       if (salesPersonDoc.employeeName !== req.body.salesPerson) {
+//         return sendErrorResponse(
+//           res,
+//           400,
+//           "NAME_MISMATCH",
+//           `Incorrect salesPerson name for refId ${req.body.salesPersonRefId}. Expected: ${salesPersonDoc.employeeName}, Received: ${req.body.salesPerson}`
+//         );
+//       }
+//     }
 
-    for (let i = 0; i < brandCategories.length; i++) {
-      const brand = brandCategories[i];
+//     for (let i = 0; i < brandCategories.length; i++) {
+//       const brand = brandCategories[i];
 
-      // Validate brand
-      const brandDoc = await Brand.findById(brand.brandId);
-      if (!brandDoc) {
-        return sendErrorResponse(
-          res,
-          404,
-          "INVALID_REF_ID",
-          `Brand with refId ${brand.brandId} does not exist in brandCategories[${i}]`
-        );
-      }
-      if (brandDoc.name !== brand.brandName.toUpperCase()) {
-        return sendErrorResponse(
-          res,
-          400,
-          "NAME_MISMATCH",
-          `Incorrect brand name for refId ${brand.brandId} in brandCategories[${i}]. Expected: ${brandDoc.name}, Received: ${brand.brandName}`
-        );
-      }
+//       // Validate brand
+//       const brandDoc = await Brand.findById(brand.brandId);
+//       if (!brandDoc) {
+//         return sendErrorResponse(
+//           res,
+//           404,
+//           "INVALID_REF_ID",
+//           `Brand with refId ${brand.brandId} does not exist in brandCategories[${i}]`
+//         );
+//       }
+//       if (brandDoc.name !== brand.brandName.toUpperCase()) {
+//         return sendErrorResponse(
+//           res,
+//           400,
+//           "NAME_MISMATCH",
+//           `Incorrect brand name for refId ${brand.brandId} in brandCategories[${i}]. Expected: ${brandDoc.name}, Received: ${brand.brandName}`
+//         );
+//       }
 
-      // Validate categories
-      if (brand.categories && Array.isArray(brand.categories)) {
-        for (let j = 0; j < brand.categories.length; j++) {
-          const category = brand.categories[j];
+//       // Validate categories
+//       if (brand.categories && Array.isArray(brand.categories)) {
+//         for (let j = 0; j < brand.categories.length; j++) {
+//           const category = brand.categories[j];
 
-          const categoryDoc = await Category.findById(category.categoryId);
-          if (!categoryDoc) {
-            return sendErrorResponse(
-              res,
-              404,
-              "INVALID_REF_ID",
-              `Category with refId ${category.categoryId} does not exist in brandCategories[${i}].categories[${j}]`
-            );
-          }
-          if (categoryDoc.name !== category.categoryName) {
-            return sendErrorResponse(
-              res,
-              400,
-              "NAME_MISMATCH",
-              `Incorrect category name for refId ${category.categoryId} in brandCategories[${i}].categories[${j}]. Expected: ${categoryDoc.name}, Received: ${category.categoryName}`
-            );
-          }
-          // Verify category belongs to the brand
-          if (categoryDoc.brand.toString() !== brand.brandId) {
-            return sendErrorResponse(
-              res,
-              400,
-              "BRAND_CATEGORY_MISMATCH",
-              `Category "${category.categoryName}" does not belong to brand "${brand.brandName}" in brandCategories[${i}].categories[${j}]`
-            );
-          }
-        }
-      }
-    }
+//           const categoryDoc = await Category.findById(category.categoryId);
+//           if (!categoryDoc) {
+//             return sendErrorResponse(
+//               res,
+//               404,
+//               "INVALID_REF_ID",
+//               `Category with refId ${category.categoryId} does not exist in brandCategories[${i}].categories[${j}]`
+//             );
+//           }
+//           if (categoryDoc.name !== category.categoryName) {
+//             return sendErrorResponse(
+//               res,
+//               400,
+//               "NAME_MISMATCH",
+//               `Incorrect category name for refId ${category.categoryId} in brandCategories[${i}].categories[${j}]. Expected: ${categoryDoc.name}, Received: ${category.categoryName}`
+//             );
+//           }
+//           // Verify category belongs to the brand
+//           if (categoryDoc.brand.toString() !== brand.brandId) {
+//             return sendErrorResponse(
+//               res,
+//               400,
+//               "BRAND_CATEGORY_MISMATCH",
+//               `Category "${category.categoryName}" does not belong to brand "${brand.brandName}" in brandCategories[${i}].categories[${j}]`
+//             );
+//           }
+//         }
+//       }
+//     }
 
-    const billToAddressToUpdate = req.body.billToAddress || customer.billToAddress;
-    const finalPassword = generateRandomPassword();
+//     const billToAddressToUpdate = req.body.billToAddress || customer.billToAddress;
+//     const finalPassword = generateRandomPassword();
 
-    let customerCode = generateCustomerCode(customer.shopName);
-    let codeExists = true;
+//     let customerCode = generateCustomerCode(customer.shopName);
+//     let codeExists = true;
 
-    while (codeExists) {
-      const existing = await Customer.findOne({ customerCode });
-      if (!existing) {
-        codeExists = false;
-      } else {
-        customerCode = generateCustomerCode(customer.shopName);
-      }
-    }
+//     while (codeExists) {
+//       const existing = await Customer.findOne({ customerCode });
+//       if (!existing) {
+//         codeExists = false;
+//       } else {
+//         customerCode = generateCustomerCode(customer.shopName);
+//       }
+//     }
 
-    const updateData = {
-      password: finalPassword,
-      zone: req.body.zone,
-      brandCategories: req.body.brandCategories,
-      specificLab: req.body.specificLab,
-      salesPerson: req.body.salesPerson,
-      plant: req.body.plant,
-      fittingCenter: req.body.fittingCenter,
-      creditDays: req.body.creditDays,
-      creditLimit: req.body.creditLimit,
-      courierName: req.body.courierName,
-      courierTime: req.body.courierTime,
-      finalDiscount: req.body.finalDiscount,
-      customerCode: customerCode,
-      financeCompletedBy: req.user.id,
-      financeCompletedAt: new Date(),
-      Status: {
-        isActive: true,
-        isSuspended: false,
-      },
-      billToAddress: billToAddressToUpdate
-    };
+//     const updateData = {
+//       password: finalPassword,
+//       zone: req.body.zone,
+//       brandCategories: req.body.brandCategories,
+//       specificLab: req.body.specificLab,
+//       salesPerson: req.body.salesPerson,
+//       plant: req.body.plant,
+//       fittingCenter: req.body.fittingCenter,
+//       creditDays: req.body.creditDays,
+//       creditLimit: req.body.creditLimit,
+//       courierName: req.body.courierName,
+//       courierTime: req.body.courierTime,
+//       finalDiscount: req.body.finalDiscount,
+//       customerCode: customerCode,
+//       Status: {
+//         isActive: true,
+//         isSuspended: false,
+//       },
+//       billToAddress: billToAddressToUpdate
+//     };
 
-    console.log("updateData : ", updateData);
+//     console.log("updateData : ", updateData);
 
-    Object.assign(customer, updateData);
-    await customer.save();
-    const customerObj = customer.toObject();
-    delete customerObj.password;
+//     Object.assign(customer, updateData);
+//     await customer.save();
+//     const customerObj = customer.toObject();
+//     delete customerObj.password;
 
-    return sendSuccessResponse(
-      res,
-      200,
-      customerObj,
-      "Customer completed and approved by Finance successfully",
-    );
-  } catch (error) {
-    console.error("Finance complete customer error:", error);
+//     return sendSuccessResponse(
+//       res,
+//       200,
+//       customerObj,
+//       "Customer completed and approved by Finance successfully",
+//     );
+//   } catch (error) {
+//     console.error("Finance complete customer error:", error);
 
-    if (error.name === "ValidationError") {
-      const messages = Object.values(error.errors).map((err) => err.message);
-      return sendErrorResponse(
-        res,
-        400,
-        "VALIDATION_ERROR",
-        messages.join(", "),
-      );
-    }
+//     if (error.name === "ValidationError") {
+//       const messages = Object.values(error.errors).map((err) => err.message);
+//       return sendErrorResponse(
+//         res,
+//         400,
+//         "VALIDATION_ERROR",
+//         messages.join(", "),
+//       );
+//     }
 
-    return sendErrorResponse(
-      res,
-      500,
-      "INTERNAL_ERROR",
-      "Internal server error during customer completion",
-    );
-  }
-};
+//     return sendErrorResponse(
+//       res,
+//       500,
+//       "INTERNAL_ERROR",
+//       "Internal server error during customer completion",
+//     );
+//   }
+// };
 
 export const updateCustomerProfile = async (req, res) => {
   try {
@@ -1497,7 +1494,7 @@ export const updateCustomerProfile = async (req, res) => {
           res,
           400,
           "VALIDATION_ERROR",
-          "Bill to address must be an object",
+          "Bill to address must be an object.",
         );
       }
       const addr = updateData.billToAddress;
@@ -1640,12 +1637,7 @@ export const sendCustomerForCorrection = async (req, res) => {
     const userEmployeeType = req.user.EmployeeType;
 
     if (userEmployeeType !== 'SUPERADMIN' && userDepartment !== 'FINANCE') {
-      return sendErrorResponse(
-        res,
-        403,
-        'FORBIDDEN',
-        'Only Finance department or SuperAdmin can send customer data back for corrections'
-      );
+      return sendErrorResponse(res, 403, 'FORBIDDEN', 'Only Finance department or SuperAdmin can send customer data back for corrections');
     }
 
     if (!mongoose.Types.ObjectId.isValid(customerId)) {
@@ -1653,21 +1645,11 @@ export const sendCustomerForCorrection = async (req, res) => {
     }
 
     if (!fieldsToCorrect || !Array.isArray(fieldsToCorrect) || fieldsToCorrect.length === 0) {
-      return sendErrorResponse(
-        res,
-        400,
-        'VALIDATION_ERROR',
-        'fieldsToCorrect must be an array with at least one field name'
-      );
+      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'fieldsToCorrect must be an array with at least one field name');
     }
 
     if (!remark || remark.trim() === '') {
-      return sendErrorResponse(
-        res,
-        400,
-        'VALIDATION_ERROR',
-        'remark is required to explain what needs to be corrected'
-      );
+      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'remark is required to explain what needs to be corrected');
     }
 
     const customer = await Customer.findById(customerId);
@@ -1677,24 +1659,15 @@ export const sendCustomerForCorrection = async (req, res) => {
     }
 
     if (customer.approvalWorkflow?.financeApprovalStatus === 'APPROVED') {
-      return sendErrorResponse(
-        res,
-        400,
-        'ALREADY_APPROVED',
-        'Customer is already approved. Cannot send back for corrections.'
-      );
+      return sendErrorResponse(res, 400, 'ALREADY_APPROVED', 'Customer is already approved. Cannot send back for corrections.');
     }
 
     if (customer.approvalWorkflow?.financeApprovalStatus !== 'PENDING') {
-      return sendErrorResponse(
-        res,
-        400,
-        'INVALID_STATUS',
-        'Customer must be in PENDING status to send back for corrections'
-      );
+      return sendErrorResponse(res, 400, 'INVALID_STATUS', 'Customer must be in PENDING status to send back for corrections');
     }
 
     const allowedFields = [
+      'finalDiscount',
       'shopName',
       'ownerName',
       'BusinessType',
@@ -1717,40 +1690,35 @@ export const sendCustomerForCorrection = async (req, res) => {
       'proposedDiscount',
       'currentlyDealtBrands',
       'minSalesValue',
-      // 'zone',
-      // 'zoneRefId',
-      // 'specificLab',
-      // 'specificLabRefId',
-      // 'plant',
-      // 'plantRefId',
-      // 'fittingCenter',
-      // 'fittingCenterRefId',
-      // 'creditDays',
-      // 'creditDaysRefId',
-      // 'creditLimit',
-      // 'courierName',
-      // 'courierNameRefId',
-      // 'courierTime',
-      // 'courierTimeRefId',
-      // 'brandCategories',
-      // 'salesPerson',
-      // 'salesPersonRefId'
+      'zone',
+      'zoneRefId',
+      'specificLab',
+      'specificLabRefId',
+      'plant',
+      'plantRefId',
+      'fittingCenter',
+      'fittingCenterRefId',
+      'creditDays',
+      'creditDaysRefId',
+      'creditLimit',
+      'courierName',
+      'courierNameRefId',
+      'courierTime',
+      'courierTimeRefId',
+      'brandCategories',
+      'salesPerson',
+      'salesPersonRefId'
     ];
 
     const invalidFields = fieldsToCorrect.filter(field => {
       if (allowedFields.includes(field)) return false;
-      const billToAddressFieldPattern = /^billToAddress\.(branchName|customerContactName|customerContactNumber|city|state|zipCode|country|address|billingCurrency|billingMode)$/;
+      const billToAddressFieldPattern = /^billToAddress(\[\d+\])?\.(branchName|customerContactName|customerContactNumber|city|state|zipCode|country|address|billingCurrency|billingMode)$/;
       if (billToAddressFieldPattern.test(field)) return false;
       return true;
     });
 
     if (invalidFields.length > 0) {
-      return sendErrorResponse(
-        res,
-        400,
-        'INVALID_FIELDS',
-        `Invalid field names: ${invalidFields.join(', ')}. Allowed fields: ${allowedFields.join(', ')}. For bill to address corrections use format "billToAddress.fieldName" (e.g., "billToAddress.branchName", "billToAddress.billingCurrency")`
-      );
+      return sendErrorResponse(res, 400, 'INVALID_FIELDS', `Invalid field names: ${invalidFields.join(', ')}. Allowed fields: ${allowedFields.join(', ')}. For bill to address corrections use format "billToAddress.fieldName" (e.g., "billToAddress.branchName", "billToAddress.billingCurrency")`);
     }
 
     console.log("Anish : ", req.user);
@@ -1761,7 +1729,8 @@ export const sendCustomerForCorrection = async (req, res) => {
       remark: remark.trim(),
       requestedBy: req.user.id,
       requestedEmployeeName: req.user.employeeName,
-      requestedAt: new Date()
+      requestedAt: new Date(),
+      correctionNeededBy: 'SALES'
     };
 
     await customer.save();
@@ -1769,39 +1738,23 @@ export const sendCustomerForCorrection = async (req, res) => {
     const customerObj = customer.toObject();
     delete customerObj.password;
 
-    return sendSuccessResponse(
-      res,
-      200,
-      {
-        customer: customerObj,
-        correctionRequest: {
-          fieldsToCorrect: fieldsToCorrect,
-          remark: remark.trim(),
-          requestedBy: req.user.employeeName || req.user.email,
-          requestedAt: customer.correctionRequest.requestedAt
-        }
-      },
-      'Customer sent back to sales for corrections successfully'
-    );
+    return sendSuccessResponse(res, 200, {
+      customer: customerObj,
+      correctionRequest: {
+        fieldsToCorrect: fieldsToCorrect,
+        remark: remark.trim(),
+        requestedBy: req.user.employeeName || req.user.email,
+        requestedAt: customer.correctionRequest.requestedAt
+      }
+    }, 'Customer sent back to sales for corrections successfully');
+
   } catch (error) {
     console.error('Send customer for correction error:', error);
-
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map((err) => err.message);
-      return sendErrorResponse(
-        res,
-        400,
-        'VALIDATION_ERROR',
-        messages.join(', ')
-      );
+      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', messages.join(', '));
     }
-
-    return sendErrorResponse(
-      res,
-      500,
-      'INTERNAL_ERROR',
-      'Failed to send customer for corrections'
-    );
+    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Failed to send customer for corrections');
   }
 };
 
@@ -1886,7 +1839,7 @@ export const resubmitCorrectedCustomer = async (req, res) => {
     if (updateData.AadharCard) updateFields.AadharCard = updateData.AadharCard;
     if (updateData.PANCardImg) updateFields.PANCardImg = updateData.PANCardImg;
     if (updateData.AadharCardImg) updateFields.AadharCardImg = updateData.AadharCardImg;
-
+    if (updateData.finalDiscount) updateFields.finalDiscount = updateData.finalDiscount;
     if (updateData.yearOfEstablishment !== undefined) updateFields.yearOfEstablishment = updateData.yearOfEstablishment;
     if (updateData.proposedDiscount !== undefined) updateFields.proposedDiscount = updateData.proposedDiscount;
     if (updateData.currentlyDealtBrands !== undefined) updateFields.currentlyDealtBrands = updateData.currentlyDealtBrands?.trim();
@@ -1895,20 +1848,10 @@ export const resubmitCorrectedCustomer = async (req, res) => {
     if (updateData.BusinessType && updateData.BusinessTypeRefId) {
       const businessType = await BusinessType.findById(updateData.BusinessTypeRefId);
       if (!businessType) {
-        return sendErrorResponse(
-          res,
-          404,
-          'INVALID_REF_ID',
-          `BusinessType with refId ${updateData.BusinessTypeRefId} does not exist`
-        );
+        return sendErrorResponse(res, 404, 'INVALID_REF_ID', `BusinessType with refId ${updateData.BusinessTypeRefId} does not exist`);
       }
       if (businessType.name !== updateData.BusinessType) {
-        return sendErrorResponse(
-          res,
-          400,
-          'NAME_MISMATCH',
-          `Incorrect BusinessType name for refId ${updateData.BusinessTypeRefId}`
-        );
+        return sendErrorResponse(res, 400, 'NAME_MISMATCH', `Incorrect BusinessType name for refId ${updateData.BusinessTypeRefId}`);
       }
       updateFields.BusinessType = {
         name: updateData.BusinessType,
@@ -1944,12 +1887,7 @@ export const resubmitCorrectedCustomer = async (req, res) => {
     // Handle bill to address updates
     if (updateData.billToAddress) {
       if (typeof updateData.billToAddress !== 'object' || Array.isArray(updateData.billToAddress)) {
-        return sendErrorResponse(
-          res,
-          400,
-          'VALIDATION_ERROR',
-          'Bill to address must be an object'
-        );
+        return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Bill to address must be an object..');
       }
 
       const addr = updateData.billToAddress;
