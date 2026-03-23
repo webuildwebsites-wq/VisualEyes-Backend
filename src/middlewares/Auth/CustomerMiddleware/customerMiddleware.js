@@ -32,7 +32,7 @@ export const protectCustomer = async (req, res, next) => {
           success: false,
           error: {
             code: 'ACCOUNT_INACTIVE',
-            message: 'Customer account is inactive or suspended',
+            message: 'Customer account not found or is inactive or suspended',
             timestamp: new Date().toISOString()
           }
         });

@@ -9,7 +9,6 @@ import {
 } from "../../../../Utils/Auth/tokenUtils.js";
 import {
   generateCustomerCode,
-  generateRandomPassword,
 } from "../../../../Utils/Auth/customerAuthUtils.js";
 import Customer from "../../../../models/Auth/Customer.js";
 import customerDraftSchema from "../../../../models/Auth/CustomerDraft.js";
@@ -472,8 +471,6 @@ export const customerBasicRegistration = async (req, res) => {
       }
     }
 
-    const finalPassword = generateRandomPassword();
-
     let generatedCustomerCode = null;
     let customerCode = generateCustomerCode(shopName);
     let codeExists = true;
@@ -538,7 +535,6 @@ export const customerBasicRegistration = async (req, res) => {
 
       // Customer Registration - Only for FINANCE department or SUPERADMIN
       customerCode: generatedCustomerCode,
-      password: finalPassword,
       brandCategories: brandCategories
         ? brandCategories
           .filter(brand => brand.brandId && brand.brandName && brand.brandId !== "" && brand.brandName !== "")

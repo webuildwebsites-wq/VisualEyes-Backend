@@ -81,7 +81,7 @@ export const getAllCustomers = async (req, res) => {
 
     const {
       businessType,
-      status = "active",
+      status,
       createdByDepartment,
       zone,
       specificBrand,
@@ -102,19 +102,23 @@ export const getAllCustomers = async (req, res) => {
     const userDepartment = req.user?.Department?.name || req.user?.Department;
     const userEmployeeType = req.user?.EmployeeType;
 
+    console.log("req.user : ", req.user);
+
     let query = {};
 
-    if (userDepartment === 'SALES' && userEmployeeType === 'EMPLOYEE') {
+    const isSalesHead = Array.isArray(req.user?.subRoles) && req.user.subRoles.some(r => r.name === 'Sales Head');
+
+    if (userDepartment === 'SALES' && userEmployeeType === 'EMPLOYEE' && !isSalesHead) {
       query.createdBy = req.user.id;
     }
 
     if (searchTerm) {
       const searchConditions = [];
-      
+
       if (!isNaN(searchTerm)) {
         searchConditions.push({ serialNumber: Number(searchTerm) });
       }
-      
+
       searchConditions.push({ ownerName: { $regex: searchTerm, $options: 'i' } });
       searchConditions.push({ customerCode: { $regex: searchTerm, $options: 'i' } });
       searchConditions.push({ shopName: { $regex: searchTerm, $options: 'i' } });
@@ -122,7 +126,7 @@ export const getAllCustomers = async (req, res) => {
       searchConditions.push({ mobileNo2: { $regex: searchTerm, $options: 'i' } });
       searchConditions.push({ businessEmail: { $regex: searchTerm, $options: 'i' } });
       searchConditions.push({ 'salesPerson.name': { $regex: searchTerm, $options: 'i' } });
-      
+
       query.$or = searchConditions;
     }
 
@@ -132,9 +136,9 @@ export const getAllCustomers = async (req, res) => {
 
     if (statusTerm) {
       if (statusTerm.toLowerCase() === 'active') {
-        query['Status.isActive'] = true;
+        query['status.isActive'] = true;
       } else if (statusTerm.toLowerCase() === 'inactive') {
-         query['Status.isActive'] = false;
+        query['status.isActive'] = false;
       }
     }
 
@@ -175,7 +179,7 @@ export const getAllCustomers = async (req, res) => {
       if (startDate) query.createdAt.$gte = startDate;
       if (endDate) query.createdAt.$lte = endDate;
     }
-    console.log("query : ",query);
+    console.log("querys : ", query);
     const [customers, total] = await Promise.all([
       Customer
         .find(query)
@@ -284,7 +288,7 @@ export const getPendingTermsCustomers = async (req, res) => {
     console.error("Get pending terms customers error:", error);
     return sendErrorResponse(res, 500, "INTERNAL_ERROR", "Failed to retrieve customers pending T&C");
   }
-}; 
+};
 
 export const getCorrectionRequiredCustomers = async (req, res) => {
   try {

@@ -25,7 +25,7 @@ customerRouter.post('/draft-register', ProtectUser, attachDepartmentInfo, custom
 customerRouter.put('/:customerId/finance-approve', ProtectUser, attachDepartmentInfo, financeApproveCustomer);
 customerRouter.put('/:customerId/sales-head-approve', ProtectUser, attachDepartmentInfo, salesHeadApproveCustomer);
 customerRouter.put('/:customerId/finance-resubmit', ProtectUser, attachDepartmentInfo, financeResubmitToSalesHead);
-customerRouter.put('/:customerId/accept-terms', protectCustomer, acceptTermsAndConditions);
+customerRouter.put('/accept-terms-conditions', protectCustomer, acceptTermsAndConditions);
 
 
 // Get Pending Customers by Stage

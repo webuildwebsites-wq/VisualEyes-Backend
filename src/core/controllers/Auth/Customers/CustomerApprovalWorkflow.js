@@ -2,6 +2,8 @@ import { sendErrorResponse, sendSuccessResponse } from "../../../../Utils/respon
 import { sendEmail } from "../../../config/Email/emailService.js";
 import Customer from "../../../../models/Auth/Customer.js";
 import mongoose from "mongoose";
+import CredentialsTemplate from "../../../../Utils/Mail/CredentialsTemplate.js";
+import { generateRandomPassword } from "../../../../Utils/Auth/customerAuthUtils.js";
 
 export const financeApproveCustomer = async (req, res) => {
   try {
@@ -122,12 +124,36 @@ export const salesHeadApproveCustomer = async (req, res) => {
       return sendErrorResponse(res, 400, "INVALID_STATUS", "Customer must be approved by Finance before Sales Head approval");
     }
 
+    if (customer.approvalWorkflow.salesHeadApprovalStatus === "APPROVED") {
+      return sendErrorResponse(res, 400, "ALREADY_APPROVED", "Sales Head has already approved this customer");
+    }
+
     if (action === "APPROVE") {
       customer.approvalWorkflow.salesHeadApprovalStatus = "APPROVED";
       customer.approvalWorkflow.salesHeadApprovedBy = userId;
       customer.approvalWorkflow.salesHeadApprovedAt = new Date();
       customer.approvalWorkflow.salesHeadRemark = remark || "";
       customer.status.isActive = true;
+
+      const plainPassword = generateRandomPassword();
+      customer.password = plainPassword;
+
+      await customer.save();
+
+      sendEmail({
+        to: customer.businessEmail,
+        subject: "Your Account Approved - Welcome to VISUAL EYES",
+        html: CredentialsTemplate(
+          customer.ownerName,
+          customer.businessEmail,
+          plainPassword
+        ),
+      }).catch((err) => console.error("Background email error:", err));
+
+      const customerObj = customer.toObject();
+      delete customerObj.password;
+      return sendSuccessResponse(res, 200, { customer: customerObj }, "Customer approved by Sales Head");
+
     } else if (action === "REJECT") {
       if (!blacklistReason || blacklistReason.trim() === "") {
         return sendErrorResponse(res, 400, "VALIDATION_ERROR", "blacklistReason is required when blacklisting a customer");
@@ -167,12 +193,7 @@ export const salesHeadApproveCustomer = async (req, res) => {
 
 export const acceptTermsAndConditions = async (req, res) => {
   try {
-    const { customerId } = req.params;
-    const userId = req.user.id;
-
-    if (!customerId || !mongoose.Types.ObjectId.isValid(customerId)) {
-      return sendErrorResponse(res, 400, "INVALID_ID", "Invalid customer ID");
-    }
+    const customerId = req.user.id;
 
     const customer = await Customer.findById(customerId);
     if (!customer) {
@@ -187,6 +208,10 @@ export const acceptTermsAndConditions = async (req, res) => {
       return sendErrorResponse(res, 403, "BLACKLISTED", "This customer is blacklisted and cannot proceed");
     }
 
+    if (customer.termsAndConditionsAccepted) {
+      return sendErrorResponse(res, 400, "ALREADY_ACCEPTED", "Terms and conditions have already been accepted");
+    }
+
     customer.termsAndConditionsAccepted = true;
     customer.termsAcceptedAt = new Date();
     customer.status.isActive = true;
@@ -196,20 +221,10 @@ export const acceptTermsAndConditions = async (req, res) => {
     const customerObj = customer.toObject();
     delete customerObj.password;
 
-    return sendSuccessResponse(
-      res,
-      200,
-      { customer: customerObj },
-      "Terms and conditions accepted. Customer is now finalized."
-    );
+    return sendSuccessResponse(res, 200, { customer: customerObj }, "Terms and conditions accepted. Customer is now finalized.");
   } catch (error) {
     console.error("Terms acceptance error:", error);
-    return sendErrorResponse(
-      res,
-      500,
-      "INTERNAL_ERROR",
-      "Terms acceptance failed"
-    );
+    return sendErrorResponse(res, 500, "INTERNAL_ERROR", "Terms acceptance failed");
   }
 };
 
@@ -247,10 +262,7 @@ export const financeResubmitToSalesHead = async (req, res) => {
     if (fieldsToCorrect.length > 0) {
       const hasRelevantUpdate = fieldsToCorrect.some(field => updateData[field] !== undefined);
       if (!hasRelevantUpdate) {
-        return sendErrorResponse(
-          res, 400, "MISSING_CORRECTIONS",
-          `Please update at least one of the requested fields: ${fieldsToCorrect.join(", ")}`
-        );
+        return sendErrorResponse(res, 400, "MISSING_CORRECTIONS", `Please update at least one of the requested fields: ${fieldsToCorrect.join(", ")}`);
       }
     }
 
@@ -338,11 +350,6 @@ export const getPendingCustomersByStage = async (req, res) => {
     return sendSuccessResponse(res, 200, { customers, pagination }, `Retrieved ${customers.length} customers pending at ${stage} stage`);
   } catch (error) {
     console.error("Get pending customers error:", error);
-    return sendErrorResponse(
-      res,
-      500,
-      "INTERNAL_ERROR",
-      "Failed to retrieve pending customers"
-    );
+    return sendErrorResponse(res, 500, "INTERNAL_ERROR", "Failed to retrieve pending customers");
   }
 };

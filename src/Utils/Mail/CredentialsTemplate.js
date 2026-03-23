@@ -96,8 +96,19 @@ const CredentialsTemplate = (username, businessEmail, customerpassword) => {
         <p><strong>Password:</strong> ${customerpassword}</p>
       </div>
 
+      <p>
+        Please use the link below to log in and accept the Terms & Conditions of Visual Eyes to activate your account:
+      </p>
+
+      <div style="text-align: center; margin: 24px 0;">
+        <a href="http://visualeye.digibysr.in/" 
+           style="background-color: #f2b63f; color: #1f1f1f; padding: 12px 28px; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 15px; display: inline-block;">
+          Login to Visual Eyes
+        </a>
+      </div>
+
       <p class="note">
-        For security reasons, please log in and change your password immediately.
+        For security reasons, please log in and change your password immediately after accepting the Terms & Conditions.
       </p>
 
       <p>
