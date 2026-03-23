@@ -1,6 +1,6 @@
 import express from 'express';
 import { customerForgotPassword, customerLogin,customerResetPassword,customerUpdatePassword, customerBasicRegistration, updateCustomerProfile, resetCustomerCredit, sendCustomerForCorrection, resubmitCorrectedCustomer, updateCustomerShipToDetails } from '../../core/controllers/Auth/Customers/CustomerAuth.js';
-import { financeApproveCustomer, salesHeadApproveCustomer, acceptTermsAndConditions, getPendingCustomersByStage } from '../../core/controllers/Auth/Customers/CustomerApprovalWorkflow.js';
+import { financeApproveCustomer, salesHeadApproveCustomer, acceptTermsAndConditions, getPendingCustomersByStage, financeResubmitToSalesHead } from '../../core/controllers/Auth/Customers/CustomerApprovalWorkflow.js';
 import { getAllCustomers, getCustomerById, getCustomerProfile, getDraftCustomers, getCorrectionRequiredCustomers } from '../../core/controllers/Auth/Customers/customer.get.controller.js';
 import { requireSalesFinanceOrSuperAdmin, attachDepartmentInfo } from '../../middlewares/Auth/AdminMiddleware/departmentMiddleware.js';
 import { protectCustomer } from '../../middlewares/Auth/CustomerMiddleware/customerMiddleware.js';
@@ -24,6 +24,7 @@ customerRouter.post('/draft-register', ProtectUser, attachDepartmentInfo, custom
 // NEW WORKFLOW ROUTES
 customerRouter.put('/:customerId/finance-approve', ProtectUser, attachDepartmentInfo, financeApproveCustomer);
 customerRouter.put('/:customerId/sales-head-approve', ProtectUser, attachDepartmentInfo, salesHeadApproveCustomer);
+customerRouter.put('/:customerId/finance-resubmit', ProtectUser, attachDepartmentInfo, financeResubmitToSalesHead);
 customerRouter.put('/:customerId/accept-terms', protectCustomer, acceptTermsAndConditions);
 
 

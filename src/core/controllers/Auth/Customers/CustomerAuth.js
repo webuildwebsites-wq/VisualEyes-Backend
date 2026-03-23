@@ -1954,12 +1954,7 @@ export const resubmitCorrectedCustomer = async (req, res) => {
     const customerObj = customer.toObject();
     delete customerObj.password;
 
-    return sendSuccessResponse(
-      res,
-      200,
-      { customer: customerObj },
-      'Customer corrections submitted successfully. Pending Finance approval.'
-    );
+    return sendSuccessResponse(res, 200, { customer: customerObj }, 'Customer corrections submitted successfully.');
   } catch (error) {
     console.error('Resubmit corrected customer error:', error);
 
