@@ -147,6 +147,7 @@ export const customerBasicRegistration = async (req, res) => {
       chequeDetails,
       billingCycle,
       billingMode,
+      customerShipToDetails
     } = req.body;
 
     const userEmployeeType = req.user?.EmployeeType;
@@ -318,31 +319,21 @@ export const customerBasicRegistration = async (req, res) => {
 
     for (const field of requiredRefIds) {
       if (!field.value) {
-        return sendErrorResponse(
-          res,
-          400,
-          "VALIDATION_ERROR",
-          `${field.name} is required for FINANCE department`,
-        );
+        return sendErrorResponse(res,400,"VALIDATION_ERROR",`${field.name} is required for FINANCE department`);
       }
       if (!isValidObjectId(field.value)) {
-        return sendErrorResponse(
-          res,
-          400,
-          "VALIDATION_ERROR",
-          `${field.name} must be a valid ObjectId (24 hex characters)`,
-        );
+        return sendErrorResponse(res,400,"VALIDATION_ERROR",`${field.name} must be a valid ObjectId (24 hex characters)`,);
       }
     }
 
-    if (!brandCategories || !Array.isArray(brandCategories) || brandCategories.length === 0) {
-      return sendErrorResponse(
-        res,
-        400,
-        "VALIDATION_ERROR",
-        "brandCategories array with at least one brand is required for FINANCE department",
-      );
-    }
+    // if (!brandCategories || !Array.isArray(brandCategories) || brandCategories.length === 0) {
+    //   return sendErrorResponse(
+    //     res,
+    //     400,
+    //     "VALIDATION_ERROR",
+    //     "brandCategories array with at least one brand is required for FINANCE department",
+    //   );
+    // }
 
     if (businessTypeRefId && !isValidObjectId(businessTypeRefId)) {
       return sendErrorResponse(
@@ -518,22 +509,37 @@ export const customerBasicRegistration = async (req, res) => {
         isSuspended: false,
       },
 
-      // Address
+      // BillToAddress
       billToAddress: {
-        branchName: billToAddress.branchName.trim(),
-        customerContactName: billToAddress.customerContactName.trim(),
-        customerContactNumber: billToAddress.customerContactNumber.trim(),
-        country: billToAddress.country,
-        state: billToAddress.state,
-        zipCode: billToAddress.zipCode,
-        city: billToAddress.city.trim(),
-        address: billToAddress.address.trim(),
-        billingCurrency: billToAddress.billingCurrency,
-        billingMode: billToAddress.billingMode,
-        createdBy: req.user.id,
+        branchName: billToAddress?.branchName?.trim(),
+        customerContactName: billToAddress?.customerContactName?.trim(),
+        customerContactNumber: billToAddress?.customerContactNumber?.trim(),
+        country: billToAddress?.country,
+        state: billToAddress?.state,
+        zipCode: billToAddress?.zipCode,
+        city: billToAddress?.city?.trim(),
+        address: billToAddress?.address?.trim(),
+        billingCurrency: billToAddress?.billingCurrency,
+        billingMode: billToAddress?.billingMode,
+        createdBy: req?.user?.id,
       },
 
-      // Customer Registration - Only for FINANCE department or SUPERADMIN
+      // ShipToAddress
+      customerShipToDetails: customerShipToDetails
+        ? customerShipToDetails.map((item) => ({
+          branchName: item?.branchName?.trim(),
+          customerContactName: item?.customerContactName?.trim(),
+          customerContactNumber: item?.customerContactNumber?.trim(),
+          country: item?.country,
+          state: item?.state,
+          zipCode: item?.zipCode,
+          city: item?.city?.trim(),
+          address: item?.address?.trim(),
+          billingCurrency: item?.billingCurrency,
+          billingMode: item?.billingMode,
+          createdBy: req.user.id,
+        })) : [],
+
       customerCode: generatedCustomerCode,
       brandCategories: brandCategories
         ? brandCategories

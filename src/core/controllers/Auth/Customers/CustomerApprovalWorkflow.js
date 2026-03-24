@@ -101,9 +101,10 @@ export const salesHeadApproveCustomer = async (req, res) => {
     const { customerId } = req.params;
     const { action, remark, blacklistReason, fieldsToCorrect } = req.body;
     const userId = req.user.id;
-    const userDepartment = req.user?.Department?.name || req.user?.Department;
 
-    if (userDepartment !== "SALES" && req.user?.EmployeeType !== "SUPERADMIN") {
+    const isSalesHead = Array.isArray(req.user?.subRoles) && req.user.subRoles.some(r => r.name === 'Sales Head');
+
+    if (req.user?.EmployeeType !== "SUPERADMIN" && !isSalesHead) {
       return sendErrorResponse(res, 403, "FORBIDDEN", "Only Sales Head can approve customers");
     }
 
