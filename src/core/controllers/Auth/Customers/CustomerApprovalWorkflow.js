@@ -79,7 +79,7 @@ export const financeApproveCustomer = async (req, res) => {
 export const salesHeadApproveCustomer = async (req, res) => {
   try {
     const { customerId } = req.params;
-    const { action, remark, blacklistReason, fieldsToCorrect } = req.body;
+    const { action, remark, blacklistReason, fieldsToCorrect, finnalPayload } = req.body;
     const userId = req.user.id;
 
     const isSalesHead = Array.isArray(req.user?.subRoles) && req.user.subRoles.some(r => r.code === 'SALES_HEAD');
@@ -110,6 +110,15 @@ export const salesHeadApproveCustomer = async (req, res) => {
     }
 
     if (action === "APPROVE") {
+      if (finnalPayload && typeof finnalPayload === 'object') {
+        const allowedFields = ['finalDiscount', 'creditLimit', 'creditDays', 'proposedDiscount', 'yearOfEstablishment'];
+        for (const field of allowedFields) {
+          if (finnalPayload[field] !== undefined && finnalPayload[field] !== null) {
+            customer[field] = finnalPayload[field];
+          }
+        }
+      }
+      
       customer.approvalWorkflow.salesHeadApprovalStatus = "APPROVED";
       customer.approvalWorkflow.salesHeadApprovedBy = userId;
       customer.approvalWorkflow.salesHeadApprovedAt = new Date();
