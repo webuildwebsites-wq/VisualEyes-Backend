@@ -18,7 +18,7 @@ export const updateDraftEmployee = async (req, res) => {
       return sendErrorResponse(res, 404, 'NOT_FOUND', 'Draft employee not found');
     }
 
-    const isCreator = draftEmployee.createdBy.toString() === userId;
+    const isCreator = draftEmployee.createdBy.toString() === userId?.toString();
     const isSuperAdmin = userEmployeeType === 'SUPERADMIN';
     
     if (!isCreator && !isSuperAdmin) {

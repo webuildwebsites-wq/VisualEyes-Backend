@@ -460,7 +460,7 @@ export const updateDraftCustomer = async (req, res) => {
     }
 
     // Check if user has permission to update
-    const isCreator = draftCustomer.createdBy.toString() === userId;
+    const isCreator = draftCustomer.createdBy?.toString() === userId?.toString();
     const isFinanceDepartment = userDepartment === 'FINANCE' || userEmployeeType === 'SUPERADMIN';
 
     if (!isCreator && !isFinanceDepartment) {
