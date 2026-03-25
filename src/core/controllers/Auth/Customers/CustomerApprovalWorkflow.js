@@ -35,17 +35,10 @@ export const financeApproveCustomer = async (req, res) => {
 
     if (action === "APPROVE") {
       if (finnalPayload && typeof finnalPayload === 'object') {
-        const allowedFields = {
-          finalDiscount: 'finalDiscount',
-          creditLimit: 'creditLimit',
-          creditDays: 'creditDays',
-          proposedDiscount: 'proposedDiscount',
-          yearOfEstablishment: 'yearOfEstablishment'
-        };
-
-        for (const [payloadKey, schemaKey] of Object.entries(allowedFields)) {
-          if (finnalPayload[payloadKey] !== undefined) {
-            customer[schemaKey] = finnalPayload[payloadKey];
+        const allowedFields = ['finalDiscount', 'creditLimit', 'creditDays', 'proposedDiscount', 'yearOfEstablishment'];
+        for (const field of allowedFields) {
+          if (finnalPayload[field] !== undefined && finnalPayload[field] !== null) {
+            customer[field] = finnalPayload[field];
           }
         }
       }

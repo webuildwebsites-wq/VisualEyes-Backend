@@ -139,15 +139,7 @@ const customerSchema = new mongoose.Schema(
           }
         }]
       }],
-      validate: {
-        validator: function (value) {
-          if (['FINANCE', 'SUPERADMIN'].includes(this.createdByDepartment) || this.approvalWorkflow?.financeApprovalStatus === 'APPROVED') {
-            return value && value.length > 0;
-          }
-          return true;
-        },
-        message: 'At least one brand with categories is required for approved customers'
-      }
+      default: [],
     },
     salesPerson: {
       name: {
