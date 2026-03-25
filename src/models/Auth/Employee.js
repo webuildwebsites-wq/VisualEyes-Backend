@@ -7,6 +7,15 @@ const subRoleSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  code: {
+    type: String,
+    trim: true,
+    uppercase: true
+  },
+  description: {
+    type: String,
+    trim: true
+  },
   refId: {
     type: mongoose.Schema.Types.ObjectId
   }

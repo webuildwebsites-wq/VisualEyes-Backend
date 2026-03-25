@@ -380,7 +380,20 @@ export const createEmployee = async (req, res) => {
       }
     }
 
-    userData.subRoles = subRoles || [];
+    if (subRoles && subRoles.length > 0 && departmentRefId) {
+      const deptDoc = await Department.findById(departmentRefId);
+      userData.subRoles = subRoles.map(sr => {
+        const match = deptDoc?.subRoles?.id(sr.refId);
+        return {
+          name: match?.name,
+          refId: match?._id,
+          code: match?.code,
+          description: match?.description,
+        };
+      });
+    } else {
+      userData.subRoles = subRoles || [];
+    }
 
     // if (lab && labRefId) {
     //   userData.lab = {
@@ -615,7 +628,20 @@ export const createDraftEmployee = async (req, res) => {
       }
     }
 
-    userData.subRoles = subRoles || [];
+    if (subRoles && subRoles.length > 0 && departmentRefId) {
+      const deptDoc = await Department.findById(departmentRefId);
+      userData.subRoles = subRoles.map(sr => {
+        const match = deptDoc?.subRoles?.id(sr.refId);
+        return {
+          name: match?.name,
+          refId: match?._id,
+          code: match?.code,
+          description: match?.description
+        };
+      });
+    } else {
+      userData.subRoles = subRoles || [];
+    }
 
     // if (lab && labRefId) {
     //   userData.lab = {

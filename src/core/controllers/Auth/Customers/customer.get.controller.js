@@ -102,11 +102,9 @@ export const getAllCustomers = async (req, res) => {
     const userDepartment = req.user?.Department?.name || req.user?.Department;
     const userEmployeeType = req.user?.EmployeeType;
 
-    console.log("req.user : ", req.user);
-
     let query = {};
 
-    const isSalesHead = Array.isArray(req.user?.subRoles) && req.user.subRoles.some(r => r.name === 'Sales Head');
+    const isSalesHead = Array.isArray(req.user?.subRoles) && req.user.subRoles.some(r => r.code === 'SALES_HEAD');
 
     if (userDepartment === 'SALES' && userEmployeeType === 'EMPLOYEE' && !isSalesHead) {
       query.createdBy = req.user.id;

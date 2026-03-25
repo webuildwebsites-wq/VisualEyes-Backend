@@ -22,8 +22,8 @@ import CourierTime from "../../../../models/Product/CourierTime.js";
 import BusinessType from "../../../../models/Product/BusinessType.js"
 import GSTType from "../../../../models/Product/GSTType.js";
 import employeeSchema from "../../../../models/Auth/Employee.js";
-import Brand from "../../../../models/Product/Brand.js";
-import Category from "../../../../models/Product/Category.js";
+// import Brand from "../../../../models/Product/Brand.js";
+// import Category from "../../../../models/Product/Category.js";
 import dotenv from "dotenv";
 import crypto from "crypto";
 import mongoose from "mongoose";
@@ -156,112 +156,57 @@ export const customerBasicRegistration = async (req, res) => {
     const isFinanceDepartment = userDepartment === "FINANCE" || userEmployeeType === "SUPERADMIN";
 
     if (draftCustomerId && !mongoose.Types.ObjectId.isValid(draftCustomerId)) {
-      return sendErrorResponse(
-        res,
-        400,
-        "INVALID_ID",
-        "Invalid draft customer ID format",
-      );
+      return sendErrorResponse(res, 400, "INVALID_ID", "Invalid draft customer ID format");
     }
 
     if (!businessType || !shopName || !ownerName || !businessEmail) {
-      return sendErrorResponse(
-        res,
-        400,
-        "VALIDATION_ERROR",
-        "businessType, shopName, ownerName, businessEmail and orderMode are required",
-      );
+      return sendErrorResponse(res, 400, "VALIDATION_ERROR", "businessType, shopName, ownerName, businessEmail and orderMode are required");
     }
 
     if (!salesPerson || !salesPersonRefId) {
-      return sendErrorResponse(
-        res,
-        400,
-        "VALIDATION_ERROR",
-        "salesPerson is required",
-      );
+      return sendErrorResponse(res, 400, "VALIDATION_ERROR", "salesPerson is required");
     }
 
     if (!billToAddress || typeof billToAddress !== 'object') {
-      return sendErrorResponse(
-        res,
-        400,
-        "VALIDATION_ERROR",
-        "Bill to address is required",
-      );
+      return sendErrorResponse(res, 400, "VALIDATION_ERROR", "Bill to address is required");
     }
 
     if (!billToAddress.branchName || !billToAddress.customerContactName || !billToAddress.customerContactNumber || !billToAddress.country || !billToAddress.state || !billToAddress.city || !billToAddress.zipCode || !billToAddress.address || !billToAddress.billingCurrency || !billToAddress.billingMode) {
-      return sendErrorResponse(
-        res,
-        400,
-        "VALIDATION_ERROR",
-        "All bill to address fields are required (branchName, customerContactName, customerContactNumber, country, state, city, zipCode, address, billingCurrency, billingMode)",
-      );
+      return sendErrorResponse(res, 400, "VALIDATION_ERROR", "All bill to address fields are required (branchName, customerContactName, customerContactNumber, country, state, city, zipCode, address, billingCurrency, billingMode)");
     }
 
     if (isGSTRegistered === true) {
       if (!gstNumber || !gstType || !gstCertificateImg) {
-        return sendErrorResponse(
-          res,
-          400,
-          "VALIDATION_ERROR",
-          "gstNumber, gstType and gstCertificateImg are required when GST registered",
-        );
+        return sendErrorResponse(res, 400, "VALIDATION_ERROR", "gstNumber, gstType and gstCertificateImg are required when GST registered");
       }
     } else {
       if (!panCard || !aadharCard || !panCardImg || !aadharCardImg) {
-        return sendErrorResponse(
-          res,
-          400,
-          "VALIDATION_ERROR",
-          "panCard, aadharCard and their images are required when not GST registered",
-        );
+        return sendErrorResponse(res, 400, "VALIDATION_ERROR", "panCard, aadharCard and their images are required when not GST registered");
       }
     }
 
     if (yearOfEstablishment !== undefined && yearOfEstablishment !== null) {
       const currentYear = new Date().getFullYear();
       if (yearOfEstablishment < 1900 || yearOfEstablishment > currentYear) {
-        return sendErrorResponse(
-          res,
-          400,
-          "VALIDATION_ERROR",
-          `yearOfEstablishment must be between 1900 and ${currentYear}`,
-        );
+        return sendErrorResponse(res, 400, "VALIDATION_ERROR", `yearOfEstablishment must be between 1900 and ${currentYear}`);
       }
     }
 
     if (proposedDiscount !== undefined && proposedDiscount !== null) {
       if (proposedDiscount < 0 || proposedDiscount > 100) {
-        return sendErrorResponse(
-          res,
-          400,
-          "VALIDATION_ERROR",
-          "proposedDiscount must be between 0 and 100",
-        );
+        return sendErrorResponse(res, 400, "VALIDATION_ERROR", "proposedDiscount must be between 0 and 100");
       }
     }
 
     if (finalDiscount !== undefined && finalDiscount !== null) {
       if (finalDiscount < 0 || finalDiscount > 100) {
-        return sendErrorResponse(
-          res,
-          400,
-          "VALIDATION_ERROR",
-          "proposedDiscount must be between 0 and 100",
-        );
+        return sendErrorResponse(res, 400, "VALIDATION_ERROR", "proposedDiscount must be between 0 and 100");
       }
     }
 
     if (minSalesValue !== undefined && minSalesValue !== null) {
       if (minSalesValue < 0) {
-        return sendErrorResponse(
-          res,
-          400,
-          "VALIDATION_ERROR",
-          "minSalesValue must be greater than or equal to 0",
-        );
+        return sendErrorResponse(res, 400, "VALIDATION_ERROR", "minSalesValue must be greater than or equal to 0");
       }
     }
 
@@ -270,11 +215,7 @@ export const customerBasicRegistration = async (req, res) => {
     }
 
     if (isGSTRegistered && (!firmName || firmName.trim() === "")) {
-      return sendErrorResponse(
-        res,
-        400,
-        "VALIDATION_ERROR",
-        "firmName is required when GST type is 'Registered'",
+      return sendErrorResponse(res, 400, "VALIDATION_ERROR", "firmName is required when GST type is 'Registered'",
       );
     }
 
@@ -285,12 +226,7 @@ export const customerBasicRegistration = async (req, res) => {
     for (let i = 0; i < chequeDetails.length; i++) {
       const cheque = chequeDetails[i];
       if (!cheque.chequeNumber || !cheque.chequeImage) {
-        return sendErrorResponse(
-          res,
-          400,
-          "VALIDATION_ERROR",
-          `chequeDetails[${i}]: chequeNumber and chequeImage are required`,
-        );
+        return sendErrorResponse(res, 400, "VALIDATION_ERROR", `chequeDetails[${i}]: chequeNumber and chequeImage are required`);
       }
     }
 
@@ -299,12 +235,7 @@ export const customerBasicRegistration = async (req, res) => {
     }
 
     if (!billingMode || !['Direct', 'DC'].includes(billingMode)) {
-      return sendErrorResponse(
-        res,
-        400,
-        "VALIDATION_ERROR",
-        "billingMode must be either 'Direct' or 'DC'",
-      );
+      return sendErrorResponse(res, 400, "VALIDATION_ERROR", "billingMode must be either 'Direct' or 'DC'");
     }
 
     const isValidObjectId = (id) => /^[0-9a-fA-F]{24}$/.test(id);
@@ -319,10 +250,10 @@ export const customerBasicRegistration = async (req, res) => {
 
     for (const field of requiredRefIds) {
       if (!field.value) {
-        return sendErrorResponse(res,400,"VALIDATION_ERROR",`${field.name} is required for FINANCE department`);
+        return sendErrorResponse(res, 400, "VALIDATION_ERROR", `${field.name} is required for FINANCE department`);
       }
       if (!isValidObjectId(field.value)) {
-        return sendErrorResponse(res,400,"VALIDATION_ERROR",`${field.name} must be a valid ObjectId (24 hex characters)`,);
+        return sendErrorResponse(res, 400, "VALIDATION_ERROR", `${field.name} must be a valid ObjectId (24 hex characters)`,);
       }
     }
 
@@ -336,12 +267,7 @@ export const customerBasicRegistration = async (req, res) => {
     // }
 
     if (businessTypeRefId && !isValidObjectId(businessTypeRefId)) {
-      return sendErrorResponse(
-        res,
-        400,
-        "VALIDATION_ERROR",
-        `BusinessTypeRefId must be a valid ObjectId (24 hex characters)`,
-      );
+      return sendErrorResponse(res, 400, "VALIDATION_ERROR", `BusinessTypeRefId must be a valid ObjectId (24 hex characters)`);
     }
 
     const existingCustomer = await Customer.findOne({
@@ -349,32 +275,17 @@ export const customerBasicRegistration = async (req, res) => {
     });
 
     if (existingCustomer) {
-      return sendErrorResponse(
-        res,
-        409,
-        "CUSTOMER_EXISTS",
-        "Customer with this business email already exists",
-      );
+      return sendErrorResponse(res, 409, "CUSTOMER_EXISTS", "Customer with this business email already exists");
     }
 
     // Validate BusinessType
     if (businessTypeRefId && businessType) {
       const businessTypeDoc = await BusinessType.findById(businessTypeRefId);
       if (!businessTypeDoc) {
-        return sendErrorResponse(
-          res,
-          404,
-          "INVALID_REF_ID",
-          `BusinessType with refId ${businessTypeRefId} does not exist`
-        );
+        return sendErrorResponse(res, 404, "INVALID_REF_ID", `BusinessType with refId ${businessTypeRefId} does not exist`);
       }
       if (businessTypeDoc.name !== businessType) {
-        return sendErrorResponse(
-          res,
-          400,
-          "NAME_MISMATCH",
-          `Incorrect BusinessType name for refId ${businessTypeRefId}. Expected: ${businessTypeDoc.name}, Received: ${businessType}`
-        );
+        return sendErrorResponse(res, 400, "NAME_MISMATCH", `Incorrect BusinessType name for refId ${businessTypeRefId}. Expected: ${businessTypeDoc.name}, Received: ${businessType}`);
       }
     }
 
@@ -382,20 +293,10 @@ export const customerBasicRegistration = async (req, res) => {
     if (zoneRefId && zone) {
       const location = await Location.findById(zoneRefId);
       if (!location) {
-        return sendErrorResponse(
-          res,
-          404,
-          "INVALID_REF_ID",
-          `Zone with refId ${zoneRefId} does not exist`
-        );
+        return sendErrorResponse(res, 404, "INVALID_REF_ID", `Zone with refId ${zoneRefId} does not exist`);
       }
       if (location.zone !== zone.toUpperCase()) {
-        return sendErrorResponse(
-          res,
-          400,
-          "NAME_MISMATCH",
-          `Incorrect zone name for refId ${zoneRefId}. Expected: ${location.zone}, Received: ${zone}`
-        );
+        return sendErrorResponse(res, 400, "NAME_MISMATCH", `Incorrect zone name for refId ${zoneRefId}. Expected: ${location.zone}, Received: ${zone}`);
       }
     }
 
@@ -403,20 +304,10 @@ export const customerBasicRegistration = async (req, res) => {
     if (creditDaysRefId && creditDays) {
       const creditDayDoc = await CreditDay.findById(creditDaysRefId);
       if (!creditDayDoc) {
-        return sendErrorResponse(
-          res,
-          404,
-          "INVALID_REF_ID",
-          `CreditDays with refId ${creditDaysRefId} does not exist`
-        );
+        return sendErrorResponse(res, 404, "INVALID_REF_ID", `CreditDays with refId ${creditDaysRefId} does not exist`);
       }
       if (creditDayDoc.days.toString() !== creditDays.toString()) {
-        return sendErrorResponse(
-          res,
-          400,
-          "NAME_MISMATCH",
-          `Incorrect creditDays value for refId ${creditDaysRefId}. Expected: ${creditDayDoc.days}, Received: ${creditDays}`
-        );
+        return sendErrorResponse(res, 400, "NAME_MISMATCH", `Incorrect creditDays value for refId ${creditDaysRefId}. Expected: ${creditDayDoc.days}, Received: ${creditDays}`);
       }
     }
 
@@ -424,20 +315,10 @@ export const customerBasicRegistration = async (req, res) => {
     if (gstTypeRefId && gstType) {
       const gstTypeDoc = await GSTType.findById(gstTypeRefId);
       if (!gstTypeDoc) {
-        return sendErrorResponse(
-          res,
-          404,
-          "INVALID_REF_ID",
-          `GSTType with refId ${gstTypeRefId} does not exist`
-        );
+        return sendErrorResponse(res, 404, "INVALID_REF_ID", `GSTType with refId ${gstTypeRefId} does not exist`);
       }
       if (gstTypeDoc.name !== gstType) {
-        return sendErrorResponse(
-          res,
-          400,
-          "NAME_MISMATCH",
-          `Incorrect gstType name for refId ${gstTypeRefId}. Expected: ${gstTypeDoc.name}, Received: ${gstType}`
-        );
+        return sendErrorResponse(res, 400, "NAME_MISMATCH", `Incorrect gstType name for refId ${gstTypeRefId}. Expected: ${gstTypeDoc.name}, Received: ${gstType}`);
       }
     }
 
@@ -445,20 +326,10 @@ export const customerBasicRegistration = async (req, res) => {
     if (salesPersonRefId && salesPerson) {
       const salesPersonDoc = await employeeSchema.findById(salesPersonRefId);
       if (!salesPersonDoc) {
-        return sendErrorResponse(
-          res,
-          404,
-          "INVALID_REF_ID",
-          `SalesPerson with refId ${salesPersonRefId} does not exist`
-        );
+        return sendErrorResponse(res, 404, "INVALID_REF_ID", `SalesPerson with refId ${salesPersonRefId} does not exist`);
       }
       if (salesPersonDoc.employeeName !== salesPerson) {
-        return sendErrorResponse(
-          res,
-          400,
-          "NAME_MISMATCH",
-          `Incorrect salesPerson name for refId ${salesPersonRefId}. Expected: ${salesPersonDoc.employeeName}, Received: ${salesPerson}`
-        );
+        return sendErrorResponse(res, 400, "NAME_MISMATCH", `Incorrect salesPerson name for refId ${salesPersonRefId}. Expected: ${salesPersonDoc.employeeName}, Received: ${salesPerson}`);
       }
     }
 
@@ -627,28 +498,13 @@ export const customerBasicRegistration = async (req, res) => {
     console.error("Customer registration error:", error);
     if (error.name === "ValidationError") {
       const messages = Object.values(error.errors).map((err) => err.message);
-      return sendErrorResponse(
-        res,
-        400,
-        "MONGOOSE_VALIDATION_ERROR",
-        messages.join(", "),
-      );
+      return sendErrorResponse(res, 400, "MONGOOSE_VALIDATION_ERROR", messages.join(", "),);
     }
     if (error.code === 11000) {
       const field = Object.keys(error.keyValue)[0];
-      return sendErrorResponse(
-        res,
-        409,
-        "DUPLICATE_FIELD",
-        `${field} already exists`,
-      );
+      return sendErrorResponse(res, 409, "DUPLICATE_FIELD", `${field} already exists`);
     }
-    return sendErrorResponse(
-      res,
-      500,
-      "INTERNAL_ERROR",
-      "Customer registration failed",
-    );
+    return sendErrorResponse(res, 500, "INTERNAL_ERROR", "Customer registration failed");
   }
 };
 

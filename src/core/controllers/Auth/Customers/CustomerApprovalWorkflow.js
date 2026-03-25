@@ -8,56 +8,48 @@ import { generateRandomPassword } from "../../../../Utils/Auth/customerAuthUtils
 export const financeApproveCustomer = async (req, res) => {
   try {
     const { customerId } = req.params;
-    const { action, remark, fieldsToCorrect } = req.body;
+    const { action, remark, fieldsToCorrect, finnalPayload } = req.body;
     const userId = req.user.id;
     const userDepartment = req.user?.Department?.name || req.user?.Department;
 
     if (userDepartment !== "FINANCE" && req.user?.EmployeeType !== "SUPERADMIN") {
-      return sendErrorResponse(res,
-        403,
-        "FORBIDDEN",
-        "Only Finance team can approve customers"
-      );
+      return sendErrorResponse(res, 403, "FORBIDDEN", "Only Finance team can approve customers");
     }
 
     if (!customerId || !mongoose.Types.ObjectId.isValid(customerId)) {
-      return sendErrorResponse(
-        res,
-        400,
-        "INVALID_ID",
-        "Invalid customer ID"
-      );
+      return sendErrorResponse(res, 400, "INVALID_ID", "Invalid customer ID");
     }
 
     if (!action || !["APPROVE", "REQUEST_MODIFICATION"].includes(action)) {
-      return sendErrorResponse(
-        res,
-        400,
-        "VALIDATION_ERROR",
-        "action must be either 'APPROVE' or 'REQUEST_MODIFICATION'"
-      );
+      return sendErrorResponse(res, 400, "VALIDATION_ERROR", "action must be either 'APPROVE' or 'REQUEST_MODIFICATION'");
     }
 
     const customer = await Customer.findById(customerId);
     if (!customer) {
-      return sendErrorResponse(
-        res,
-        404,
-        "NOT_FOUND",
-        "Customer not found"
-      );
+      return sendErrorResponse(res, 404, "NOT_FOUND", "Customer not found");
     }
 
     if (customer.approvalWorkflow.financeApprovalStatus !== "PENDING") {
-      return sendErrorResponse(
-        res,
-        400,
-        "INVALID_STATUS",
-        "Customer is not pending finance approval"
-      );
+      return sendErrorResponse(res, 400, "INVALID_STATUS", "Customer is not pending finance approval");
     }
 
     if (action === "APPROVE") {
+      if (finnalPayload && typeof finnalPayload === 'object') {
+        const allowedFields = {
+          finalDiscount: 'finalDiscount',
+          creditLimit: 'creditLimit',
+          creditDays: 'creditDays',
+          proposedDiscount: 'proposedDiscount',
+          yearOfEstablishment: 'yearOfEstablishment'
+        };
+
+        for (const [payloadKey, schemaKey] of Object.entries(allowedFields)) {
+          if (finnalPayload[payloadKey] !== undefined) {
+            customer[schemaKey] = finnalPayload[payloadKey];
+          }
+        }
+      }
+
       customer.approvalWorkflow.financeApprovalStatus = "APPROVED";
       customer.approvalWorkflow.financeApprovedBy = userId;
       customer.approvalWorkflow.financeApprovedAt = new Date();
@@ -65,12 +57,7 @@ export const financeApproveCustomer = async (req, res) => {
       customer.approvalWorkflow.salesHeadApprovalStatus = "PENDING";
     } else if (action === "REQUEST_MODIFICATION") {
       if (!fieldsToCorrect || !Array.isArray(fieldsToCorrect) || fieldsToCorrect.length === 0) {
-        return sendErrorResponse(
-          res,
-          400,
-          "VALIDATION_ERROR",
-          "fieldsToCorrect array is required when requesting modifications"
-        );
+        return sendErrorResponse(res, 400, "VALIDATION_ERROR", "fieldsToCorrect array is required when requesting modifications");
       }
 
       customer.approvalWorkflow.financeApprovalStatus = "MODIFICATION_REQUIRED";
@@ -102,7 +89,7 @@ export const salesHeadApproveCustomer = async (req, res) => {
     const { action, remark, blacklistReason, fieldsToCorrect } = req.body;
     const userId = req.user.id;
 
-    const isSalesHead = Array.isArray(req.user?.subRoles) && req.user.subRoles.some(r => r.name === 'Sales Head');
+    const isSalesHead = Array.isArray(req.user?.subRoles) && req.user.subRoles.some(r => r.code === 'SALES_HEAD');
 
     if (req.user?.EmployeeType !== "SUPERADMIN" && !isSalesHead) {
       return sendErrorResponse(res, 403, "FORBIDDEN", "Only Sales Head can approve customers");
