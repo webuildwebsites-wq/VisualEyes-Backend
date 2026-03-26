@@ -34,12 +34,7 @@ export const customerLogin = async (req, res) => {
     const { loginId, password } = req.body;
 
     if (!loginId || !password) {
-      return sendErrorResponse(
-        res,
-        400,
-        "VALIDATION_ERROR",
-        "Please provide login ID (email or customer code) and password",
-      );
+      return sendErrorResponse(res, 400, "VALIDATION_ERROR", "Please provide login ID (email or customer code) and password",);
     }
 
     const customer = await Customer.findOne({
@@ -51,60 +46,29 @@ export const customerLogin = async (req, res) => {
     }).select("+password -emailOtp -emailOtpExpires -mobileOtp -mobileOtpExpires -gstNumber -gstCertificateImg -panCard -panCardImg -aadharCard -aadharCardImg -isLocked -failedLoginAttempts -lockUntil -createdByDepartment -approvalStatus");
 
     if (!customer) {
-      return sendErrorResponse(
-        res,
-        401,
-        "INVALID_CREDENTIALS",
-        "Invalid credentials or account is inactive",
-      );
+      return sendErrorResponse(res, 401, "INVALID_CREDENTIALS", "Invalid credentials or account is inactive",);
     }
 
     if (customer.isLocked) {
-      return sendErrorResponse(
-        res,
-        423,
-        "ACCOUNT_LOCKED",
-        "Account is temporarily locked due to too many failed login attempts",
-      );
+      return sendErrorResponse(res, 423, "ACCOUNT_LOCKED", "Account is temporarily locked due to too many failed login attempts",);
     }
 
     if (customer.status.isSuspended) {
-      return sendErrorResponse(
-        res,
-        423,
-        "ACCOUNT_SUSPENDED",
-        `Account is suspended: ${customer.status.suspensionReason}`,
-      );
+      return sendErrorResponse(res, 423, "ACCOUNT_SUSPENDED", `Account is suspended: ${customer.status.suspensionReason}`,);
     }
 
     const isMatch = await customer.comparePassword(password);
 
     if (!isMatch) {
-      return sendErrorResponse(
-        res,
-        401,
-        "INVALID_CREDENTIALS",
-        "Invalid credentials",
-      );
+      return sendErrorResponse(res, 401, "INVALID_CREDENTIALS", "Invalid credentials",);
     }
     customer.lastLogin = new Date();
     await customer.save({ validateBeforeSave: false });
-    return sendTokenResponse(
-      customer,
-      200,
-      res,
-      "CUSTOMER",
-      generateToken,
-      generateRefreshToken,
-    );
+    return sendTokenResponse(customer, 200, res, "CUSTOMER", generateToken, generateRefreshToken);
+
   } catch (error) {
     console.error("Customer login error:", error);
-    return sendErrorResponse(
-      res,
-      500,
-      "INTERNAL_ERROR",
-      "Internal server error during login",
-    );
+    return sendErrorResponse(res, 500, "INTERNAL_ERROR", "Internal server error during login");
   }
 };
 
@@ -1853,181 +1817,84 @@ export const updateCustomerShipToDetails = async (req, res) => {
     const userDepartment = req.user?.Department?.name || req.user?.Department;
 
     if (userEmployeeType !== "SUPERADMIN" && userDepartment !== "FINANCE") {
-      return sendErrorResponse(
-        res,
-        403,
-        "FORBIDDEN",
-        "Only Finance department and SuperAdmin can update ship-to details"
-      );
+      return sendErrorResponse(res, 403, "FORBIDDEN", "Only Finance department and SuperAdmin can update ship-to details");
     }
 
     if (!mongoose.Types.ObjectId.isValid(customerId)) {
-      return sendErrorResponse(
-        res,
-        400,
-        "INVALID_ID",
-        "Invalid customer ID format"
-      );
+      return sendErrorResponse(res, 400, "INVALID_ID", "Invalid customer ID format");
     }
 
-    if (!shipToDetails || !Array.isArray(shipToDetails)) {
-      return sendErrorResponse(
-        res,
-        400,
-        "VALIDATION_ERROR",
-        "shipToDetails must be an array"
-      );
-    }
-
-    if (shipToDetails.length === 0) {
-      return sendErrorResponse(
-        res,
-        400,
-        "VALIDATION_ERROR",
-        "At least one ship-to address is required"
-      );
+    if (!shipToDetails || !Array.isArray(shipToDetails) || shipToDetails.length === 0) {
+      return sendErrorResponse(res, 400, "VALIDATION_ERROR", "shipToDetails must be a non-empty array");
     }
 
     for (let i = 0; i < shipToDetails.length; i++) {
       const address = shipToDetails[i];
-
-      const requiredFields = [
-        'customerName',
-        'customerRefId',
-        'shipToCustomerName',
-        'shipToCustomerEmail',
-        'shipToCustomerContactNumber',
-        'billingAddress',
-        'shipToAddress',
-        'state',
-        'city',
-        'shipToAddressZipCode',
-        'billingCurrency',
-        'billingMode'
-      ];
+      const requiredFields = ['branchName', 'customerContactName', 'customerContactNumber', 'country', 'state', 'city', 'billingCurrency', 'billingMode'];
 
       for (const field of requiredFields) {
         if (!address[field] || address[field].toString().trim() === '') {
-          return sendErrorResponse(
-            res,
-            400,
-            "VALIDATION_ERROR",
-            `shipToDetails[${i}].${field} is required`
-          );
+          return sendErrorResponse(res, 400, "VALIDATION_ERROR", `shipToDetails[${i}].${field} is required`);
         }
       }
 
-      // Validate email format
-      const emailRegex = /^\S+@\S+\.\S+$/;
-      if (!emailRegex.test(address.shipToCustomerEmail)) {
-        return sendErrorResponse(
-          res,
-          400,
-          "VALIDATION_ERROR",
-          `shipToDetails[${i}].shipToCustomerEmail has invalid email format`
-        );
+      if (!/^[0-9]{10}$/.test(address.customerContactNumber)) {
+        return sendErrorResponse(res, 400, "VALIDATION_ERROR", `shipToDetails[${i}].customerContactNumber must be 10 digits`);
       }
 
-      const phoneRegex = /^[0-9]{10}$/;
-      if (!phoneRegex.test(address.shipToCustomerContactNumber)) {
-        return sendErrorResponse(
-          res,
-          400,
-          "VALIDATION_ERROR",
-          `shipToDetails[${i}].shipToCustomerContactNumber must be 10 digits`
-        );
-      }
-
-      if (address.customerRefId !== customerId) {
-        return sendErrorResponse(
-          res,
-          400,
-          "VALIDATION_ERROR",
-          `shipToDetails[${i}].customerRefId must match the customer ID`
-        );
+      if (address._id && !mongoose.Types.ObjectId.isValid(address._id)) {
+        return sendErrorResponse(res, 400, "VALIDATION_ERROR", `shipToDetails[${i}]._id is not a valid ID`);
       }
     }
 
     const customer = await Customer.findById(customerId);
     if (!customer) {
-      return sendErrorResponse(
-        res,
-        404,
-        "NOT_FOUND",
-        "Customer not found"
-      );
+      return sendErrorResponse(res, 404, "NOT_FOUND", "Customer not found");
     }
 
     if (customer.approvalWorkflow?.salesHeadApprovalStatus !== 'APPROVED') {
-      return sendErrorResponse(
-        res,
-        400,
-        "INVALID_STATUS",
-        "Customer must be approved by Sales Head before updating ship-to details"
-      );
+      return sendErrorResponse(res, 400, "INVALID_STATUS", "Customer must be approved by Sales Head before updating ship-to details");
     }
 
-    const shipToDetailsWithMetadata = shipToDetails.map(address => {
-      const normalizedEmail = address.shipToCustomerEmail.toLowerCase().trim();
-      const existingAddress = address._id
-        ? customer.customerShipToDetails.find(addr => addr._id.toString() === address._id.toString())
-        : customer.customerShipToDetails.find(addr =>
-          addr.shipToCustomerEmail.toLowerCase() === normalizedEmail
-        );
-
-      return {
-        ...address,
-        _id: existingAddress?._id,
-        customerRefId: customerId,
-        createdBy: existingAddress ? existingAddress.createdBy : req.user.id,
-        updatedBy: req.user.id,
-        shipToCustomerEmail: normalizedEmail,
-        shipToCustomerName: address.shipToCustomerName.trim(),
-        customerName: address.customerName.trim(),
-        shipToCustomerContactNumber: address.shipToCustomerContactNumber.trim(),
-        billingAddress: address.billingAddress.trim(),
-        shipToAddress: address.shipToAddress.trim(),
+    for (const address of shipToDetails) {
+      const mapped = {
+        branchName: address.branchName.trim(),
+        customerContactName: address.customerContactName.trim(),
+        customerContactNumber: address.customerContactNumber.trim(),
+        country: address.country.trim(),
         state: address.state.trim(),
         city: address.city.trim(),
-        shipToAddressZipCode: address.shipToAddressZipCode.trim(),
+        zipCode: address.zipCode ? address.zipCode.trim() : undefined,
+        address: address.address ? address.address.trim() : undefined,
         billingCurrency: address.billingCurrency,
         billingMode: address.billingMode,
-        gstNumber: address.gstNumber ? address.gstNumber.toUpperCase().trim() : undefined,
-        gstImage: address.gstImage ? address.gstImage.trim() : undefined
+        updatedBy: req.user.id,
       };
-    });
 
-    customer.customerShipToDetails = shipToDetailsWithMetadata;
+      if (address._id) {
+        const existing = customer.customerShipToDetails.id(address._id);
+        if (!existing) {
+          return sendErrorResponse(res, 404, "NOT_FOUND", `shipToDetails entry with _id ${address._id} not found`);
+        }
+        Object.assign(existing, mapped);
+      } else {
+        customer.customerShipToDetails.push({ ...mapped, createdBy: req.user.id });
+      }
+    }
+
     await customer.save();
 
     const customerObj = customer.toObject();
-    delete customerObj.password
+    delete customerObj.password;
 
-    return sendSuccessResponse(
-      res,
-      200,
-      { customer: customerObj },
-      "Ship-to details updated successfully"
-    );
+    return sendSuccessResponse(res, 200, { customer: customerObj }, "Ship-to details updated successfully");
 
   } catch (error) {
     console.error("Update customer ship-to details error:", error);
-
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map((err) => err.message);
-      return sendErrorResponse(
-        res,
-        400,
-        'VALIDATION_ERROR',
-        messages.join(', ')
-      );
+      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', messages.join(', '));
     }
-
-    return sendErrorResponse(
-      res,
-      500,
-      "INTERNAL_ERROR",
-      "Failed to update ship-to details"
-    );
+    return sendErrorResponse(res, 500, "INTERNAL_ERROR", "Failed to update ship-to details");
   }
-};
+}
