@@ -152,9 +152,9 @@ export const createEmployee = async (req, res) => {
             isActive: true
           });
 
-          if (existingAdmin) {
-            return sendErrorResponse(res, 409, 'ADMIN_EXISTS', `An admin already exists for ${department} department`);
-          }
+          // if (existingAdmin) {
+          //   return sendErrorResponse(res, 409, 'ADMIN_EXISTS', `An admin already exists for ${department} department`);
+          // }
         }
       }
 

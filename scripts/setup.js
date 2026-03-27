@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import employeeSchema from '../src/models/Auth/Employee.js';
+import { generateEmployeeCode } from '../src/Utils/Auth/customerAuthUtils.js';
 
 dotenv.config();
 
@@ -11,16 +12,14 @@ const setupProject = async () => {
     await mongoose.connect(process.env.MONGODB_URL);
     console.log('Connected to database');
 
-    const existingSuperAdmin = await employeeSchema.findOne({ EmployeeType: 'SUPERADMIN' });
-
     // Create default superadmin details
     const superAdminData = {
-      username: 'superadmin',
-      employeeName: 'Anish Singh Rawat',
-      email: 'anishsinghrawat5@gmail.com',
-      password: 'anishsinghrawat5@gmail.com',
-      phone: '6395607666',
-      address: 'Admin Address, Admin City, Admin State',
+      username: 'Ruchica G',
+      employeeName: 'Ruchica',
+      email: 'ruchica@digibysr.com',
+      password: 'director',
+      phone: '9899119993',
+      address: 'Hauz Khas new delhi india',
       country: 'India',
       pincode: '123456',
       EmployeeType: 'SUPERADMIN',
@@ -51,8 +50,17 @@ const setupProject = async () => {
         CanManageSettings: true,
         CanViewReports: true,
         CanExportReports: true
-      }
+      },
     };
+
+    let employeeCode = generateEmployeeCode(superAdminData.employeeName);
+    let codeExists = true;
+    while (codeExists) {
+      const existing = await employeeSchema.findOne({ employeeCode });
+      if (!existing) codeExists = false;
+      else employeeCode = generateEmployeeCode(superAdminData.employeeName);
+    }
+    superAdminData.employeeCode = employeeCode;
 
     const superAdmin = new employeeSchema(superAdminData);
     await superAdmin.save();

@@ -54,6 +54,7 @@ export const customerDraftRegistration = async (req, res) => {
       chequeDetails,
       billingCycle,
       billingMode,
+      customerShipToDetails,
     } = req.body;
 
     const userEmployeeType = req.user?.EmployeeType;
@@ -205,6 +206,21 @@ export const customerDraftRegistration = async (req, res) => {
       chequeDetails: chequeDetails,
       billingCycle: billingCycle,
       billingMode: billingMode,
+
+      customerShipToDetails: customerShipToDetails && Array.isArray(customerShipToDetails)
+        ? customerShipToDetails.map((shipTo) => ({
+            branchName: shipTo.branchName?.trim(),
+            address: shipTo.address?.trim(),
+            city: shipTo.city?.trim(),
+            state: shipTo.state,
+            country: shipTo.country,
+            zipCode: shipTo.zipCode,
+            billingCurrency: shipTo.billingCurrency,
+            billingMode: shipTo.billingMode,
+            customerContactName: shipTo.customerContactName?.trim(),
+            customerContactNumber: shipTo.customerContactNumber,
+          }))
+        : undefined,
 
       // Workflow Status
       approvalWorkflow: {
@@ -553,6 +569,21 @@ export const updateDraftCustomer = async (req, res) => {
         createdBy: draftCustomer.billToAddress?.createdBy || req.user.id,
         updatedBy: req.user.id,
       };
+    }
+
+    if (updateData?.customerShipToDetails && Array.isArray(updateData?.customerShipToDetails)) {
+      updateFields.customerShipToDetails = updateData.customerShipToDetails.map((shipTo) => ({
+        branchName: shipTo.branchName?.trim(),
+        address: shipTo.address?.trim(),
+        city: shipTo.city?.trim(),
+        state: shipTo.state,
+        country: shipTo.country,
+        zipCode: shipTo.zipCode,
+        billingCurrency: shipTo.billingCurrency,
+        billingMode: shipTo.billingMode,
+        customerContactName: shipTo.customerContactName?.trim(),
+        customerContactNumber: shipTo.customerContactNumber,
+      }));
     }
 
     // Finance-only fields
