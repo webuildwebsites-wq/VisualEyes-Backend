@@ -101,7 +101,7 @@ const CredentialsTemplate = (username, businessEmail, customerpassword) => {
       </p>
 
       <div style="text-align: center; margin: 24px 0;">
-        <a href="http://visualeye.digibysr.in/" 
+        <a href="https://visualeye.digibysr.in/customer-login" 
            style="background-color: #f2b63f; color: #1f1f1f; padding: 12px 28px; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 15px; display: inline-block;">
           Login to Visual Eyes
         </a>
