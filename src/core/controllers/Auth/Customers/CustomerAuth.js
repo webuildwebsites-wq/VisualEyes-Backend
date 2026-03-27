@@ -1607,16 +1607,16 @@ export const resubmitCorrectedCustomer = async (req, res) => {
       );
     }
 
-    if (userDepartment !== 'SALES' && userEmployeeType !== 'SUPERADMIN') {
-      if (customer.createdBy.toString() !== req.user.id.toString()) {
-        return sendErrorResponse(
-          res,
-          403,
-          'FORBIDDEN',
-          'You can only resubmit customers you created'
-        );
-      }
-    }
+    // if (userDepartment !== 'SALES' && userEmployeeType !== 'SUPERADMIN') {
+    //   if (customer.createdBy.toString() !== req.user.id.toString()) {
+    //     return sendErrorResponse(
+    //       res,
+    //       403,
+    //       'FORBIDDEN',
+    //       'You can only resubmit customers you created'
+    //     );
+    //   }
+    // }
 
     const fieldsToCorrect = customer.correctionRequest?.fieldsToCorrect || [];
 
