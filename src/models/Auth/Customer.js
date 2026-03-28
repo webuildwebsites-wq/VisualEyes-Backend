@@ -317,17 +317,20 @@ const customerSchema = new mongoose.Schema(
       type: [{
         chequeNumber: {
           type: String,
-          required: true,
-          trim: true
+          required: false,
+          trim: true,
+          default: ""
         },
         chequeImage: {
           type: String,
-          required: true
+          required: false,
+          default: ""
         }
       }],
       validate: {
         validator: function (value) {
-            return value && value.length === 3;
+          if (!value || value.length === 0) return true;
+          return value.length === 3;
         },
         message: 'Exactly 3 cheque entries are required'
       }
