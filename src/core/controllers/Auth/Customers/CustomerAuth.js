@@ -183,14 +183,16 @@ export const customerBasicRegistration = async (req, res) => {
       );
     }
 
-    if (!chequeDetails || !Array.isArray(chequeDetails) || chequeDetails.length !== 3) {
-      return sendErrorResponse(res, 400, "VALIDATION_ERROR", "Exactly 3 cheque entries are required");
-    }
+    if (chequeDetails !== undefined && chequeDetails !== null) {
+      if (!Array.isArray(chequeDetails) || chequeDetails.length !== 3) {
+        return sendErrorResponse(res, 400, "VALIDATION_ERROR", "Exactly 3 cheque entries are required");
+      }
 
-    for (let i = 0; i < chequeDetails.length; i++) {
-      const cheque = chequeDetails[i];
-      if (!cheque.chequeNumber || !cheque.chequeImage) {
-        return sendErrorResponse(res, 400, "VALIDATION_ERROR", `chequeDetails[${i}]: chequeNumber and chequeImage are required`);
+      for (let i = 0; i < chequeDetails.length; i++) {
+        const cheque = chequeDetails[i];
+        if (!cheque.chequeNumber || !cheque.chequeImage) {
+          return sendErrorResponse(res, 400, "VALIDATION_ERROR", `chequeDetails[${i}]: chequeNumber and chequeImage are required`);
+        }
       }
     }
 
@@ -1607,16 +1609,16 @@ export const resubmitCorrectedCustomer = async (req, res) => {
       );
     }
 
-    // if (userDepartment !== 'SALES' && userEmployeeType !== 'SUPERADMIN') {
-    //   if (customer.createdBy.toString() !== req.user.id.toString()) {
-    //     return sendErrorResponse(
-    //       res,
-    //       403,
-    //       'FORBIDDEN',
-    //       'You can only resubmit customers you created'
-    //     );
-    //   }
-    // }
+    if (userDepartment !== 'SALES' && userEmployeeType !== 'SUPERADMIN') {
+      if (customer.createdBy.toString() !== req.user.id.toString()) {
+        return sendErrorResponse(
+          res,
+          403,
+          'FORBIDDEN',
+          'You can only resubmit customers you created'
+        );
+      }
+    }
 
     const fieldsToCorrect = customer.correctionRequest?.fieldsToCorrect || [];
 
