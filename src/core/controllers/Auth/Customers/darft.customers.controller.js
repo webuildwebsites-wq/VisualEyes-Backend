@@ -52,6 +52,7 @@ export const customerDraftRegistration = async (req, res) => {
       proprietorName,
       firmName,
       chequeDetails,
+      chequeRemark,
       billingCycle,
       billingMode,
       customerShipToDetails,
@@ -64,6 +65,13 @@ export const customerDraftRegistration = async (req, res) => {
 
     if (billToAddress && typeof billToAddress !== 'object') {
       return sendErrorResponse(res, 400, "VALIDATION_ERROR", "billToAddress must be an object");
+    }
+
+    const noChequeProvided = !chequeDetails || !Array.isArray(chequeDetails) ||
+      chequeDetails.every(c => (!c.chequeNumber || c.chequeNumber.trim() === "") && (!c.chequeImage || c.chequeImage.trim() === ""));
+
+    if (noChequeProvided && (!chequeRemark || chequeRemark.trim() === "")) {
+      return sendErrorResponse(res, 400, "VALIDATION_ERROR", "chequeRemark is required when chequeDetails are not provided");
     }
 
     const normalizedEmail = businessEmail?.trim().toLowerCase();
@@ -203,7 +211,10 @@ export const customerDraftRegistration = async (req, res) => {
       // Sales Person Input Fields
       proprietorName: proprietorName,
       firmName: firmName ? firmName.trim() : undefined,
-      chequeDetails: chequeDetails,
+      chequeDetails: Array.isArray(chequeDetails)
+        ? chequeDetails.filter(c => (c.chequeNumber && c.chequeNumber.trim() !== "") || (c.chequeImage && c.chequeImage.trim() !== ""))
+        : [],
+      chequeRemark: chequeRemark || undefined,
       billingCycle: billingCycle,
       billingMode: billingMode,
 

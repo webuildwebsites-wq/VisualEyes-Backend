@@ -332,8 +332,13 @@ const customerSchema = new mongoose.Schema(
           if (!value || value.length === 0) return true;
           return value.length === 3;
         },
-        message: 'Exactly 3 cheque entries are required'
+        message: 'chequeDetails must have exactly 3 entries if provided'
       }
+    },
+    chequeRemark: {
+      type: String,
+      trim: true,
+      default: ""
     },
     billingCycle: {
       type: String,

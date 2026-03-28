@@ -109,6 +109,7 @@ export const customerBasicRegistration = async (req, res) => {
       proprietorName,
       firmName,
       chequeDetails,
+      chequeRemark,
       billingCycle,
       billingMode,
       customerShipToDetails
@@ -184,7 +185,11 @@ export const customerBasicRegistration = async (req, res) => {
     }
 
     if (chequeDetails !== undefined && chequeDetails !== null) {
-      if (!Array.isArray(chequeDetails) || chequeDetails.length !== 3) {
+      if (!Array.isArray(chequeDetails)) {
+        return sendErrorResponse(res, 400, "VALIDATION_ERROR", "chequeDetails must be an array");
+      }
+
+      if (chequeDetails.length > 0 && chequeDetails.length !== 3) {
         return sendErrorResponse(res, 400, "VALIDATION_ERROR", "Exactly 3 cheque entries are required");
       }
 
@@ -196,6 +201,14 @@ export const customerBasicRegistration = async (req, res) => {
           return sendErrorResponse(res, 400, "VALIDATION_ERROR", `chequeDetails[${i}]: both chequeNumber and chequeImage are required together`);
         }
       }
+    }
+
+    // if chequeDetails not provided, chequeRemark is required
+    const noChequeProvided = !chequeDetails || !Array.isArray(chequeDetails) ||
+      chequeDetails.every(c => (!c.chequeNumber || c.chequeNumber.trim() === "") && (!c.chequeImage || c.chequeImage.trim() === ""));
+
+    if (noChequeProvided && (!chequeRemark || chequeRemark.trim() === "")) {
+      return sendErrorResponse(res, 400, "VALIDATION_ERROR", "chequeRemark is required when chequeDetails are not provided");
     }
 
     if (!billingCycle || !['7_days', '15_days', 'end_of_month', 'custom'].includes(billingCycle)) {
@@ -424,7 +437,10 @@ export const customerBasicRegistration = async (req, res) => {
       // Sales Person Input Fields
       proprietorName: proprietorName,
       firmName: firmName.trim(),
-      chequeDetails: chequeDetails,
+      chequeDetails: Array.isArray(chequeDetails)
+        ? chequeDetails.filter(c => (c.chequeNumber && c.chequeNumber.trim() !== "") || (c.chequeImage && c.chequeImage.trim() !== ""))
+        : [],
+      chequeRemark: chequeRemark || undefined,
       billingCycle: billingCycle,
       billingMode: billingMode,
 

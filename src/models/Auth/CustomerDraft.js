@@ -291,6 +291,11 @@ const customerDraftSchema = new mongoose.Schema(
         }
       }],
     },
+    chequeRemark: {
+      type: String,
+      trim: true,
+      default: ""
+    },
     billingCycle: {
       type: String,
       enum: ['7_days', '15_days', 'end_of_month', 'custom']
