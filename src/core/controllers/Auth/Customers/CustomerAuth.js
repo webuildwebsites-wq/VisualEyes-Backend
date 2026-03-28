@@ -190,8 +190,10 @@ export const customerBasicRegistration = async (req, res) => {
 
       for (let i = 0; i < chequeDetails.length; i++) {
         const cheque = chequeDetails[i];
-        if (!cheque.chequeNumber || !cheque.chequeImage) {
-          return sendErrorResponse(res, 400, "VALIDATION_ERROR", `chequeDetails[${i}]: chequeNumber and chequeImage are required`);
+        const hasNumber = cheque.chequeNumber && cheque.chequeNumber.trim() !== "";
+        const hasImage = cheque.chequeImage && cheque.chequeImage.trim() !== "";
+        if ((hasNumber && !hasImage) || (!hasNumber && hasImage)) {
+          return sendErrorResponse(res, 400, "VALIDATION_ERROR", `chequeDetails[${i}]: both chequeNumber and chequeImage are required together`);
         }
       }
     }
