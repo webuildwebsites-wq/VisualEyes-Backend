@@ -15,6 +15,7 @@
     "seed-dropdowns": "node scripts/seedCustomerDropdowns.js",
     "seed-roles-departments": "node scripts/seedRolesAndDepartments.js",
     "update-employee-type-order": "node scripts/updateEmployeeTypeOrder.js",
+    "seed-excel": "node scripts/seedExcelData.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
@@ -35,6 +36,7 @@
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
     "nodemailer": "^8.0.0",
-    "uuid": "^13.0.0"
+    "uuid": "^13.0.0",
+    "xlsx": "^0.18.5"
   }
 }
