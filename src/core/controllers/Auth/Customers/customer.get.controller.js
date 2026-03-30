@@ -206,48 +206,6 @@ export const getAllCustomers = async (req, res) => {
   }
 };
 
-// export const getPendingFinanceCustomers = async (req, res) => {
-//   try {
-//     const page = Math.max(parseInt(req.query.page) || 1, 1);
-//     const limit = Math.min(parseInt(req.query.limit) || 10, 100);
-//     const skip = (page - 1) * limit;
-
-//     const [customers, total] = await Promise.all([
-//       Customer.find({
-//         "approvalWorkflow.financeApprovalStatus": 'PENDING'
-//       })
-//         .populate('createdBy', 'username employeeName employeeName email Department')
-//         .sort({ createdAt: -1 })
-//         .skip(skip)
-//         .limit(limit)
-//         .lean(),
-//       Customer.countDocuments({
-//         "approvalWorkflow.financeApprovalStatus": 'PENDING'
-//       })
-//     ]);
-
-//     const totalPages = Math.ceil(total / limit);
-
-//     const pagination = {
-//       currentPage: page,
-//       totalPages,
-//       totalCustomers: total,
-//       hasNext: page < totalPages,
-//       hasPrev: page > 1
-//     };
-
-//     return sendSuccessResponse(res, 200, { customers, pagination }, "Pending Finance approval customers retrieved successfully");
-//   } catch (error) {
-//     console.error("Get pending finance customers error:", error);
-//     return sendErrorResponse(
-//       res,
-//       500,
-//       "INTERNAL_ERROR",
-//       "Internal server error while fetching pending customers"
-//     );
-//   }
-// };
-
 export const getPendingTermsCustomers = async (req, res) => {
   try {
     const page = Math.max(parseInt(req.query.page) || 1, 1);

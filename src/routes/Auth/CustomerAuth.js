@@ -1,5 +1,5 @@
 import express from 'express';
-import { customerForgotPassword, customerLogin,customerResetPassword,customerUpdatePassword, customerBasicRegistration, updateCustomerProfile, resetCustomerCredit, sendCustomerForCorrection, resubmitCorrectedCustomer, updateCustomerShipToDetails } from '../../core/controllers/Auth/Customers/CustomerAuth.js';
+import { customerForgotPassword, customerLogin,customerResetPassword, customerBasicRegistration, updateCustomerProfile, resetCustomerCredit, sendCustomerForCorrection, resubmitCorrectedCustomer, updateCustomerShipToDetails } from '../../core/controllers/Auth/Customers/CustomerAuth.js';
 import { financeApproveCustomer, salesHeadApproveCustomer, acceptTermsAndConditions, getPendingCustomersByStage, financeResubmitToSalesHead } from '../../core/controllers/Auth/Customers/CustomerApprovalWorkflow.js';
 import { getAllCustomers, getCustomerById, getCustomerProfile, getDraftCustomers, getCorrectionRequiredCustomers, getPendingTermsCustomers } from '../../core/controllers/Auth/Customers/customer.get.controller.js';
 import { requireSalesFinanceOrSuperAdmin, attachDepartmentInfo } from '../../middlewares/Auth/AdminMiddleware/departmentMiddleware.js';
@@ -16,10 +16,6 @@ customerRouter.post('/login',  customerLogin);
 customerRouter.post('/register', ProtectUser, attachDepartmentInfo, requireSalesFinanceOrSuperAdmin, customerBasicRegistration);
 
 customerRouter.post('/draft-register', ProtectUser, attachDepartmentInfo, customerDraftRegistration);
-
-// FINANCE COMPLETE
-// customerRouter.put('/:customerId/finance-complete', ProtectUser, attachDepartmentInfo, financeCompleteCustomer);
-
 
 // NEW WORKFLOW ROUTES
 customerRouter.put('/:customerId/finance-approve', ProtectUser, attachDepartmentInfo, financeApproveCustomer);
@@ -46,15 +42,12 @@ customerRouter.put('/reset-credit/:customerId', ProtectUser, attachDepartmentInf
 // FORGOT PASSWORD
 customerRouter.post('/forgot-password',  customerForgotPassword);
 customerRouter.put('/reset-password/confirm', customerResetPassword);
-customerRouter.put('/update-password', protectCustomer, customerUpdatePassword);
 customerRouter.post('/verify-email', verifyCustomerEmail);
 
 // TOKEN
 customerRouter.post('/refresh', refreshToken);
 customerRouter.post('/logout', protectCustomer, logout);
 
-// GET ALL THE REQUIRED DETAILS
-// customerRouter.get('/customer/pending-finance', ProtectUser, getPendingFinanceCustomers);
 
 customerRouter.get('/customer/correction-required', ProtectUser, attachDepartmentInfo, getCorrectionRequiredCustomers);
 customerRouter.get('/customer/pending-terms', ProtectUser, attachDepartmentInfo, getPendingTermsCustomers);

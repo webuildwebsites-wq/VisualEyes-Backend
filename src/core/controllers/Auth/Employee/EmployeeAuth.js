@@ -71,7 +71,7 @@ export const employeeForgotPassword = async (req, res) => {
 
     const { uidb36, token } = generateResetToken(user._id, user.password);
 
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const frontendUrl = process.env.FRONTEND_URL;
     const resetUrl = `${frontendUrl}/reset-password/confirm?uidb36=${uidb36}&token=${encodeURIComponent(token)}&type=employee`;
 
     const emailResult = await sendEmail({
@@ -146,31 +146,6 @@ export const employeeResetPassword = async (req, res) => {
   } catch (error) {
     console.error('Employee reset password error:', error);
     return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Password could not be reset');
-  }
-};
-
-export const employeeUpdatePassword = async (req, res) => {
-  try {
-    const { currentPassword, newPassword } = req.body;
-    
-    if (!currentPassword || !newPassword) {
-      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Please provide current password and new password');
-    }
-
-    const user = await employeeSchema.findById(req.user.id).select('+password');
-    
-    if (!(await user.comparePassword(currentPassword))) {
-      return sendErrorResponse(res, 401, 'INVALID_PASSWORD', 'Current password is incorrect');
-    }
-
-    user.password = newPassword;
-    await user.save();
-
-    return sendTokenResponse(user, 200, res, 'EMPLOYEE', generateToken, generateRefreshToken);
-
-  } catch (error) {
-    console.error('Employee update password error:', error);
-    return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Password could not be updated');
   }
 };
 
