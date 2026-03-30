@@ -45,7 +45,7 @@ customerRouter.put('/reset-credit/:customerId', ProtectUser, attachDepartmentInf
 
 // FORGOT PASSWORD
 customerRouter.post('/forgot-password',  customerForgotPassword);
-customerRouter.put('/reset-password/:resettoken', customerResetPassword);
+customerRouter.put('/reset-password/confirm', customerResetPassword);
 customerRouter.put('/update-password', protectCustomer, customerUpdatePassword);
 customerRouter.post('/verify-email', verifyCustomerEmail);
 

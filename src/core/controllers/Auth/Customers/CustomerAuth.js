@@ -22,6 +22,9 @@ import CourierTime from "../../../../models/Product/CourierTime.js";
 import BusinessType from "../../../../models/Product/BusinessType.js"
 import GSTType from "../../../../models/Product/GSTType.js";
 import employeeSchema from "../../../../models/Auth/Employee.js";
+import { sendEmail } from "../../../../core/config/Email/emailService.js";
+import ResetPasswordTemplate from "../../../../Utils/Mail/ResetPasswordTemplate.js";
+import { generateResetToken, verifyResetToken, decodeUidb36 } from "../../../../Utils/Auth/passwordResetUtils.js";
 // import Brand from "../../../../models/Product/Brand.js";
 // import Category from "../../../../models/Product/Category.js";
 import dotenv from "dotenv";
@@ -497,109 +500,95 @@ export const customerForgotPassword = async (req, res) => {
     const { email } = req.body;
 
     if (!email) {
-      return sendErrorResponse(
-        res,
-        400,
-        "VALIDATION_ERROR",
-        "Please provide email address",
-      );
+      return sendErrorResponse(res, 400, "VALIDATION_ERROR", "Please provide email address");
     }
 
     const customer = await Customer.findOne({
-      businessEmail: email,
-      "Status.isActive": true,
-    });
+      businessEmail: email.toLowerCase(),
+      "status.isActive": true,
+    }).select("+password");
 
     if (!customer) {
-      return sendErrorResponse(
-        res,
-        404,
-        "USER_NOT_FOUND",
-        "No customer found with that email address",
-      );
+      return sendErrorResponse(res, 404, 'USER_NOT_FOUND', 'No active account found with that email address');
     }
 
-    const resetToken = crypto.randomBytes(20).toString("hex");
-    customer.passwordResetToken = crypto
-      .createHash("sha256")
-      .update(resetToken)
-      .digest("hex");
+    const { uidb36, token } = generateResetToken(customer._id, customer.password);
 
-    customer.passwordResetExpires = Date.now() + 10 * 60 * 1000;
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+    const resetUrl = `${frontendUrl}/reset-password/confirm?uidb36=${uidb36}&token=${encodeURIComponent(token)}&type=customer`;
 
-    await customer.save({ validateBeforeSave: false });
+    const emailResult = await sendEmail({
+      to: customer.businessEmail,
+      subject: "Visual Eyes — Password Reset Request",
+      html: ResetPasswordTemplate(customer.shopName || customer.ownerName, resetUrl, 30),
+    });
 
-    const response = {
-      message: "Password reset link sent to email",
-      ...(process.env.NODE_ENV === "development" && { resetToken }),
-    };
+    if (!emailResult.success) {
+      return sendErrorResponse(res, 500, "EMAIL_FAILED", "Email could not be sent. Please try again.");
+    }
 
-    return sendSuccessResponse(res, 200, null, response.message);
+    return sendSuccessResponse(res, 200, { message: "Password reset link sent to your email" });
   } catch (error) {
     console.error("Customer forgot password error:", error);
-    return sendErrorResponse(
-      res,
-      500,
-      "INTERNAL_ERROR",
-      "Email could not be sent",
-    );
+    return sendErrorResponse(res, 500, "INTERNAL_ERROR", "Email could not be sent");
   }
 };
 
 export const customerResetPassword = async (req, res) => {
   try {
-    const { password } = req.body;
+    const { password, confirmPassword } = req.body;
+    const { uidb36, token } = req.query;
 
-    if (!password) {
-      return sendErrorResponse(
-        res,
-        400,
-        "VALIDATION_ERROR",
-        "Please provide new password",
-      );
+    if (!uidb36 || !token) {
+      return sendErrorResponse(res, 400, "INVALID_TOKEN", "Invalid reset link");
     }
 
-    const resetPasswordToken = crypto
-      .createHash("sha256")
-      .update(req.params.resettoken)
-      .digest("hex");
+    if (!password || !confirmPassword) {
+      return sendErrorResponse(res, 400, "VALIDATION_ERROR", "Please provide new password and confirm password");
+    }
 
-    const customer = await Customer.findOne({
-      passwordResetToken: resetPasswordToken,
-      passwordResetExpires: { $gt: Date.now() },
-    });
+    if (password !== confirmPassword) {
+      return sendErrorResponse(res, 400, "VALIDATION_ERROR", "Passwords do not match");
+    }
 
-    if (!customer) {
-      return sendErrorResponse(
-        res,
-        400,
-        "INVALID_TOKEN",
-        "Invalid or expired reset token",
-      );
+    if (password.length < 6) {
+      return sendErrorResponse(res, 400, "VALIDATION_ERROR", "Password must be at least 6 characters");
+    }
+
+    let userId;
+    try {
+      userId = decodeUidb36(uidb36);
+    } catch {
+      return sendErrorResponse(res, 400, "INVALID_TOKEN", "Invalid reset link");
+    }
+
+    const customer = await Customer.findById(userId).select("+password");
+
+    if (!customer || !customer.status?.isActive) {
+      return sendErrorResponse(res, 400, "INVALID_TOKEN", "Invalid reset link");
+    }
+
+    const { valid, expired } = verifyResetToken(uidb36, token, customer.password);
+
+    if (expired) {
+      return sendErrorResponse(res, 400, "TOKEN_EXPIRED", "Reset link has expired. Please request a new one.");
+    }
+
+    if (!valid) {
+      return sendErrorResponse(res, 400, "INVALID_TOKEN", "Invalid reset link");
     }
 
     customer.password = password;
-    customer.passwordResetToken = undefined;
-    customer.passwordResetExpires = undefined;
+    customer.failedLoginAttempts = 0;
+    customer.lockUntil = undefined;
 
-    await customer.save();
+    await customer.save({ validateBeforeSave: false });
+    // await customer.save();
 
-    return sendTokenResponse(
-      customer,
-      200,
-      res,
-      "CUSTOMER",
-      generateToken,
-      generateRefreshToken,
-    );
+    return sendSuccessResponse(res, 200, { message: "Password has been reset successfully. You can now log in." });
   } catch (error) {
     console.error("Customer reset password error:", error);
-    return sendErrorResponse(
-      res,
-      500,
-      "INTERNAL_ERROR",
-      "Password could not be reset",
-    );
+    return sendErrorResponse(res, 500, "INTERNAL_ERROR", "Password could not be reset");
   }
 };
 

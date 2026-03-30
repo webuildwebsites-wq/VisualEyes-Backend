@@ -13,7 +13,7 @@ employeeRouter.post('/verify-email', verifyUserEmail);
 
 employeeRouter.post('/forgot-password', employeeForgotPassword);
 employeeRouter.put('/update-password', ProtectUser, employeeUpdatePassword);
-employeeRouter.put('/reset-password/:resettoken', employeeResetPassword);
+employeeRouter.put('/reset-password/confirm', employeeResetPassword);
 
 employeeRouter.post('/refresh', refreshToken);
 employeeRouter.post('/logout', ProtectUser, logout);

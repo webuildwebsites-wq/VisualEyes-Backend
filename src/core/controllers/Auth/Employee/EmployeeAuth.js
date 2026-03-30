@@ -1,7 +1,9 @@
-import crypto from 'crypto';
 import { sendSuccessResponse, sendErrorResponse, sendTokenResponse } from '../../../../Utils/response/responseHandler.js';
 import { generateToken, generateRefreshToken } from '../../../../Utils/Auth/tokenUtils.js';
 import employeeSchema from '../../../../models/Auth/Employee.js';
+import { sendEmail } from '../../../../core/config/Email/emailService.js';
+import ResetPasswordTemplate from '../../../../Utils/Mail/ResetPasswordTemplate.js';
+import { generateResetToken, verifyResetToken, decodeUidb36 } from '../../../../Utils/Auth/passwordResetUtils.js';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -56,33 +58,33 @@ export const employeeLogin = async (req, res) => {
 export const employeeForgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
-    
+
     if (!email) {
       return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Please provide email address');
     }
 
-    const user = await employeeSchema.findOne({ email, isActive: true });
+    const user = await employeeSchema.findOne({ email: email.toLowerCase(), isActive: true }).select('+password');
 
     if (!user) {
-      return sendErrorResponse(res, 404, 'USER_NOT_FOUND', 'No user found with that email address');
+      return sendErrorResponse(res, 404, 'USER_NOT_FOUND', 'No active account found with that email address');
     }
 
-    const resetToken = crypto.randomBytes(20).toString('hex');  
-    user.passwordResetToken = crypto
-      .createHash('sha256')
-      .update(resetToken)
-      .digest('hex');
+    const { uidb36, token } = generateResetToken(user._id, user.password);
 
-    user.passwordResetExpires = Date.now() + 10 * 60 * 1000; 
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const resetUrl = `${frontendUrl}/reset-password/confirm?uidb36=${uidb36}&token=${encodeURIComponent(token)}&type=employee`;
 
-    await user.save({ validateBeforeSave: false });
+    const emailResult = await sendEmail({
+      to: user.email,
+      subject: 'Visual Eyes — Password Reset Request',
+      html: ResetPasswordTemplate(user.employeeName, resetUrl, 30),
+    });
 
-    const response = {
-      message: 'Password reset link sent to email',
-      ...(process.env.NODE_ENV === 'development' && { resetToken })
-    };
+    if (!emailResult.success) {
+      return sendErrorResponse(res, 500, 'EMAIL_FAILED', 'Email could not be sent. Please try again.');
+    }
 
-    return sendSuccessResponse(res, 200, null, response.message);
+    return sendSuccessResponse(res, 200, { message: 'Password reset link sent to your email' });
   } catch (error) {
     console.error('Employee forgot password error:', error);
     return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Email could not be sent');
@@ -91,38 +93,58 @@ export const employeeForgotPassword = async (req, res) => {
 
 export const employeeResetPassword = async (req, res) => {
   try {
-    const { password } = req.body;
+    const { password, confirmPassword } = req.body;
+    const { uidb36, token } = req.query;
 
-    if (!password) {
-      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Please provide new password');
+    if (!uidb36 || !token) {
+      return sendErrorResponse(res, 400, 'INVALID_TOKEN', 'Invalid reset link');
     }
 
-    const resetPasswordToken = crypto
-      .createHash('sha256')
-      .update(req.params.resettoken)
-      .digest('hex');
-
-    const user = await employeeSchema.findOne({
-      passwordResetToken: resetPasswordToken,
-      passwordResetExpires: { $gt: Date.now() }
-    });
-
-    if (!user) {
-      return sendErrorResponse(res, 400, 'INVALID_TOKEN', 'Invalid or expired reset token');
+    if (!password || !confirmPassword) {
+      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Please provide new password and confirm password');
     }
 
-    // Password will be hashed by the pre-save middleware
+    if (password !== confirmPassword) {
+      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Passwords do not match');
+    }
+
+    if (password.length < 8) {
+      return sendErrorResponse(res, 400, 'VALIDATION_ERROR', 'Password must be at least 8 characters');
+    }
+
+    let userId;
+    try {
+      userId = decodeUidb36(uidb36);
+    } catch {
+      return sendErrorResponse(res, 400, 'INVALID_TOKEN', 'Invalid reset link');
+    }
+
+    const user = await employeeSchema.findById(userId).select('+password');
+
+    if (!user || !user.isActive) {
+      return sendErrorResponse(res, 400, 'INVALID_TOKEN', 'Invalid reset link');
+    }
+
+    const { valid, expired } = verifyResetToken(uidb36, token, user.password);
+
+    if (expired) {
+      return sendErrorResponse(res, 400, 'TOKEN_EXPIRED', 'Reset link has expired. Please request a new one.');
+    }
+
+    if (!valid) {
+      return sendErrorResponse(res, 400, 'INVALID_TOKEN', 'Invalid reset link');
+    }
+
     user.password = password;
-    user.passwordResetToken = undefined;
-    user.passwordResetExpires = undefined;
     user.lockUntil = undefined;
+    user.failedLoginAttempts = 0;
 
-    await user.save();
+    await user.save({ validateBeforeSave: false });
+    // await user.save();
 
-    return sendTokenResponse(user, 200, res, 'EMPLOYEE', generateToken, generateRefreshToken);
-
+    return sendSuccessResponse(res, 200, { message: 'Password has been reset successfully. You can now log in.' });
   } catch (error) {
-    console.error('Employee', error);
+    console.error('Employee reset password error:', error);
     return sendErrorResponse(res, 500, 'INTERNAL_ERROR', 'Password could not be reset');
   }
 };
