@@ -37,21 +37,32 @@ async function seedProductMaster(filePath) {
   console.log("   🗑️  Clearing existing Product collection...");
   await Product.deleteMany({});
 
-  const docs = rows.map((row) => ({
-    itemCode:         toStr(row["Item Code"]),
-    productName:      toStr(row["Product Name"]),
-    coating:          toStr(row["Coating"]),
-    index:            toNum(row["Index"]),
-    productShortCode: toStr(row["Product Short Code"]),
-    brand:            toStr(row["Brand"]),
-    productType:      toStr(row["Product Type"]),
-    category:         toStr(row["Category"]),
-    treatment:        toStr(row["treatment"]),
-    price:            toNum(row["Price"]),
-    status:           toStr(row["Status"]),
-    lab:              toStr(row["Lab"]),
-    blankCode:        toStr(row["Blank Code"]),
-  }));
+  const docs = rows.map((row) => {
+    const suppliers = [];
+    for (let i = 1; i <= 4; i++) {
+      const name = toStr(row[`Supplier${i}`] ?? row[`Supplier ${i}`]);
+      if (name) {
+        suppliers.push({ name: name.toUpperCase(), priority: i, active: true });
+      }
+    }
+
+    return {
+      itemCode:         toStr(row["Item Code"]),
+      productName:      toStr(row["Product Name"]),
+      coating:          toStr(row["Coating"]),
+      index:            toNum(row["Index"]),
+      productShortCode: toStr(row["Product Short Code"]),
+      brand:            toStr(row["Brand"]),
+      productType:      toStr(row["Product Type"]),
+      category:         toStr(row["Category"]),
+      treatment:        toStr(row["treatment"]),
+      price:            toNum(row["Price"]),
+      status:           toStr(row["Status"]),
+      lab:              toStr(row["Lab"]),
+      blankCode:        toStr(row["Blank Code"]),
+      suppliers,
+    };
+  });
 
   await Product.insertMany(docs, { ordered: false });
   console.log(`   ✅ Inserted: ${docs.length} products`);

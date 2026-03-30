@@ -12,13 +12,16 @@ const baseGridSchema = new mongoose.Schema(
       {
         _id:       false,
         sphere:    { type: Number, required: true },
-        axisValue: { type: Number, required: true }, // Addition or Cylinder value
+        axisValue: { type: Number, required: true }, // CYL (Minus cylinder) or ADD (Addition)
         stock:     { type: Number, default: null },  // base curve value
       },
     ],
   },
   { timestamps: true }
 );
+
+// Compound index for supplier + productCode lookups
+baseGridSchema.index({ supplier: 1, productCode: 1 });
 
 const BaseGrid = mongoose.model("BaseGrid", baseGridSchema);
 export default BaseGrid;
