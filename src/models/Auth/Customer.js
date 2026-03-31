@@ -426,6 +426,10 @@ const customerSchema = new mongoose.Schema(
       ref: "employee",
       required: true,
     },
+    createdByName: {
+      type: String,
+      trim: true,
+    },
     createdByDepartment: {
       type: String,
       enum: ['SALES', 'FINANCE', 'SUPERADMIN'],

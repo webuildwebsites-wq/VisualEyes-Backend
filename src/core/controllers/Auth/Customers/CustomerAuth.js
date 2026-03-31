@@ -425,6 +425,7 @@ export const customerBasicRegistration = async (req, res) => {
       dcWithoutValue: false,
       designation: "Customer",
       createdBy: req.user.id,
+      createdByName: req.user.employeeName,
       createdByDepartment: userDepartment,
 
       // Business Details
