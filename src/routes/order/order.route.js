@@ -7,22 +7,23 @@ import {
   updateOrder,
   cancelOrder,
   resolveProduct,
+  getOrderDropdowns,
 } from "../../core/controllers/order/order.controller.js";
 import { ProtectUser } from "../../middlewares/Auth/AdminMiddleware/adminMiddleware.js";
 
-const customerOrder = express.Router();
+const orderRouter = express.Router();
 
-customerOrder.use(ProtectUser);
+orderRouter.use(ProtectUser);
 
-customerOrder.post("/resolve-product", resolveProduct);
+orderRouter.post("/resolve-product", resolveProduct);   
+orderRouter.get("/dropdowns",        getOrderDropdowns);
 
-customerOrder.post("/create",       createOrder);
-customerOrder.get("/",              listOrders);
-customerOrder.get("/:id",           getOrder);
-customerOrder.put("/:id",           updateOrder);
+orderRouter.post("/create", createOrder);
+orderRouter.get("/",        listOrders);
+orderRouter.get("/:id",     getOrder);
+orderRouter.put("/:id",     updateOrder);
 
-// Status transitions
-customerOrder.post("/:id/submit",   submitOrder);
-customerOrder.post("/:id/cancel",   cancelOrder);
+orderRouter.post("/:id/submit", submitOrder);
+orderRouter.post("/:id/cancel", cancelOrder);
 
-export default customerOrder;
+export default orderRouter;

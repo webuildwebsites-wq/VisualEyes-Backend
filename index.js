@@ -16,7 +16,7 @@ import imageUploadRouter from './src/routes/uploads/upload.js';
 import dropdownRouter from './src/routes/Product/Dropdown.js';
 import salesPersonRouter from './src/routes/Auth/SalesPerson.js';
 import locationRouter from './src/routes/Location/location.routes.js';
-import customerOrder from './src/routes/order/order.route.js';
+import orderRouter from './src/routes/order/order.route.js';
 
 dotenv.config();
 
@@ -99,7 +99,7 @@ try {
     app.use('/api/location', locationRouter);
 
     // CUSTOMER ORDER MODULE
-    app.use('/api/order', customerOrder);
+    app.use('/api/order', orderRouter);
     
 } catch (error) {
     console.error("Error occurred:", error);
