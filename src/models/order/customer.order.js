@@ -69,7 +69,7 @@ const orderSchema = new mongoose.Schema({
   brand:       String,
   category:    String,
   index:       Number,
-  lensType:    String,
+  productName: String,
   coating:     String,
   treatment:   String,
   tint:        String,

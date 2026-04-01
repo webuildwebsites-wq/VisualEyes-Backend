@@ -26,29 +26,29 @@ function caseInsensitive(val) {
 }
 
 
-export async function resolveEye({ brand, category, lensType, sph, cyl, add, productMode }) {
+export async function resolveEye({ brand, category, productName, sph, cyl, add, productMode }) {
   const product = await Product.findOne({
     brand: caseInsensitive(brand),
     category: caseInsensitive(category),
-    productName: caseInsensitive(lensType),
+    productName: caseInsensitive(productName),
   }).lean();
 
   console.log("product. ", product);
 
   if (!product) {
-    return { error: `Product not found for brand="${brand}", category="${category}", lensType="${lensType}"` };
+    return { error: `Product not found for brand="${brand}", category="${category}", productName="${productName}"` };
   }
 
   const blankCode = (product.blankCode || "").trim().toUpperCase();
   if (!blankCode) {
-    return { error: `No blank code defined for product "${lensType}"` };
+    return { error: `No blank code defined for product "${productName}"` };
   }
 
   console.log("product.suppliers : ", product.suppliers);
   const activeSuppliers = (product.suppliers || []).filter((s) => s.active).sort((a, b) => a.priority - b.priority);
 
   if (!activeSuppliers.length) {
-    return { error: `No active supplier found for product "${lensType}"` };
+    return { error: `No active supplier found for product "${productName}"` };
   }
 
   const gridType = productMode === "Stock Lens" ? "FFGrid" : "RxGrid";
@@ -130,7 +130,7 @@ export async function generateOrderNumber() {
 }
 
 
-export async function resolveAllEyes({ brand, category, lensType, productMode, powerType, powers = [] }) {
+export async function resolveAllEyes({ brand, category, productName, productMode, powerType, powers = [] }) {
   const requestedSides = powers.map((p) => p.side).filter(Boolean);
   const sides = requestedSides.length > 0 ? requestedSides : (powerType === "Both" ? ["R", "L"] : ["R"]);
   const resolved = [];
@@ -142,7 +142,7 @@ export async function resolveAllEyes({ brand, category, lensType, productMode, p
     const result = await resolveEye({
       brand,
       category,
-      lensType,
+      productName,
       sph: eye.sph,
       cyl: eye.cyl,
       add: eye.add,
@@ -167,10 +167,10 @@ export async function resolveAllEyes({ brand, category, lensType, productMode, p
 
 
 export async function createOrderService(data, userId) {
-  const { brand, category, lensType, productMode, powerType, powers = [] } = data;
+  const { brand, category, productName, productMode, powerType, powers = [] } = data;
 
-  if (!brand || !category || !lensType) {
-    throw { statusCode: 400, code: "MISSING_FIELDS", message: "brand, category, and lensType are required" };
+  if (!brand || !category || !productName) {
+    throw { statusCode: 400, code: "MISSING_FIELDS", message: "brand, category, and productName are required" };
   }
   if (!data.customerId) {
     throw { statusCode: 400, code: "MISSING_FIELDS", message: "customerId is required" };
@@ -184,7 +184,7 @@ export async function createOrderService(data, userId) {
     throw { statusCode: 403, code: "CUSTOMER_INACTIVE", message: "Customer account is not active" };
   }
 
-  const resolved = await resolveAllEyes({ brand, category, lensType, productMode, powerType, powers });
+  const resolved = await resolveAllEyes({ brand, category, productName, productMode, powerType, powers });
   const orderNumber = await generateOrderNumber();
 
   const order = await Order.create({
@@ -204,7 +204,7 @@ export async function createOrderService(data, userId) {
     brand,
     category,
     index: data.index,
-    lensType,
+    productName,
     coating: data.coating,
     treatment: data.treatment,
     tint: data.tint,
@@ -301,13 +301,13 @@ export async function updateOrderService(orderId, data) {
     throw { statusCode: 400, code: "INVALID_STATUS", message: "Only Draft orders can be updated" };
   }
 
-  const needsResolve = data.brand || data.category || data.lensType || data.powers || data.productMode || data.powerType;
+  const needsResolve = data.brand || data.category || data.productName || data.powers || data.productMode || data.powerType;
 
   if (needsResolve) {
     const resolved = await resolveAllEyes({
       brand: data.brand || order.brand,
       category: data.category || order.category,
-      lensType: data.lensType || order.lensType,
+      productName: data.productName || order.productName,
       productMode: data.productMode || order.productMode,
       powerType: data.powerType || order.powerType,
       powers: data.powers || order.powers,
@@ -318,7 +318,7 @@ export async function updateOrderService(orderId, data) {
   const UPDATABLE = [
     "shipTo", "customerBalance", "lab", "orderReference", "consumerCardName",
     "opticianName", "powerType", "productMode", "hasPrism", "powers", "prisms",
-    "brand", "category", "index", "lensType", "coating", "treatment", "tint",
+    "brand", "category", "index", "productName", "coating", "treatment", "tint",
     "tintDetails", "remarks", "mirror", "resolved", "centration", "fitting",
     "lensData", "directCustomer", "shippingCharges", "otherCharges",
   ];
@@ -345,14 +345,14 @@ export async function cancelOrderService(orderId, reason) {
   return order;
 }
 
-export async function resolveProductService({ brand, category, lensType, productMode, powerType, powers }) {
-  if (!brand || !category || !lensType) {
-    throw { statusCode: 400, code: "MISSING_FIELDS", message: "brand, category, and lensType are required" };
+export async function resolveProductService({ brand, category, productName, productMode, powerType, powers }) {
+  if (!brand || !category || !productName) {
+    throw { statusCode: 400, code: "MISSING_FIELDS", message: "brand, category, and productName are required" };
   }
   return resolveAllEyes({
     brand,
     category,
-    lensType,
+    productName,
     productMode,
     powerType: powerType || "Single",
     powers: powers || [],
@@ -374,12 +374,12 @@ export async function getOrderDropdownsService({ brand, category }) {
   }
 
   if (brand && category) {
-    const lensTypes = await Product.distinct("productName", {
+    const productNames = await Product.distinct("productName", {
       brand: caseInsensitive(brand),
       category: caseInsensitive(category),
       productName: { $ne: null },
     });
-    return { lensTypes: lensTypes.filter(Boolean).sort() };
+    return { productNames: productNames.filter(Boolean).sort() };
   }
 
   return {};
