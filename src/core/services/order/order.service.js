@@ -10,25 +10,15 @@ function roundToStep(value, step = 0.25) {
 
 function findGridCell(grid, sph, axisValue) {
   const sphR = roundToStep(sph);
-  const axR = roundToStep(axisValue);
+  const axR  = roundToStep(axisValue);
 
-  if (sphR != null && axR != null) {
-    const exact = grid.find((g) => g.sphere === sphR && g.axisValue === axR);
-    if (exact) return exact;
+  if (sphR == null) return null;
+
+  if (axR != null) {
+    return grid.find((g) => g.sphere === sphR && g.axisValue === axR) ?? null;
   }
 
-  if (sphR != null) {
-    const noAxis = grid.find((g) => g.sphere === sphR && g.axisValue === 0);
-    if (noAxis) return noAxis;
-  }
-
-  if (sphR != null && grid.length > 0) {
-    return [...grid].sort(
-      (a, b) => Math.abs(a.sphere - sphR) - Math.abs(b.sphere - sphR)
-    )[0];
-  }
-
-  return null;
+  return grid.find((g) => g.sphere === sphR && g.axisValue === 0) ?? null;
 }
 
 function caseInsensitive(val) {
@@ -96,12 +86,21 @@ export async function resolveEye({ brand, category, lensType, sph, cyl, add, pro
   console.log("gridDoc : ", gridDoc);
 
   if (!gridDoc) {
-    gridDoc = allGridDocs[0];
-    chosenSupplier = activeSuppliers[0];
+    gridDoc        = allGridDocs[0];
+    chosenSupplier = { name: allGridDocs[0].supplier, priority: 99, active: true };
   }
 
+  console.log("gridDoc : ", gridDoc);
+  console.log("chosenSupplier : ", chosenSupplier);
+
   const axisValue = gridDoc.axisType === "Minus cylinder" ? (cyl ?? 0) : (add ?? 0);
+  console.log("gridDoc.grid : ", gridDoc.grid);
+  console.log("sph : ", sph);
+  console.log("axisValue : ", axisValue);
+
   const cell = findGridCell(gridDoc.grid, sph, axisValue);
+
+  console.log("cell : ", cell);
 
   return {
     itemCode: product.itemCode,
@@ -132,11 +131,14 @@ export async function generateOrderNumber() {
 
 
 export async function resolveAllEyes({ brand, category, lensType, productMode, powerType, powers = [] }) {
-  const sides = powerType === "Both" ? ["R", "L"] : ["R"];
+  const requestedSides = powers.map((p) => p.side).filter(Boolean);
+  const sides = requestedSides.length > 0 ? requestedSides : (powerType === "Both" ? ["R", "L"] : ["R"]);
   const resolved = [];
 
   for (const side of sides) {
+    console.log("powers : ", powers);
     const eye = powers.find((p) => p.side === side) || {};
+    console.log("eye.sph : ", eye)
     const result = await resolveEye({
       brand,
       category,
