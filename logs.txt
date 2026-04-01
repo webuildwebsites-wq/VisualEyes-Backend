@@ -1,0 +1,466 @@
+============================================================
+⚠️  SKIPPED ROWS (0) — no itemCode
+============================================================
+
+============================================================
+❓ WITHOUT SUPPLIER DATA (27) — itemCode not in Supplier file
+============================================================
+
+[1] ItemCode: NEW
+{
+  "Item Code": "New",
+  "Product Name": "1.50 Fuji SafeRide Transition Gen*S AM DSC",
+  "Coating": "DSC",
+  "Index": "1.50",
+  "Product Short Code": "FRXSA150TXAMDS",
+  "Brand": "VE-FUJI",
+  "Product Type": "Rx Lens",
+  "Category": "Fuji Safe Ride",
+  "treatment": "Transition",
+  "Price": 10675,
+  "Status": 21350,
+  "Lab": "VisualEyes Lab & Vrx All Labs",
+  "Blank Code": null
+}
+
+[2] ItemCode: NEW
+{
+  "Item Code": "New",
+  "Product Name": "1.50 Fuji SafeRide Transition Gen*S AT DSC",
+  "Coating": "DSC",
+  "Index": "1.50",
+  "Product Short Code": "FRXSA150TXATDS",
+  "Brand": "VE-FUJI",
+  "Product Type": "Rx Lens",
+  "Category": "Fuji Safe Ride",
+  "treatment": "Transition",
+  "Price": 10675,
+  "Status": 21350,
+  "Lab": "VisualEyes Lab & Vrx All Labs",
+  "Blank Code": null
+}
+
+[3] ItemCode: NEW
+{
+  "Item Code": "New",
+  "Product Name": "1.50 Fuji SafeRide Transition Gen*S EM DSC",
+  "Coating": "DSC",
+  "Index": "1.50",
+  "Product Short Code": "FRXSA150TXEMDS",
+  "Brand": "VE-FUJI",
+  "Product Type": "Rx Lens",
+  "Category": "Fuji Safe Ride",
+  "treatment": "Transition",
+  "Price": 10675,
+  "Status": 21350,
+  "Lab": "VisualEyes Lab & Vrx All Labs",
+  "Blank Code": null
+}
+
+[4] ItemCode: NEW
+{
+  "Item Code": "New",
+  "Product Name": "1.50 Fuji SafeRide Transition Gen*S RB DSC",
+  "Coating": "DSC",
+  "Index": "1.50",
+  "Product Short Code": "FRXSA150TXRBDS",
+  "Brand": "VE-FUJI",
+  "Product Type": "Rx Lens",
+  "Category": "Fuji Safe Ride",
+  "treatment": "Transition",
+  "Price": 10675,
+  "Status": 21350,
+  "Lab": "VisualEyes Lab & Vrx All Labs",
+  "Blank Code": null
+}
+
+[5] ItemCode: NEW
+{
+  "Item Code": "New",
+  "Product Name": "1.50 Fuji SafeRide Transition Gen*S SP DSC",
+  "Coating": "DSC",
+  "Index": "1.50",
+  "Product Short Code": "FRXSA150TXSPDS",
+  "Brand": "VE-FUJI",
+  "Product Type": "Rx Lens",
+  "Category": "Fuji Safe Ride",
+  "treatment": "Transition",
+  "Price": 10675,
+  "Status": 21350,
+  "Lab": "VisualEyes Lab & Vrx All Labs",
+  "Blank Code": null
+}
+
+[6] ItemCode: NEW
+{
+  "Item Code": "New",
+  "Product Name": "1.59 Fuji SafeRide Transition Gen*S AM DSC",
+  "Coating": "DSC",
+  "Index": "1.59",
+  "Product Short Code": "FRXSA159TXAMDS",
+  "Brand": "VE-FUJI",
+  "Product Type": "Rx Lens",
+  "Category": "Fuji Safe Ride",
+  "treatment": "Transition",
+  "Price": 11750,
+  "Status": 23500,
+  "Lab": "VisualEyes Lab & Vrx All Labs",
+  "Blank Code": null
+}
+
+[7] ItemCode: NEW
+{
+  "Item Code": "New",
+  "Product Name": "1.59 Fuji SafeRide Transition Gen*S AT DSC",
+  "Coating": "DSC",
+  "Index": "1.59",
+  "Product Short Code": "FRXSA159TXATDS",
+  "Brand": "VE-FUJI",
+  "Product Type": "Rx Lens",
+  "Category": "Fuji Safe Ride",
+  "treatment": "Transition",
+  "Price": 11750,
+  "Status": 23500,
+  "Lab": "VisualEyes Lab & Vrx All Labs",
+  "Blank Code": null
+}
+
+[8] ItemCode: NEW
+{
+  "Item Code": "New",
+  "Product Name": "1.59 Fuji SafeRide Transition Gen*S EM DSC",
+  "Coating": "DSC",
+  "Index": "1.59",
+  "Product Short Code": "FRXSA159TXEMDS",
+  "Brand": "VE-FUJI",
+  "Product Type": "Rx Lens",
+  "Category": "Fuji Safe Ride",
+  "treatment": "Transition",
+  "Price": 11750,
+  "Status": 23500,
+  "Lab": "VisualEyes Lab & Vrx All Labs",
+  "Blank Code": null
+}
+
+[9] ItemCode: NEW
+{
+  "Item Code": "New",
+  "Product Name": "1.59 Fuji SafeRide Transition Gen*S GN DSC",
+  "Coating": "DSC",
+  "Index": "1.59",
+  "Product Short Code": "FRXSA159TXGNDS",
+  "Brand": "VE-FUJI",
+  "Product Type": "Rx Lens",
+  "Category": "Fuji Safe Ride",
+  "treatment": "Transition",
+  "Price": 11750,
+  "Status": 23500,
+  "Lab": "VisualEyes Lab & Vrx All Labs",
+  "Blank Code": null
+}
+
+[10] ItemCode: NEW
+{
+  "Item Code": "New",
+  "Product Name": "1.59 Fuji SafeRide Transition Gen*S RB DSC",
+  "Coating": "DSC",
+  "Index": "1.59",
+  "Product Short Code": "FRXSA159TXRBDS",
+  "Brand": "VE-FUJI",
+  "Product Type": "Rx Lens",
+  "Category": "Fuji Safe Ride",
+  "treatment": "Transition",
+  "Price": 11750,
+  "Status": 23500,
+  "Lab": "VisualEyes Lab & Vrx All Labs",
+  "Blank Code": null
+}
+
+[11] ItemCode: NEW
+{
+  "Item Code": "New",
+  "Product Name": "1.59 Fuji SafeRide Transition Gen*S SP DSC",
+  "Coating": "DSC",
+  "Index": "1.59",
+  "Product Short Code": "FRXSA159TXSPDS",
+  "Brand": "VE-FUJI",
+  "Product Type": "Rx Lens",
+  "Category": "Fuji Safe Ride",
+  "treatment": "Transition",
+  "Price": 11750,
+  "Status": 23500,
+  "Lab": "VisualEyes Lab & Vrx All Labs",
+  "Blank Code": null
+}
+
+[12] ItemCode: NEW
+{
+  "Item Code": "New",
+  "Product Name": "1.60 Fuji SafeRide Transition Gen*S AM DSC",
+  "Coating": "DSC",
+  "Index": "1.60",
+  "Product Short Code": "FRXSA160TXAMDS",
+  "Brand": "VE-FUJI",
+  "Product Type": "Rx Lens",
+  "Category": "Fuji Safe Ride",
+  "treatment": "Transition",
+  "Price": 11750,
+  "Status": 23500,
+  "Lab": "VisualEyes Lab & Vrx All Labs",
+  "Blank Code": null
+}
+
+[13] ItemCode: NEW
+{
+  "Item Code": "New",
+  "Product Name": "1.60 Fuji SafeRide Transition Gen*S AT DSC",
+  "Coating": "DSC",
+  "Index": "1.60",
+  "Product Short Code": "FRXSA160TXATDS",
+  "Brand": "VE-FUJI",
+  "Product Type": "Rx Lens",
+  "Category": "Fuji Safe Ride",
+  "treatment": "Transition",
+  "Price": 11750,
+  "Status": 23500,
+  "Lab": "VisualEyes Lab & Vrx All Labs",
+  "Blank Code": null
+}
+
+[14] ItemCode: NEW
+{
+  "Item Code": "New",
+  "Product Name": "1.60 Fuji SafeRide Transition Gen*S EM DSC",
+  "Coating": "DSC",
+  "Index": "1.60",
+  "Product Short Code": "FRXSA160TXEMDS",
+  "Brand": "VE-FUJI",
+  "Product Type": "Rx Lens",
+  "Category": "Fuji Safe Ride",
+  "treatment": "Transition",
+  "Price": 11750,
+  "Status": 23500,
+  "Lab": "VisualEyes Lab & Vrx All Labs",
+  "Blank Code": null
+}
+
+[15] ItemCode: NEW
+{
+  "Item Code": "New",
+  "Product Name": "1.60 Fuji SafeRide Transition Gen*S RB DSC",
+  "Coating": "DSC",
+  "Index": "1.60",
+  "Product Short Code": "FRXSA160TXRBDS",
+  "Brand": "VE-FUJI",
+  "Product Type": "Rx Lens",
+  "Category": "Fuji Safe Ride",
+  "treatment": "Transition",
+  "Price": 11750,
+  "Status": 23500,
+  "Lab": "VisualEyes Lab & Vrx All Labs",
+  "Blank Code": null
+}
+
+[16] ItemCode: NEW
+{
+  "Item Code": "New",
+  "Product Name": "1.60 Fuji SafeRide Transition Gen*S SP DSC",
+  "Coating": "DSC",
+  "Index": "1.60",
+  "Product Short Code": "FRXSA160TXSPDS",
+  "Brand": "VE-FUJI",
+  "Product Type": "Rx Lens",
+  "Category": "Fuji Safe Ride",
+  "treatment": "Transition",
+  "Price": 11750,
+  "Status": 23500,
+  "Lab": "VisualEyes Lab & Vrx All Labs",
+  "Blank Code": null
+}
+
+[17] ItemCode: NEW
+{
+  "Item Code": "New",
+  "Product Name": "1.67 Fuji SafeRide Transition Gen*S AM DSC",
+  "Coating": "DSC",
+  "Index": "1.67",
+  "Product Short Code": "FRXSA167TXAMDS",
+  "Brand": "VE-FUJI",
+  "Product Type": "Rx Lens",
+  "Category": "Fuji Safe Ride",
+  "treatment": "Transition",
+  "Price": 12875,
+  "Status": 25750,
+  "Lab": "VisualEyes Lab & Vrx All Labs",
+  "Blank Code": null
+}
+
+[18] ItemCode: NEW
+{
+  "Item Code": "New",
+  "Product Name": "1.67 Fuji SafeRide Transition Gen*S AT DSC",
+  "Coating": "DSC",
+  "Index": "1.67",
+  "Product Short Code": "FRXSA167TXATDS",
+  "Brand": "VE-FUJI",
+  "Product Type": "Rx Lens",
+  "Category": "Fuji Safe Ride",
+  "treatment": "Transition",
+  "Price": 12875,
+  "Status": 25750,
+  "Lab": "VisualEyes Lab & Vrx All Labs",
+  "Blank Code": null
+}
+
+[19] ItemCode: NEW
+{
+  "Item Code": "New",
+  "Product Name": "1.67 Fuji SafeRide Transition Gen*S EM DSC",
+  "Coating": "DSC",
+  "Index": "1.67",
+  "Product Short Code": "FRXSA167TXEMDS",
+  "Brand": "VE-FUJI",
+  "Product Type": "Rx Lens",
+  "Category": "Fuji Safe Ride",
+  "treatment": "Transition",
+  "Price": 12875,
+  "Status": 25750,
+  "Lab": "VisualEyes Lab & Vrx All Labs",
+  "Blank Code": null
+}
+
+[20] ItemCode: NEW
+{
+  "Item Code": "New",
+  "Product Name": "1.67 Fuji SafeRide Transition Gen*S RB DSC",
+  "Coating": "DSC",
+  "Index": "1.67",
+  "Product Short Code": "FRXSA167TXRBDS",
+  "Brand": "VE-FUJI",
+  "Product Type": "Rx Lens",
+  "Category": "Fuji Safe Ride",
+  "treatment": "Transition",
+  "Price": 12875,
+  "Status": 25750,
+  "Lab": "VisualEyes Lab & Vrx All Labs",
+  "Blank Code": null
+}
+
+[21] ItemCode: NEW
+{
+  "Item Code": "New",
+  "Product Name": "1.67 Fuji SafeRide Transition Gen*S SP DSC",
+  "Coating": "DSC",
+  "Index": "1.67",
+  "Product Short Code": "FRXSA167TXSPDS",
+  "Brand": "VE-FUJI",
+  "Product Type": "Rx Lens",
+  "Category": "Fuji Safe Ride",
+  "treatment": "Transition",
+  "Price": 12875,
+  "Status": 25750,
+  "Lab": "VisualEyes Lab & Vrx All Labs",
+  "Blank Code": null
+}
+
+[22] ItemCode: NEW
+{
+  "Item Code": "New",
+  "Product Name": "RX Fuji SV 1.50 Transition Gen*S SP BGC",
+  "Coating": "BGC",
+  "Index": "1.50",
+  "Product Short Code": "FRXSA150TXSPBG",
+  "Brand": "VE-FUJI",
+  "Product Type": "Rx Lens",
+  "Category": "Fuji SV RX",
+  "treatment": "Transition",
+  "Price": 7375,
+  "Status": 14750,
+  "Lab": "VisualEyes Lab & Vrx All Labs",
+  "Blank Code": null
+}
+
+[23] ItemCode: NEW
+{
+  "Item Code": "New",
+  "Product Name": "RX Fuji SV 1.50 Transition Gen*S SP HDC",
+  "Coating": "HDC",
+  "Index": "1.50",
+  "Product Short Code": "FRXSA150TXSPHD",
+  "Brand": "VE-FUJI",
+  "Product Type": "Rx Lens",
+  "Category": "Fuji SV RX",
+  "treatment": "Transition",
+  "Price": 7725,
+  "Status": 15450,
+  "Lab": "VisualEyes Lab & Vrx All Labs",
+  "Blank Code": null
+}
+
+[24] ItemCode: NEW
+{
+  "Item Code": "New",
+  "Product Name": "RX Fuji SV 1.50 Transition Gen*S SP SHMC",
+  "Coating": "SHMC",
+  "Index": "1.50",
+  "Product Short Code": "FRXSA150TXSPSD",
+  "Brand": "VE-FUJI",
+  "Product Type": "Rx Lens",
+  "Category": "Fuji SV RX",
+  "treatment": "Transition",
+  "Price": 700,
+  "Status": 1400,
+  "Lab": "VisualEyes Lab & Vrx All Labs",
+  "Blank Code": null
+}
+
+[25] ItemCode: NEW
+{
+  "Item Code": "New",
+  "Product Name": "RX Fuji SV 1.59 Transition Gen*S SP BGC",
+  "Coating": "BGC",
+  "Index": "1.59",
+  "Product Short Code": "FRXSA159TXGPBG",
+  "Brand": "VE-FUJI",
+  "Product Type": "Rx Lens",
+  "Category": "Fuji SV RX",
+  "treatment": "Transition",
+  "Price": 7750,
+  "Status": 15500,
+  "Lab": "VisualEyes Lab & Vrx All Labs",
+  "Blank Code": null
+}
+
+[26] ItemCode: NEW
+{
+  "Item Code": "New",
+  "Product Name": "RX Fuji SV 1.59 Transition Gen*S SP HDC",
+  "Coating": "HDC",
+  "Index": "1.59",
+  "Product Short Code": "FRXSA159TXGPHD",
+  "Brand": "VE-FUJI",
+  "Product Type": "Rx Lens",
+  "Category": "Fuji SV RX",
+  "treatment": "Transition",
+  "Price": 8100,
+  "Status": 16200,
+  "Lab": "VisualEyes Lab & Vrx All Labs",
+  "Blank Code": null
+}
+
+[27] ItemCode: NEW
+{
+  "Item Code": "New",
+  "Product Name": "RX Fuji SV 1.59 Transition Gen*S SP SHMC",
+  "Coating": "SHMC",
+  "Index": "1.59",
+  "Product Short Code": "FRXSA159TXGPSD",
+  "Brand": "VE-FUJI",
+  "Product Type": "Rx Lens",
+  "Category": "Fuji SV RX",
+  "treatment": "Transition",
+  "Price": 7375,
+  "Status": 14750,
+  "Lab": "VisualEyes Lab & Vrx All Labs",
+  "Blank Code": null
+}

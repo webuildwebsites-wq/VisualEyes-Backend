@@ -10,7 +10,7 @@ function roundToStep(value, step = 0.25) {
 
 function findGridCell(grid, sph, axisValue) {
   const sphR = roundToStep(sph);
-  const axR  = roundToStep(axisValue);
+  const axR = roundToStep(axisValue);
 
   if (sphR != null && axR != null) {
     const exact = grid.find((g) => g.sphere === sphR && g.axisValue === axR);
@@ -38,12 +38,12 @@ function caseInsensitive(val) {
 
 export async function resolveEye({ brand, category, lensType, sph, cyl, add, productMode }) {
   const product = await Product.findOne({
-    brand:       caseInsensitive(brand),
-    category:    caseInsensitive(category),
+    brand: caseInsensitive(brand),
+    category: caseInsensitive(category),
     productName: caseInsensitive(lensType),
   }).lean();
 
-  console.log("product : ", product);
+  console.log("product. ", product);
 
   if (!product) {
     return { error: `Product not found for brand="${brand}", category="${category}", lensType="${lensType}"` };
@@ -54,60 +54,68 @@ export async function resolveEye({ brand, category, lensType, sph, cyl, add, pro
     return { error: `No blank code defined for product "${lensType}"` };
   }
 
+  console.log("product.suppliers : ", product.suppliers);
   const activeSuppliers = (product.suppliers || []).filter((s) => s.active).sort((a, b) => a.priority - b.priority);
-  console.log("activeSuppliers : ", product.suppliers);
+
   if (!activeSuppliers.length) {
     return { error: `No active supplier found for product "${lensType}"` };
   }
 
-  const gridType     = productMode === "Stock Lens" ? "FFGrid" : "RxGrid";
-  let gridDoc        = null;
+  const gridType = productMode === "Stock Lens" ? "FFGrid" : "RxGrid";
+  let allGridDocs = await BaseGrid.find({
+    productCode: caseInsensitive(blankCode),
+    gridType,
+  }).lean();
+
+  console.log("allGridDocs : ", allGridDocs);
+
+  if (!allGridDocs.length) {
+    allGridDocs = await BaseGrid.find({
+      productCode: caseInsensitive(blankCode),
+    }).lean();
+    console.log("Fall back all grids : ", allGridDocs);
+  }
+
+  if (!allGridDocs.length) {
+    return { error: `No grid data found for blank code "${blankCode}"` };
+  }
+
+  let gridDoc = null;
   let chosenSupplier = null;
 
   for (const supplier of activeSuppliers) {
-    const supplierName = (supplier.name || "").trim();
-    gridDoc = await BaseGrid.findOne({
-      supplier:    caseInsensitive(supplierName),
-      productCode: caseInsensitive(blankCode),
-      gridType,
-    }).lean();
-
-    if (!gridDoc) {
-      gridDoc = await BaseGrid.findOne({
-        supplier:    caseInsensitive(supplierName),
-        productCode: caseInsensitive(blankCode),
-      }).lean();
-    }
-
-    if (gridDoc) {
+    const supplierName = supplier.name.trim().toUpperCase();
+    const match = allGridDocs.find((g) => g.supplier.trim().toUpperCase() === supplierName);
+    if (match) {
+      gridDoc = match;
       chosenSupplier = supplier;
       break;
     }
   }
 
-  console.log("gridDoc ", gridDoc);
-  console.log("chosenSupplier ",chosenSupplier);
+  console.log("gridDoc : ", gridDoc);
 
-  if (!gridDoc || !chosenSupplier) {
-    return { error: `No grid data found for blank code "${blankCode}" across all active suppliers` };
+  if (!gridDoc) {
+    gridDoc = allGridDocs[0];
+    chosenSupplier = activeSuppliers[0];
   }
 
   const axisValue = gridDoc.axisType === "Minus cylinder" ? (cyl ?? 0) : (add ?? 0);
-  const cell      = findGridCell(gridDoc.grid, sph, axisValue);
+  const cell = findGridCell(gridDoc.grid, sph, axisValue);
 
   return {
-    itemCode:    product.itemCode,
+    itemCode: product.itemCode,
     blankCode,
-    supplier:    chosenSupplier.name,
+    supplier: chosenSupplier.name,
     productCode: blankCode,
-    gridType:    gridDoc.gridType,
-    baseCurve:   cell?.stock ?? null,
+    gridType: gridDoc.gridType,
+    baseCurve: cell?.stock ?? null,
   };
 }
 
 export async function generateOrderNumber() {
   const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-  const prefix  = "ORD-" + dateStr + "-";
+  const prefix = "ORD-" + dateStr + "-";
 
   const last = await Order.findOne(
     { orderNumber: { $regex: "^" + prefix } },
@@ -124,18 +132,18 @@ export async function generateOrderNumber() {
 
 
 export async function resolveAllEyes({ brand, category, lensType, productMode, powerType, powers = [] }) {
-  const sides    = powerType === "Both" ? ["R", "L"] : ["R"];
+  const sides = powerType === "Both" ? ["R", "L"] : ["R"];
   const resolved = [];
 
   for (const side of sides) {
-    const eye    = powers.find((p) => p.side === side) || {};
+    const eye = powers.find((p) => p.side === side) || {};
     const result = await resolveEye({
       brand,
       category,
       lensType,
-      sph:         eye.sph,
-      cyl:         eye.cyl,
-      add:         eye.add,
+      sph: eye.sph,
+      cyl: eye.cyl,
+      add: eye.add,
       productMode: productMode || "Rx",
     });
 
@@ -145,10 +153,10 @@ export async function resolveAllEyes({ brand, category, lensType, productMode, p
 
     resolved.push({
       side,
-      itemCode:  result.itemCode,
-      supplier:  result.supplier,
+      itemCode: result.itemCode,
+      supplier: result.supplier,
       baseCurve: result.baseCurve,
-      diameter:  eye.diameter ?? null,
+      diameter: eye.diameter ?? null,
     });
   }
 
@@ -174,42 +182,42 @@ export async function createOrderService(data, userId) {
     throw { statusCode: 403, code: "CUSTOMER_INACTIVE", message: "Customer account is not active" };
   }
 
-  const resolved    = await resolveAllEyes({ brand, category, lensType, productMode, powerType, powers });
+  const resolved = await resolveAllEyes({ brand, category, lensType, productMode, powerType, powers });
   const orderNumber = await generateOrderNumber();
 
   const order = await Order.create({
     orderNumber,
-    customerId:       data.customerId,
-    shipTo:           data.shipTo,
-    customerBalance:  data.customerBalance,
-    lab:              data.lab,
-    orderReference:   data.orderReference,
+    customerId: data.customerId,
+    shipTo: data.shipTo,
+    customerBalance: data.customerBalance,
+    lab: data.lab,
+    orderReference: data.orderReference,
     consumerCardName: data.consumerCardName,
-    opticianName:     data.opticianName,
-    powerType:        data.powerType,
-    productMode:      data.productMode,
-    hasPrism:         data.hasPrism      ?? false,
-    powers:           data.powers        ?? [],
-    prisms:           data.prisms        ?? [],
+    opticianName: data.opticianName,
+    powerType: data.powerType,
+    productMode: data.productMode,
+    hasPrism: data.hasPrism ?? false,
+    powers: data.powers ?? [],
+    prisms: data.prisms ?? [],
     brand,
     category,
-    index:            data.index,
+    index: data.index,
     lensType,
-    coating:          data.coating,
-    treatment:        data.treatment,
-    tint:             data.tint,
-    tintDetails:      data.tintDetails,
-    remarks:          data.remarks,
-    mirror:           data.mirror        ?? false,
+    coating: data.coating,
+    treatment: data.treatment,
+    tint: data.tint,
+    tintDetails: data.tintDetails,
+    remarks: data.remarks,
+    mirror: data.mirror ?? false,
     resolved,
-    centration:       data.centration    ?? [],
-    fitting:          data.fitting,
-    lensData:         data.lensData,
-    directCustomer:   data.directCustomer,
-    shippingCharges:  data.shippingCharges ?? 0,
-    otherCharges:     data.otherCharges    ?? 0,
-    status:           "Draft",
-    createdBy:        userId,
+    centration: data.centration ?? [],
+    fitting: data.fitting,
+    lensData: data.lensData,
+    directCustomer: data.directCustomer,
+    shippingCharges: data.shippingCharges ?? 0,
+    otherCharges: data.otherCharges ?? 0,
+    status: "Draft",
+    createdBy: userId,
   });
 
   return order;
@@ -223,7 +231,7 @@ export async function submitOrderService(orderId) {
     throw { statusCode: 400, code: "INVALID_STATUS", message: "Cannot submit an order with status: " + order.status };
   }
 
-  order.status      = "Submitted";
+  order.status = "Submitted";
   order.submittedAt = new Date();
   await order.save();
   return order;
@@ -232,7 +240,7 @@ export async function submitOrderService(orderId) {
 export async function getOrderService(orderId) {
   const order = await Order.findById(orderId)
     .populate("customerId", "shopName ownerName customerCode mobileNo1 businessEmail")
-    .populate("createdBy",  "name email EmployeeType")
+    .populate("createdBy", "name email EmployeeType")
     .lean();
 
   if (!order) throw { statusCode: 404, code: "NOT_FOUND", message: "Order not found" };
@@ -243,11 +251,11 @@ export async function listOrdersService({ customerId, status, page = 1, limit = 
   const filter = {};
 
   if (customerId) filter.customerId = customerId;
-  if (status)     filter.status     = status;
+  if (status) filter.status = status;
   if (search) {
     filter.$or = [
-      { orderNumber:    { $regex: search, $options: "i" } },
-      { opticianName:   { $regex: search, $options: "i" } },
+      { orderNumber: { $regex: search, $options: "i" } },
+      { opticianName: { $regex: search, $options: "i" } },
       { orderReference: { $regex: search, $options: "i" } },
     ];
   }
@@ -262,7 +270,7 @@ export async function listOrdersService({ customerId, status, page = 1, limit = 
     }
   }
 
-  const skip  = (parseInt(page) - 1) * parseInt(limit);
+  const skip = (parseInt(page) - 1) * parseInt(limit);
   const total = await Order.countDocuments(filter);
 
   const orders = await Order.find(filter)
@@ -276,8 +284,8 @@ export async function listOrdersService({ customerId, status, page = 1, limit = 
     orders,
     pagination: {
       total,
-      page:       parseInt(page),
-      limit:      parseInt(limit),
+      page: parseInt(page),
+      limit: parseInt(limit),
       totalPages: Math.ceil(total / parseInt(limit)),
     },
   };
@@ -295,12 +303,12 @@ export async function updateOrderService(orderId, data) {
 
   if (needsResolve) {
     const resolved = await resolveAllEyes({
-      brand:       data.brand       || order.brand,
-      category:    data.category    || order.category,
-      lensType:    data.lensType    || order.lensType,
+      brand: data.brand || order.brand,
+      category: data.category || order.category,
+      lensType: data.lensType || order.lensType,
       productMode: data.productMode || order.productMode,
-      powerType:   data.powerType   || order.powerType,
-      powers:      data.powers      || order.powers,
+      powerType: data.powerType || order.powerType,
+      powers: data.powers || order.powers,
     });
     data.resolved = resolved;
   }
@@ -329,7 +337,7 @@ export async function cancelOrderService(orderId, reason) {
     throw { statusCode: 400, code: "INVALID_STATUS", message: "Cannot cancel an order with status: " + order.status };
   }
 
-  order.status       = "Cancelled";
+  order.status = "Cancelled";
   order.cancelReason = reason || "";
   await order.save();
   return order;
@@ -345,7 +353,7 @@ export async function resolveProductService({ brand, category, lensType, product
     lensType,
     productMode,
     powerType: powerType || "Single",
-    powers:    powers    || [],
+    powers: powers || [],
   });
 }
 
@@ -357,7 +365,7 @@ export async function getOrderDropdownsService({ brand, category }) {
 
   if (brand && !category) {
     const categories = await Product.distinct("category", {
-      brand:    caseInsensitive(brand),
+      brand: caseInsensitive(brand),
       category: { $ne: null },
     });
     return { categories: categories.filter(Boolean).sort() };
@@ -365,8 +373,8 @@ export async function getOrderDropdownsService({ brand, category }) {
 
   if (brand && category) {
     const lensTypes = await Product.distinct("productName", {
-      brand:       caseInsensitive(brand),
-      category:    caseInsensitive(category),
+      brand: caseInsensitive(brand),
+      category: caseInsensitive(category),
       productName: { $ne: null },
     });
     return { lensTypes: lensTypes.filter(Boolean).sort() };

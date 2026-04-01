@@ -75,30 +75,24 @@ async function main() {
   const productRows = readSheet(productFilePath);
   console.log(`   Found ${productRows.length} rows\n`);
 
-  const docs      = [];
-  const seenCodes = new Set();
-  let skipped     = 0;
-  const skippedRows        = [];
+  const docs = [];
+  let skippedNoItemCode = 0;
+  const skippedRows = [];
   const missingSupplierRows = [];
 
   for (const row of productRows) {
     const itemCode = toUpper(row["Item Code"]);
 
+    // Only skip if there's no itemCode at all
     if (!itemCode) {
-      skipped++;
+      skippedNoItemCode++;
       skippedRows.push({ reason: "no itemCode", row });
       continue;
     }
 
-    if (seenCodes.has(itemCode)) {
-      skipped++;
-      skippedRows.push({ reason: "duplicate itemCode", itemCode, row });
-      continue;
-    }
-    seenCodes.add(itemCode);
-
     const sup = supplierMap.get(itemCode) || {};
 
+    // Track rows without supplier data but still insert them
     if (!supplierMap.has(itemCode)) {
       missingSupplierRows.push({ itemCode, row });
     }
@@ -139,7 +133,7 @@ async function main() {
 
   console.log("─────────────────────────────────────────────────────────────");
   console.log(`✅ Products inserted     : ${inserted}`);
-  console.log(`⚠️  Rows skipped         : ${skipped}  (no itemCode or duplicate in Excel)`);
+  console.log(`⚠️  Rows skipped         : ${skippedNoItemCode}  (no itemCode)`);
   console.log(`🔗 With supplier data   : ${withSuppliers}`);
   console.log(`❓ Without supplier data : ${withoutSuppliers}  (itemCode not found in Supplier file)`);
   console.log(`📦 Total in DB          : ${await Product.countDocuments()}`);
@@ -148,7 +142,7 @@ async function main() {
   const logLines = [];
 
   logLines.push("=".repeat(60));
-  logLines.push(`⚠️  SKIPPED ROWS (${skippedRows.length}) — no itemCode or duplicate`);
+  logLines.push(`⚠️  SKIPPED ROWS (${skippedRows.length}) — no itemCode`);
   logLines.push("=".repeat(60));
   skippedRows.forEach((entry, i) => {
     logLines.push(`\n[${i + 1}] Reason: ${entry.reason}${entry.itemCode ? ` | ItemCode: ${entry.itemCode}` : ""}`);
