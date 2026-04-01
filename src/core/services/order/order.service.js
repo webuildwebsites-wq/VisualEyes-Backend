@@ -43,35 +43,53 @@ export async function resolveEye({ brand, category, lensType, sph, cyl, add, pro
     productName: caseInsensitive(lensType),
   }).lean();
 
+  console.log("product : ", product);
+
   if (!product) {
     return { error: `Product not found for brand="${brand}", category="${category}", lensType="${lensType}"` };
   }
 
-  const activeSupplier = (product.suppliers || []).filter((s) => s.active).sort((a, b) => a.priority - b.priority)[0];
+  const blankCode = (product.blankCode || "").trim().toUpperCase();
+  if (!blankCode) {
+    return { error: `No blank code defined for product "${lensType}"` };
+  }
 
-  if (!activeSupplier) {
+  const activeSuppliers = (product.suppliers || []).filter((s) => s.active).sort((a, b) => a.priority - b.priority);
+  console.log("activeSuppliers : ", product.suppliers);
+  if (!activeSuppliers.length) {
     return { error: `No active supplier found for product "${lensType}"` };
   }
 
-  const gridType       = productMode === "Stock Lens" ? "FFGrid" : "RxGrid";
-  const supplierUpper  = activeSupplier.name.toUpperCase();
-  const productCodeKey = (product.productShortCode || product.itemCode || "").toUpperCase();
+  const gridType     = productMode === "Stock Lens" ? "FFGrid" : "RxGrid";
+  let gridDoc        = null;
+  let chosenSupplier = null;
 
-  let gridDoc = await BaseGrid.findOne({
-    supplier:    supplierUpper,
-    productCode: productCodeKey,
-    gridType,
-  }).lean();
-
-  if (!gridDoc) {
+  for (const supplier of activeSuppliers) {
+    const supplierName = (supplier.name || "").trim();
     gridDoc = await BaseGrid.findOne({
-      supplier:    supplierUpper,
-      productCode: productCodeKey,
+      supplier:    caseInsensitive(supplierName),
+      productCode: caseInsensitive(blankCode),
+      gridType,
     }).lean();
+
+    if (!gridDoc) {
+      gridDoc = await BaseGrid.findOne({
+        supplier:    caseInsensitive(supplierName),
+        productCode: caseInsensitive(blankCode),
+      }).lean();
+    }
+
+    if (gridDoc) {
+      chosenSupplier = supplier;
+      break;
+    }
   }
 
-  if (!gridDoc) {
-    return { error: `No grid data found for supplier "${activeSupplier.name}" and product "${productCodeKey}"` };
+  console.log("gridDoc ", gridDoc);
+  console.log("chosenSupplier ",chosenSupplier);
+
+  if (!gridDoc || !chosenSupplier) {
+    return { error: `No grid data found for blank code "${blankCode}" across all active suppliers` };
   }
 
   const axisValue = gridDoc.axisType === "Minus cylinder" ? (cyl ?? 0) : (add ?? 0);
@@ -79,8 +97,9 @@ export async function resolveEye({ brand, category, lensType, sph, cyl, add, pro
 
   return {
     itemCode:    product.itemCode,
-    supplier:    activeSupplier.name,
-    productCode: productCodeKey,
+    blankCode,
+    supplier:    chosenSupplier.name,
+    productCode: blankCode,
     gridType:    gridDoc.gridType,
     baseCurve:   cell?.stock ?? null,
   };

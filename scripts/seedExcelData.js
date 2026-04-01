@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
 import XLSX from "xlsx";
+import fs from "fs";
 import Product from "../src/models/Product/Product.js";
 
 dotenv.config();
@@ -77,22 +78,30 @@ async function main() {
   const docs      = [];
   const seenCodes = new Set();
   let skipped     = 0;
+  const skippedRows        = [];
+  const missingSupplierRows = [];
 
   for (const row of productRows) {
     const itemCode = toUpper(row["Item Code"]);
 
     if (!itemCode) {
       skipped++;
+      skippedRows.push({ reason: "no itemCode", row });
       continue;
     }
 
     if (seenCodes.has(itemCode)) {
       skipped++;
+      skippedRows.push({ reason: "duplicate itemCode", itemCode, row });
       continue;
     }
     seenCodes.add(itemCode);
 
     const sup = supplierMap.get(itemCode) || {};
+
+    if (!supplierMap.has(itemCode)) {
+      missingSupplierRows.push({ itemCode, row });
+    }
 
     docs.push({
       itemCode,
@@ -134,6 +143,29 @@ async function main() {
   console.log(`🔗 With supplier data   : ${withSuppliers}`);
   console.log(`❓ Without supplier data : ${withoutSuppliers}  (itemCode not found in Supplier file)`);
   console.log(`📦 Total in DB          : ${await Product.countDocuments()}`);
+
+  // ── 5. Write logs.txt ────────────────────────────────────────────────────
+  const logLines = [];
+
+  logLines.push("=".repeat(60));
+  logLines.push(`⚠️  SKIPPED ROWS (${skippedRows.length}) — no itemCode or duplicate`);
+  logLines.push("=".repeat(60));
+  skippedRows.forEach((entry, i) => {
+    logLines.push(`\n[${i + 1}] Reason: ${entry.reason}${entry.itemCode ? ` | ItemCode: ${entry.itemCode}` : ""}`);
+    logLines.push(JSON.stringify(entry.row, null, 2));
+  });
+
+  logLines.push("\n" + "=".repeat(60));
+  logLines.push(`❓ WITHOUT SUPPLIER DATA (${missingSupplierRows.length}) — itemCode not in Supplier file`);
+  logLines.push("=".repeat(60));
+  missingSupplierRows.forEach((entry, i) => {
+    logLines.push(`\n[${i + 1}] ItemCode: ${entry.itemCode}`);
+    logLines.push(JSON.stringify(entry.row, null, 2));
+  });
+
+  const logPath = path.join(__dirname, "../logs.txt");
+  fs.writeFileSync(logPath, logLines.join("\n"), "utf8");
+  console.log(`\n📝 Full row data written to logs.txt`);
 
   await mongoose.disconnect();
   process.exit(0);
