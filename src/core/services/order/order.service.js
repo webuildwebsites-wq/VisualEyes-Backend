@@ -3,6 +3,7 @@ import BaseGrid from "../../../models/Product/BaseGrid.js";
 import Product from "../../../models/Product/Product.js";
 import Customer from "../../../models/Auth/Customer.js";
 import Tint from "../../../models/order/Tint.js";
+import FrameType from "../../../models/order/FrameType.js";
 
 function roundToStep(value, step = 0.25) {
   if (value == null || isNaN(Number(value))) return null;
@@ -34,7 +35,7 @@ export async function resolveEye({ brand, category, productName, sph, cyl, add, 
     productName: caseInsensitive(productName),
   }).lean();
 
-  console.log("product. ", product);
+  // console.log("product. ", product);
 
   if (!product) {
     return { error: `Product not found for brand="${brand}", category="${category}", productName="${productName}"` };
@@ -45,7 +46,7 @@ export async function resolveEye({ brand, category, productName, sph, cyl, add, 
     return { error: `No blank code defined for product "${productName}"` };
   }
 
-  console.log("product.suppliers : ", product.suppliers);
+  // console.log("product.suppliers : ", product.suppliers);
   const activeSuppliers = (product.suppliers || []).filter((s) => s.active).sort((a, b) => a.priority - b.priority);
 
   if (!activeSuppliers.length) {
@@ -53,14 +54,14 @@ export async function resolveEye({ brand, category, productName, sph, cyl, add, 
   }
 
   const gridType = productMode === "Stock Lens" ? "FFGrid" : "RxGrid";
-  console.log("gridType : ", gridType);
-  console.log("blankCode : ", blankCode);
+  // console.log("gridType : ", gridType);
+  // console.log("blankCode : ", blankCode);
   let allGridDocs = await BaseGrid.find({
     productCode: caseInsensitive(blankCode),
     gridType,
   }).lean();
 
-  console.log("allGridDocs : ", allGridDocs);
+  // console.log("allGridDocs : ", allGridDocs);
 
   if (!allGridDocs.length) {
     allGridDocs = await BaseGrid.find({
@@ -86,15 +87,15 @@ export async function resolveEye({ brand, category, productName, sph, cyl, add, 
     }
   }
 
-  console.log("gridDoc : ", gridDoc);
+  // console.log("gridDoc : ", gridDoc);
 
   if (!gridDoc) {
     gridDoc        = allGridDocs[0];
     chosenSupplier = { name: allGridDocs[0].supplier, priority: 99, active: true };
   }
 
-  console.log("gridDoc : ", gridDoc);
-  console.log("chosenSupplier : ", chosenSupplier);
+  // console.log("gridDoc : ", gridDoc);
+  // console.log("chosenSupplier : ", chosenSupplier);
 
   // For Stock Lens (FFGrid), axis columns are "Addition" values — add is required.
   // For Rx Lens (RxGrid), axis columns are "Minus cylinder" values — cyl is used.
@@ -103,9 +104,9 @@ export async function resolveEye({ brand, category, productName, sph, cyl, add, 
   }
 
   const axisValue = gridDoc.axisType === "Minus cylinder" ? (cyl ?? 0) : add;
-  console.log("gridDoc.grid : ", gridDoc.grid);
-  console.log("sph : ", sph);
-  console.log("axisValue : ", axisValue);
+  // console.log("gridDoc.grid : ", gridDoc.grid);
+  // console.log("sph : ", sph);
+  // console.log("axisValue : ", axisValue);
 
   const cell = findGridCell(gridDoc.grid, sph, axisValue);
 
@@ -315,14 +316,22 @@ export async function getOrderService(orderId) {
 }
 
 export async function listOrdersService({ customerId, status, page = 1, limit = 20, search, fromDate, toDate }) {
+  const VALID_STATUSES = ["Draft", "Submitted", "Processing", "Completed", "Cancelled"];
   const filter = {};
 
   if (customerId) filter["customer.customerId"] = customerId;
-  if (status) filter.status = status;
+
+  if (status) {
+    if (!VALID_STATUSES.includes(status)) {
+      throw { statusCode: 400, code: "INVALID_VALUE", message: `Invalid status. Allowed: ${VALID_STATUSES.join(", ")}` };
+    }
+    filter.status = status;
+  }
+
   if (search) {
     filter.$or = [
-      { orderNumber: { $regex: search, $options: "i" } },
-      { opticianName: { $regex: search, $options: "i" } },
+      { orderNumber:    { $regex: search, $options: "i" } },
+      { opticianName:   { $regex: search, $options: "i" } },
       { orderReference: { $regex: search, $options: "i" } },
     ];
   }
@@ -337,7 +346,7 @@ export async function listOrdersService({ customerId, status, page = 1, limit = 
     }
   }
 
-  const skip = (parseInt(page) - 1) * parseInt(limit);
+  const skip  = (parseInt(page) - 1) * parseInt(limit);
   const total = await Order.countDocuments(filter);
 
   const orders = await Order.find(filter)
@@ -350,8 +359,8 @@ export async function listOrdersService({ customerId, status, page = 1, limit = 
     orders,
     pagination: {
       total,
-      page: parseInt(page),
-      limit: parseInt(limit),
+      page:       parseInt(page),
+      limit:      parseInt(limit),
       totalPages: Math.ceil(total / parseInt(limit)),
     },
   };
@@ -458,7 +467,6 @@ export async function updateDraftOrderService(orderId, data) {
         customerShipToBranchName: customerShipToBranchName,
       };
     } else if (data.customer.customerShipToId) {
-      // Only shipTo changed
       const customer = await Customer.findById(order.customer.customerId).lean();
       const shipTo   = (customer?.customerShipToDetails || []).find(
         (s) => s._id.toString() === data.customer.customerShipToId.toString()
@@ -476,6 +484,7 @@ export async function updateDraftOrderService(orderId, data) {
     "tint", "tintDetails", "remarks", "mirror", "resolved", "suppliers",
     "selectedSupplier", "centration", "fitting", "lensData",
     "directCustomer", "shippingCharges", "otherCharges", "customerBalance",
+    "status"
   ];
 
   UPDATABLE.forEach((key) => {
@@ -536,4 +545,10 @@ export async function getProductNamesService({ search = "", limit = 100, page = 
 export async function getTintOptionsService() {
   const tints = await Tint.find({}, { name: 1, _id: 0 }).sort({ name: 1 }).lean();
   return tints.map((t) => t.name);
+}
+
+
+export async function getFrameTypesService() {
+  const types = await FrameType.find({}, { name: 1, _id: 0 }).sort({ name: 1 }).lean();
+  return types.map((t) => t.name);
 }

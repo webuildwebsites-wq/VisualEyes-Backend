@@ -1,4 +1,4 @@
-import { createOrderService, getOrderService, listOrdersService, updateOrderService, cancelOrderService, resolveProductService, getProductFieldService, getProductNamesService, getTintOptionsService, updateDraftOrderService } from "../../services/order/order.service.js";
+import { createOrderService, getOrderService, listOrdersService, updateOrderService, cancelOrderService, resolveProductService, getProductFieldService, getProductNamesService, getTintOptionsService, updateDraftOrderService, getFrameTypesService } from "../../services/order/order.service.js";
 import { sendSuccessResponse, sendErrorResponse } from "../../../Utils/response/responseHandler.js";
 
 function handleError(res, err) {
@@ -104,4 +104,11 @@ export const updateDraftOrder = async (req, res) => {
   } catch (err) {
     return handleError(res, err);
   }
+};
+
+export const getFrameTypes = async (req, res) => {
+  try {
+    const values = await getFrameTypesService();
+    return sendSuccessResponse(res, 200, { field: "frameType", values });
+  } catch (err) { return handleError(res, err); }
 };
