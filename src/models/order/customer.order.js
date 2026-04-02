@@ -38,11 +38,18 @@ const lensDataSchema = new mongoose.Schema({
 
 // Per-eye resolved grid data
 const resolvedEyeSchema = new mongoose.Schema({
-  side: { type: String, enum: ["R", "L"] },
-  itemCode: String,
-  supplier: String,
+  side:      { type: String, enum: ["R", "L"] },
+  itemCode:  String,
+  blankCode: String,
+  supplier:  String,
   baseCurve: Number,
-  diameter: Number,
+  diameter:  Number,
+}, { _id: false });
+
+const supplierEntrySchema = new mongoose.Schema({
+  name:     { type: String },
+  priority: { type: Number },
+  active:   { type: Boolean },
 }, { _id: false });
 
 const orderSchema = new mongoose.Schema({
@@ -57,7 +64,6 @@ const orderSchema = new mongoose.Schema({
     customerShipToBranchName: { type: String },
   },
 
-  customerBalance: Number,
   lab: String,
   orderReference: String,
   consumerCardName: String,
@@ -83,6 +89,9 @@ const orderSchema = new mongoose.Schema({
   mirror: Boolean,
 
   resolved: [resolvedEyeSchema],
+
+  suppliers:        [supplierEntrySchema],
+  selectedSupplier: { type: String },
 
   // Centration
   centration: [centrationSchema],

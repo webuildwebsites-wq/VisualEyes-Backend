@@ -111,12 +111,18 @@ export async function resolveEye({ brand, category, productName, sph, cyl, add, 
   console.log("cell : ", cell);
 
   return {
-    itemCode: product.itemCode,
+    itemCode:         product.itemCode,
     blankCode,
-    supplier: chosenSupplier.name,
-    productCode: blankCode,
-    gridType: gridDoc.gridType,
-    baseCurve: cell?.stock ?? null,
+    supplier:         chosenSupplier.name,
+    productCode:      blankCode,
+    gridType:         gridDoc.gridType,
+    baseCurve:        cell?.stock ?? null,
+    selectedSupplier: chosenSupplier.name,
+    allSuppliers:     activeSuppliers.map((s) => ({
+      name:     s.name,
+      priority: s.priority,
+      active:   s.active,
+    })),
   };
 }
 
@@ -140,20 +146,20 @@ export async function generateOrderNumber() {
 
 export async function resolveAllEyes({ brand, category, productName, productMode, powerType, powers = [] }) {
   const requestedSides = powers.map((p) => p.side).filter(Boolean);
-  const sides = requestedSides.length > 0 ? requestedSides : (powerType === "Both" ? ["R", "L"] : ["R"]);
+  const sides    = requestedSides.length > 0 ? requestedSides : (powerType === "Both" ? ["R", "L"] : ["R"]);
   const resolved = [];
+  let   suppliers        = [];
+  let   selectedSupplier = null;
 
   for (const side of sides) {
-    console.log("powers : ", powers);
-    const eye = powers.find((p) => p.side === side) || {};
-    console.log("eye.sph : ", eye)
+    const eye    = powers.find((p) => p.side === side) || {};
     const result = await resolveEye({
       brand,
       category,
       productName,
-      sph: eye.sph,
-      cyl: eye.cyl,
-      add: eye.add,
+      sph:         eye.sph,
+      cyl:         eye.cyl,
+      add:         eye.add,
       productMode: productMode || "Rx",
     });
 
@@ -161,16 +167,22 @@ export async function resolveAllEyes({ brand, category, productName, productMode
       throw { statusCode: 422, code: "RESOLUTION_ERROR", message: side + " eye: " + result.error };
     }
 
+    if (suppliers.length === 0 && result.allSuppliers?.length) {
+      suppliers        = result.allSuppliers;
+      selectedSupplier = result.selectedSupplier;
+    }
+
     resolved.push({
       side,
-      itemCode: result.itemCode,
-      supplier: result.supplier,
+      itemCode:  result.itemCode,
+      blankCode: result.blankCode,
+      supplier:  result.supplier,
       baseCurve: result.baseCurve,
-      diameter: eye.diameter ?? null,
+      diameter:  eye.diameter ?? null,
     });
   }
 
-  return resolved;
+  return { resolved, suppliers, selectedSupplier };
 }
 
 
@@ -204,7 +216,7 @@ export async function createOrderService(data, userId) {
     customerShipToBranchName = shipTo.branchName;
   }
 
-  const resolved    = await resolveAllEyes({ brand, category, productName, productMode, powerType, powers });
+  const { resolved, suppliers, selectedSupplier } = await resolveAllEyes({ brand, category, productName, productMode, powerType, powers });
   const orderNumber = await generateOrderNumber();
 
   const order = await Order.create({
@@ -215,7 +227,6 @@ export async function createOrderService(data, userId) {
       customerShipToId:         data.customer.customerShipToId ?? null,
       customerShipToBranchName: customerShipToBranchName,
     },
-    customerBalance:  data.customerBalance,
     lab:              data.lab,
     orderReference:   data.orderReference,
     consumerCardName: data.consumerCardName,
@@ -236,6 +247,8 @@ export async function createOrderService(data, userId) {
     remarks:          data.remarks,
     mirror:           data.mirror        ?? false,
     resolved,
+    suppliers,
+    selectedSupplier,
     centration:       data.centration    ?? [],
     fitting:          data.fitting,
     lensData:         data.lensData,
@@ -288,7 +301,6 @@ export async function listOrdersService({ customerId, status, page = 1, limit = 
   const total = await Order.countDocuments(filter);
 
   const orders = await Order.find(filter)
-    .populate("customer.customerId", "shopName ownerName customerCode mobileNo1")
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(parseInt(limit))
@@ -316,23 +328,25 @@ export async function updateOrderService(orderId, data) {
   const needsResolve = data.brand || data.category || data.productName || data.powers || data.productMode || data.powerType;
 
   if (needsResolve) {
-    const resolved = await resolveAllEyes({
-      brand: data.brand || order.brand,
-      category: data.category || order.category,
+    const { resolved, suppliers, selectedSupplier } = await resolveAllEyes({
+      brand:       data.brand       || order.brand,
+      category:    data.category    || order.category,
       productName: data.productName || order.productName,
       productMode: data.productMode || order.productMode,
-      powerType: data.powerType || order.powerType,
-      powers: data.powers || order.powers,
+      powerType:   data.powerType   || order.powerType,
+      powers:      data.powers      || order.powers,
     });
-    data.resolved = resolved;
+    data.resolved         = resolved;
+    data.suppliers        = suppliers;
+    data.selectedSupplier = selectedSupplier;
   }
 
   const UPDATABLE = [
-    "customerBalance", "lab", "orderReference", "consumerCardName",
+    "lab", "orderReference", "consumerCardName",
     "opticianName", "powerType", "productMode", "hasPrism", "powers", "prisms",
     "brand", "category", "index", "productName", "coating", "treatment", "tint",
-    "tintDetails", "remarks", "mirror", "resolved", "centration", "fitting",
-    "lensData", "directCustomer", "shippingCharges", "otherCharges",
+    "tintDetails", "remarks", "mirror", "resolved", "suppliers", "selectedSupplier",
+    "centration", "fitting", "lensData", "directCustomer", "shippingCharges", "otherCharges",
   ];
 
   UPDATABLE.forEach((key) => {
@@ -367,7 +381,7 @@ export async function resolveProductService({ brand, category, productName, prod
     productName,
     productMode,
     powerType: powerType || "Single",
-    powers: powers || [],
+    powers:    powers    || [],
   });
 }
 
