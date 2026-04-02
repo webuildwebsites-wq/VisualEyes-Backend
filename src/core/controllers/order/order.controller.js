@@ -1,4 +1,4 @@
-import { createOrderService, getOrderService, listOrdersService, updateOrderService, cancelOrderService, resolveProductService, getOrderDropdownsService, getProductFieldService, getProductNamesService } from "../../services/order/order.service.js";
+import { createOrderService, getOrderService, listOrdersService, updateOrderService, cancelOrderService, resolveProductService, getProductFieldService, getProductNamesService, getTintOptionsService } from "../../services/order/order.service.js";
 import { sendSuccessResponse, sendErrorResponse } from "../../../Utils/response/responseHandler.js";
 
 function handleError(res, err) {
@@ -65,7 +65,7 @@ export const resolveProduct = async (req, res) => {
 
 export const getProductField = async (req, res) => {
   try {
-    const allowed = ["brand", "category", "treatment", "index", "productType", "coating", "lab"];
+    const allowed = ["brand", "category", "treatment", "index", "productType", "coating", "lab",];
     const { field } = req.params;
 
     if (!allowed.includes(field)) {
@@ -83,6 +83,15 @@ export const getProductNames = async (req, res) => {
   try {
     const result = await getProductNamesService(req.query);
     return sendSuccessResponse(res, 200, result);
+  } catch (err) {
+    return handleError(res, err);
+  }
+};
+
+export const getTintOptions = async (req, res) => {
+  try {
+    const values = await getTintOptionsService();
+    return sendSuccessResponse(res, 200, { field: "tint", values });
   } catch (err) {
     return handleError(res, err);
   }

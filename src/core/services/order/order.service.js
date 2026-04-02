@@ -2,6 +2,7 @@ import Order from "../../../models/order/customer.order.js";
 import BaseGrid from "../../../models/Product/BaseGrid.js";
 import Product from "../../../models/Product/Product.js";
 import Customer from "../../../models/Auth/Customer.js";
+import Tint from "../../../models/order/Tint.js";
 
 function roundToStep(value, step = 0.25) {
   if (value == null || isNaN(Number(value))) return null;
@@ -189,11 +190,41 @@ export async function resolveAllEyes({ brand, category, productName, productMode
 export async function createOrderService(data, userId) {
   const { brand, category, productName, productMode, powerType, powers = [] } = data;
 
-  if (!brand || !category || !productName) {
-    throw { statusCode: 400, code: "MISSING_FIELDS", message: "brand, category, and productName are required" };
+
+  const missing = [];
+  if (!data.customer?.customerId) missing.push("customer.customerId");
+  if (!brand)                      missing.push("brand");
+  if (!category)                   missing.push("category");
+  if (!productName)                missing.push("productName");
+  if (!productMode)                missing.push("productMode");
+  if (!powerType)                  missing.push("powerType");
+  if (!powers.length)              missing.push("powers (at least one eye required)");
+
+  if (missing.length) {
+    throw { statusCode: 400, code: "MISSING_FIELDS", message: `Missing required fields: ${missing.join(", ")}` };
   }
-  if (!data.customer?.customerId) {
-    throw { statusCode: 400, code: "MISSING_FIELDS", message: "customer.customerId is required" };
+
+  if (!["Stock Lens", "Rx"].includes(productMode)) {
+    throw { statusCode: 400, code: "INVALID_VALUE", message: `productMode must be "Stock Lens" or "Rx"` };
+  }
+  if (!["Single", "Both"].includes(powerType)) {
+    throw { statusCode: 400, code: "INVALID_VALUE", message: `powerType must be "Single" or "Both"` };
+  }
+
+  for (const p of powers) {
+    if (!["R", "L"].includes(p.side)) {
+      throw { statusCode: 400, code: "INVALID_VALUE", message: `powers[].side must be "R" or "L"` };
+    }
+    if (p.sph == null) {
+      throw { statusCode: 400, code: "MISSING_FIELDS", message: `powers[].sph is required for side "${p.side}"` };
+    }
+  }
+
+  if (powerType === "Both") {
+    const sides = powers.map((p) => p.side);
+    if (!sides.includes("R") || !sides.includes("L")) {
+      throw { statusCode: 400, code: "MISSING_FIELDS", message: `powerType is "Both" but powers must include both "R" and "L" sides` };
+    }
   }
 
   const customer = await Customer.findById(data.customer.customerId).lean();
@@ -385,32 +416,6 @@ export async function resolveProductService({ brand, category, productName, prod
   });
 }
 
-export async function getOrderDropdownsService({ brand, category }) {
-  if (!brand && !category) {
-    const brands = await Product.distinct("brand", { brand: { $ne: null } });
-    return { brands: brands.filter(Boolean).sort() };
-  }
-
-  if (brand && !category) {
-    const categories = await Product.distinct("category", {
-      brand: caseInsensitive(brand),
-      category: { $ne: null },
-    });
-    return { categories: categories.filter(Boolean).sort() };
-  }
-
-  if (brand && category) {
-    const productNames = await Product.distinct("productName", {
-      brand: caseInsensitive(brand),
-      category: caseInsensitive(category),
-      productName: { $ne: null },
-    });
-    return { productNames: productNames.filter(Boolean).sort() };
-  }
-
-  return {};
-}
-
 export async function getProductFieldService(field) {
   const values = await Product.distinct(field, { [field]: { $ne: null } });
   return values.filter(Boolean).sort();
@@ -441,4 +446,10 @@ export async function getProductNamesService({ search = "", limit = 100, page = 
       totalPages: Math.ceil(total / parseInt(limit)),
     },
   };
+}
+
+
+export async function getTintOptionsService() {
+  const tints = await Tint.find({}, { name: 1, _id: 0 }).sort({ name: 1 }).lean();
+  return tints.map((t) => t.name);
 }
