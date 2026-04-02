@@ -1,4 +1,4 @@
-import { createOrderService, getOrderService, listOrdersService, updateOrderService, cancelOrderService, resolveProductService, getProductFieldService, getProductNamesService, getTintOptionsService } from "../../services/order/order.service.js";
+import { createOrderService, getOrderService, listOrdersService, updateOrderService, cancelOrderService, resolveProductService, getProductFieldService, getProductNamesService, getTintOptionsService, updateDraftOrderService } from "../../services/order/order.service.js";
 import { sendSuccessResponse, sendErrorResponse } from "../../../Utils/response/responseHandler.js";
 
 function handleError(res, err) {
@@ -92,6 +92,15 @@ export const getTintOptions = async (req, res) => {
   try {
     const values = await getTintOptionsService();
     return sendSuccessResponse(res, 200, { field: "tint", values });
+  } catch (err) {
+    return handleError(res, err);
+  }
+};
+
+export const updateDraftOrder = async (req, res) => {
+  try {
+    const order = await updateDraftOrderService(req.params.id, req.body);
+    return sendSuccessResponse(res, 200, order, "Draft order updated successfully");
   } catch (err) {
     return handleError(res, err);
   }

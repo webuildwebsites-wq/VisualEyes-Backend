@@ -188,42 +188,48 @@ export async function resolveAllEyes({ brand, category, productName, productMode
 
 
 export async function createOrderService(data, userId) {
+  const isDraft = data.status === "Draft";
   const { brand, category, productName, productMode, powerType, powers = [] } = data;
 
-
   const missing = [];
-  if (!data.customer?.customerId) missing.push("customer.customerId");
-  if (!brand)                      missing.push("brand");
-  if (!category)                   missing.push("category");
-  if (!productName)                missing.push("productName");
-  if (!productMode)                missing.push("productMode");
-  if (!powerType)                  missing.push("powerType");
-  if (!powers.length)              missing.push("powers (at least one eye required)");
-
+  if (!data.customer?.customerId)  missing.push("customer.customerId");
+  if (!data.customer?.customerShipToId) missing.push("customer.customerShipToId");
   if (missing.length) {
     throw { statusCode: 400, code: "MISSING_FIELDS", message: `Missing required fields: ${missing.join(", ")}` };
   }
 
-  if (!["Stock Lens", "Rx"].includes(productMode)) {
-    throw { statusCode: 400, code: "INVALID_VALUE", message: `productMode must be "Stock Lens" or "Rx"` };
-  }
-  if (!["Single", "Both"].includes(powerType)) {
-    throw { statusCode: 400, code: "INVALID_VALUE", message: `powerType must be "Single" or "Both"` };
-  }
+  if (!isDraft) {
+    const submitMissing = [];
+    if (!brand)           submitMissing.push("brand");
+    if (!category)        submitMissing.push("category");
+    if (!productName)     submitMissing.push("productName");
+    if (!productMode)     submitMissing.push("productMode");
+    if (!powerType)       submitMissing.push("powerType");
+    if (!powers.length)   submitMissing.push("powers (at least one eye required)");
 
-  for (const p of powers) {
-    if (!["R", "L"].includes(p.side)) {
-      throw { statusCode: 400, code: "INVALID_VALUE", message: `powers[].side must be "R" or "L"` };
+    if (submitMissing.length) {
+      throw { statusCode: 400, code: "MISSING_FIELDS", message: `Missing required fields for submission: ${submitMissing.join(", ")}` };
     }
-    if (p.sph == null) {
-      throw { statusCode: 400, code: "MISSING_FIELDS", message: `powers[].sph is required for side "${p.side}"` };
-    }
-  }
 
-  if (powerType === "Both") {
-    const sides = powers.map((p) => p.side);
-    if (!sides.includes("R") || !sides.includes("L")) {
-      throw { statusCode: 400, code: "MISSING_FIELDS", message: `powerType is "Both" but powers must include both "R" and "L" sides` };
+    if (!["Stock Lens", "Rx"].includes(productMode)) {
+      throw { statusCode: 400, code: "INVALID_VALUE", message: `productMode must be "Stock Lens" or "Rx"` };
+    }
+    if (!["Single", "Both"].includes(powerType)) {
+      throw { statusCode: 400, code: "INVALID_VALUE", message: `powerType must be "Single" or "Both"` };
+    }
+    for (const p of powers) {
+      if (!["R", "L"].includes(p.side)) {
+        throw { statusCode: 400, code: "INVALID_VALUE", message: `powers[].side must be "R" or "L"` };
+      }
+      if (p.sph == null) {
+        throw { statusCode: 400, code: "MISSING_FIELDS", message: `powers[].sph is required for side "${p.side}"` };
+      }
+    }
+    if (powerType === "Both") {
+      const sides = powers.map((p) => p.side);
+      if (!sides.includes("R") || !sides.includes("L")) {
+        throw { statusCode: 400, code: "MISSING_FIELDS", message: `powerType is "Both" but powers must include both "R" and "L" sides` };
+      }
     }
   }
 
@@ -247,7 +253,10 @@ export async function createOrderService(data, userId) {
     customerShipToBranchName = shipTo.branchName;
   }
 
-  const { resolved, suppliers, selectedSupplier } = await resolveAllEyes({ brand, category, productName, productMode, powerType, powers });
+  const { resolved, suppliers, selectedSupplier } = !isDraft
+    ? await resolveAllEyes({ brand, category, productName, productMode, powerType, powers })
+    : { resolved: [], suppliers: [], selectedSupplier: null };
+
   const orderNumber = await generateOrderNumber();
 
   const order = await Order.create({
@@ -286,8 +295,8 @@ export async function createOrderService(data, userId) {
     directCustomer:   data.directCustomer,
     shippingCharges:  data.shippingCharges ?? 0,
     otherCharges:     data.otherCharges    ?? 0,
-    status:           data.status         ?? "Submitted",
-    submittedAt:      new Date(),
+    status:           isDraft ? "Draft" : "Submitted",
+    submittedAt:      isDraft ? null : new Date(),
     createdBy:        userId,
   });
 
@@ -398,6 +407,81 @@ export async function cancelOrderService(orderId, reason) {
 
   order.status = "Cancelled";
   order.cancelReason = reason || "";
+  await order.save();
+  return order;
+}
+
+export async function updateDraftOrderService(orderId, data) {
+  const order = await Order.findById(orderId);
+  if (!order) throw { statusCode: 404, code: "NOT_FOUND", message: "Order not found" };
+
+  if (order.status !== "Draft") {
+    throw { statusCode: 400, code: "INVALID_STATUS", message: "Only Draft orders can be updated. Submit the order first to make changes." };
+  }
+
+  const needsResolve = data.brand || data.category || data.productName || data.powers || data.productMode || data.powerType;
+  if (needsResolve) {
+    const brand       = data.brand       || order.brand;
+    const category    = data.category    || order.category;
+    const productName = data.productName || order.productName;
+    const productMode = data.productMode || order.productMode;
+    const powerType   = data.powerType   || order.powerType;
+    const powers      = data.powers      || order.powers;
+
+    if (brand && category && productName && productMode && powerType && powers?.length) {
+      const { resolved, suppliers, selectedSupplier } = await resolveAllEyes({ brand, category, productName, productMode, powerType, powers });
+      data.resolved         = resolved;
+      data.suppliers        = suppliers;
+      data.selectedSupplier = selectedSupplier;
+    }
+  }
+
+  if (data.customer) {
+    if (data.customer.customerId) {
+      const customer = await Customer.findById(data.customer.customerId).lean();
+      if (!customer) throw { statusCode: 404, code: "NOT_FOUND", message: "Customer not found" };
+
+      let customerShipToBranchName = order.customer.customerShipToBranchName;
+      const shipToId = data.customer.customerShipToId || order.customer.customerShipToId;
+      if (shipToId) {
+        const shipTo = (customer.customerShipToDetails || []).find(
+          (s) => s._id.toString() === shipToId.toString()
+        );
+        if (!shipTo) throw { statusCode: 404, code: "NOT_FOUND", message: "Ship-to address not found for this customer" };
+        customerShipToBranchName = shipTo.branchName;
+      }
+
+      order.customer = {
+        customerId:               customer._id,
+        customerName:             customer.shopName,
+        customerShipToId:         shipToId ?? null,
+        customerShipToBranchName: customerShipToBranchName,
+      };
+    } else if (data.customer.customerShipToId) {
+      // Only shipTo changed
+      const customer = await Customer.findById(order.customer.customerId).lean();
+      const shipTo   = (customer?.customerShipToDetails || []).find(
+        (s) => s._id.toString() === data.customer.customerShipToId.toString()
+      );
+      if (!shipTo) throw { statusCode: 404, code: "NOT_FOUND", message: "Ship-to address not found for this customer" };
+      order.customer.customerShipToId         = data.customer.customerShipToId;
+      order.customer.customerShipToBranchName = shipTo.branchName;
+    }
+  }
+
+  const UPDATABLE = [
+    "lab", "orderReference", "consumerCardName", "opticianName",
+    "powerType", "productMode", "hasPrism", "powers", "prisms",
+    "brand", "category", "index", "productName", "coating", "treatment",
+    "tint", "tintDetails", "remarks", "mirror", "resolved", "suppliers",
+    "selectedSupplier", "centration", "fitting", "lensData",
+    "directCustomer", "shippingCharges", "otherCharges", "customerBalance",
+  ];
+
+  UPDATABLE.forEach((key) => {
+    if (data[key] !== undefined) order[key] = data[key];
+  });
+
   await order.save();
   return order;
 }
