@@ -52,6 +52,8 @@ export async function resolveEye({ brand, category, productName, sph, cyl, add, 
   }
 
   const gridType = productMode === "Stock Lens" ? "FFGrid" : "RxGrid";
+  console.log("gridType : ", gridType);
+  console.log("blankCode : ", blankCode);
   let allGridDocs = await BaseGrid.find({
     productCode: caseInsensitive(blankCode),
     gridType,
@@ -93,7 +95,13 @@ export async function resolveEye({ brand, category, productName, sph, cyl, add, 
   console.log("gridDoc : ", gridDoc);
   console.log("chosenSupplier : ", chosenSupplier);
 
-  const axisValue = gridDoc.axisType === "Minus cylinder" ? (cyl ?? 0) : (add ?? 0);
+  // For Stock Lens (FFGrid), axis columns are "Addition" values — add is required.
+  // For Rx Lens (RxGrid), axis columns are "Minus cylinder" values — cyl is used.
+  if (gridDoc.axisType.toUpperCase() !== "Minus cylinder".toLocaleUpperCase() && (add == null)) {
+    return { error: `This is a Stock Lens product. Please provide "add" value in powers (e.g. "add": 0.25)` };
+  }
+
+  const axisValue = gridDoc.axisType === "Minus cylinder" ? (cyl ?? 0) : add;
   console.log("gridDoc.grid : ", gridDoc.grid);
   console.log("sph : ", sph);
   console.log("axisValue : ", axisValue);
@@ -172,11 +180,11 @@ export async function createOrderService(data, userId) {
   if (!brand || !category || !productName) {
     throw { statusCode: 400, code: "MISSING_FIELDS", message: "brand, category, and productName are required" };
   }
-  if (!data.customerId) {
-    throw { statusCode: 400, code: "MISSING_FIELDS", message: "customerId is required" };
+  if (!data.customer?.customerId) {
+    throw { statusCode: 400, code: "MISSING_FIELDS", message: "customer.customerId is required" };
   }
 
-  const customer = await Customer.findById(data.customerId).lean();
+  const customer = await Customer.findById(data.customer.customerId).lean();
   if (!customer) {
     throw { statusCode: 404, code: "NOT_FOUND", message: "Customer not found" };
   }
@@ -184,64 +192,68 @@ export async function createOrderService(data, userId) {
     throw { statusCode: 403, code: "CUSTOMER_INACTIVE", message: "Customer account is not active" };
   }
 
-  const resolved = await resolveAllEyes({ brand, category, productName, productMode, powerType, powers });
+  // Resolve shipTo branch name from customer's shipToDetails subdoc
+  let customerShipToBranchName = null;
+  if (data.customer.customerShipToId) {
+    const shipTo = (customer.customerShipToDetails || []).find(
+      (s) => s._id.toString() === data.customer.customerShipToId.toString()
+    );
+    if (!shipTo) {
+      throw { statusCode: 404, code: "NOT_FOUND", message: "Ship-to address not found for this customer" };
+    }
+    customerShipToBranchName = shipTo.branchName;
+  }
+
+  const resolved    = await resolveAllEyes({ brand, category, productName, productMode, powerType, powers });
   const orderNumber = await generateOrderNumber();
 
   const order = await Order.create({
     orderNumber,
-    customerId: data.customerId,
-    shipTo: data.shipTo,
-    customerBalance: data.customerBalance,
-    lab: data.lab,
-    orderReference: data.orderReference,
+    customer: {
+      customerId:               customer._id,
+      customerName:             customer.shopName,
+      customerShipToId:         data.customer.customerShipToId ?? null,
+      customerShipToBranchName: customerShipToBranchName,
+    },
+    customerBalance:  data.customerBalance,
+    lab:              data.lab,
+    orderReference:   data.orderReference,
     consumerCardName: data.consumerCardName,
-    opticianName: data.opticianName,
-    powerType: data.powerType,
-    productMode: data.productMode,
-    hasPrism: data.hasPrism ?? false,
-    powers: data.powers ?? [],
-    prisms: data.prisms ?? [],
+    opticianName:     data.opticianName,
+    powerType:        data.powerType,
+    productMode:      data.productMode,
+    hasPrism:         data.hasPrism      ?? false,
+    powers:           data.powers        ?? [],
+    prisms:           data.prisms        ?? [],
     brand,
     category,
-    index: data.index,
+    index:            data.index,
     productName,
-    coating: data.coating,
-    treatment: data.treatment,
-    tint: data.tint,
-    tintDetails: data.tintDetails,
-    remarks: data.remarks,
-    mirror: data.mirror ?? false,
+    coating:          data.coating,
+    treatment:        data.treatment,
+    tint:             data.tint,
+    tintDetails:      data.tintDetails,
+    remarks:          data.remarks,
+    mirror:           data.mirror        ?? false,
     resolved,
-    centration: data.centration ?? [],
-    fitting: data.fitting,
-    lensData: data.lensData,
-    directCustomer: data.directCustomer,
-    shippingCharges: data.shippingCharges ?? 0,
-    otherCharges: data.otherCharges ?? 0,
-    status: "Draft",
-    createdBy: userId,
+    centration:       data.centration    ?? [],
+    fitting:          data.fitting,
+    lensData:         data.lensData,
+    directCustomer:   data.directCustomer,
+    shippingCharges:  data.shippingCharges ?? 0,
+    otherCharges:     data.otherCharges    ?? 0,
+    status:           data.status         ?? "Submitted",
+    submittedAt:      new Date(),
+    createdBy:        userId,
   });
 
   return order;
 }
 
-export async function submitOrderService(orderId) {
-  const order = await Order.findById(orderId);
-  if (!order) throw { statusCode: 404, code: "NOT_FOUND", message: "Order not found" };
-
-  if (order.status !== "Draft") {
-    throw { statusCode: 400, code: "INVALID_STATUS", message: "Cannot submit an order with status: " + order.status };
-  }
-
-  order.status = "Submitted";
-  order.submittedAt = new Date();
-  await order.save();
-  return order;
-}
 
 export async function getOrderService(orderId) {
   const order = await Order.findById(orderId)
-    .populate("customerId", "shopName ownerName customerCode mobileNo1 businessEmail")
+    .populate("customer.customerId", "shopName ownerName customerCode mobileNo1 businessEmail")
     .populate("createdBy", "name email EmployeeType")
     .lean();
 
@@ -252,7 +264,7 @@ export async function getOrderService(orderId) {
 export async function listOrdersService({ customerId, status, page = 1, limit = 20, search, fromDate, toDate }) {
   const filter = {};
 
-  if (customerId) filter.customerId = customerId;
+  if (customerId) filter["customer.customerId"] = customerId;
   if (status) filter.status = status;
   if (search) {
     filter.$or = [
@@ -276,7 +288,7 @@ export async function listOrdersService({ customerId, status, page = 1, limit = 
   const total = await Order.countDocuments(filter);
 
   const orders = await Order.find(filter)
-    .populate("customerId", "shopName ownerName customerCode mobileNo1")
+    .populate("customer.customerId", "shopName ownerName customerCode mobileNo1")
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(parseInt(limit))
@@ -316,7 +328,7 @@ export async function updateOrderService(orderId, data) {
   }
 
   const UPDATABLE = [
-    "shipTo", "customerBalance", "lab", "orderReference", "consumerCardName",
+    "customerBalance", "lab", "orderReference", "consumerCardName",
     "opticianName", "powerType", "productMode", "hasPrism", "powers", "prisms",
     "brand", "category", "index", "productName", "coating", "treatment", "tint",
     "tintDetails", "remarks", "mirror", "resolved", "centration", "fitting",
@@ -383,4 +395,36 @@ export async function getOrderDropdownsService({ brand, category }) {
   }
 
   return {};
+}
+
+export async function getProductFieldService(field) {
+  const values = await Product.distinct(field, { [field]: { $ne: null } });
+  return values.filter(Boolean).sort();
+}
+
+export async function getProductNamesService({ search = "", limit = 100, page = 1 }) {
+  const filter = { productName: { $ne: null } };
+
+  if (search.trim()) {
+    filter.productName = { $regex: search.trim(), $options: "i" };
+  }
+
+  const skip  = (parseInt(page) - 1) * parseInt(limit);
+  const total = await Product.countDocuments(filter);
+
+  const results = await Product.find(filter, { productName: 1, _id: 0 })
+    .sort({ productName: 1 })
+    .skip(skip)
+    .limit(parseInt(limit))
+    .lean();
+
+  return {
+    productNames: [...new Set(results.map((r) => r.productName))],
+    pagination: {
+      total,
+      page:       parseInt(page),
+      limit:      parseInt(limit),
+      totalPages: Math.ceil(total / parseInt(limit)),
+    },
+  };
 }

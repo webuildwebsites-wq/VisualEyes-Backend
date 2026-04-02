@@ -1,4 +1,4 @@
-import { createOrderService, submitOrderService, getOrderService, listOrdersService, updateOrderService, cancelOrderService, resolveProductService, getOrderDropdownsService } from "../../services/order/order.service.js";
+import { createOrderService, getOrderService, listOrdersService, updateOrderService, cancelOrderService, resolveProductService, getOrderDropdownsService, getProductFieldService, getProductNamesService } from "../../services/order/order.service.js";
 import { sendSuccessResponse, sendErrorResponse } from "../../../Utils/response/responseHandler.js";
 
 function handleError(res, err) {
@@ -13,15 +13,6 @@ export const createOrder = async (req, res) => {
   try {
     const order = await createOrderService(req.body, req.user?.id);
     return sendSuccessResponse(res, 201, order, "Order created successfully");
-  } catch (err) {
-    return handleError(res, err);
-  }
-};
-
-export const submitOrder = async (req, res) => {
-  try {
-    const order = await submitOrderService(req.params.id);
-    return sendSuccessResponse(res, 200, order, "Order submitted successfully");
   } catch (err) {
     return handleError(res, err);
   }
@@ -72,9 +63,25 @@ export const resolveProduct = async (req, res) => {
   }
 };
 
-export const getOrderDropdowns = async (req, res) => {
+export const getProductField = async (req, res) => {
   try {
-    const result = await getOrderDropdownsService(req.query);
+    const allowed = ["brand", "category", "treatment", "index", "productType", "coating", "lab"];
+    const { field } = req.params;
+
+    if (!allowed.includes(field)) {
+      return sendErrorResponse(res, 400, "INVALID_FIELD", `Invalid field. Allowed: ${allowed.join(", ")}`);
+    }
+
+    const values = await getProductFieldService(field);
+    return sendSuccessResponse(res, 200, { field, values });
+  } catch (err) {
+    return handleError(res, err);
+  }
+};
+
+export const getProductNames = async (req, res) => {
+  try {
+    const result = await getProductNamesService(req.query);
     return sendSuccessResponse(res, 200, result);
   } catch (err) {
     return handleError(res, err);
