@@ -4,6 +4,13 @@ import Product from "../../../models/Product/Product.js";
 import Customer from "../../../models/Auth/Customer.js";
 import Tint from "../../../models/order/Tint.js";
 import FrameType from "../../../models/order/FrameType.js";
+import ProductBrand from "../../../models/order/ProductBrand.js";
+import ProductCategory from "../../../models/order/ProductCategory.js";
+import ProductTreatment from "../../../models/order/ProductTreatment.js";
+import ProductIndex from "../../../models/order/ProductIndex.js";
+import ProductType from "../../../models/order/ProductType.js";
+import ProductLab from "../../../models/order/ProductLab.js";
+import ProductCoating from "../../../models/order/ProductCoating.js";
 
 function roundToStep(value, step = 0.25) {
   if (value == null || isNaN(Number(value))) return null;
@@ -509,11 +516,6 @@ export async function resolveProductService({ brand, category, productName, prod
   });
 }
 
-export async function getProductFieldService(field) {
-  const values = await Product.distinct(field, { [field]: { $ne: null } });
-  return values.filter(Boolean).sort();
-}
-
 export async function getProductNamesService({ search = "", limit = 100, page = 1 }) {
   const filter = { productName: { $ne: null } };
 
@@ -551,4 +553,39 @@ export async function getTintOptionsService() {
 export async function getFrameTypesService() {
   const types = await FrameType.find({}, { name: 1, _id: 0 }).sort({ name: 1 }).lean();
   return types.map((t) => t.name);
+}
+
+export async function getProductBrandsService() {
+  const docs = await ProductBrand.find({}, { name: 1, _id: 0 }).sort({ name: 1 }).lean();
+  return docs.map((d) => d.name);
+}
+
+export async function getProductCategoriesService() {
+  const docs = await ProductCategory.find({}, { name: 1, _id: 0 }).sort({ name: 1 }).lean();
+  return docs.map((d) => d.name);
+}
+
+export async function getProductTreatmentsService() {
+  const docs = await ProductTreatment.find({}, { name: 1, _id: 0 }).sort({ name: 1 }).lean();
+  return docs.map((d) => d.name);
+}
+
+export async function getProductIndexesService() {
+  const docs = await ProductIndex.find({}, { value: 1, _id: 0 }).sort({ value: 1 }).lean();
+  return docs.map((d) => d.value);
+}
+
+export async function getProductTypesService() {
+  const docs = await ProductType.find({}, { name: 1, _id: 0 }).sort({ name: 1 }).lean();
+  return docs.map((d) => d.name);
+}
+
+export async function getProductLabsService() {
+  const docs = await ProductLab.find({}, { name: 1, _id: 0 }).sort({ name: 1 }).lean();
+  return docs.map((d) => d.name);
+}
+
+export async function getProductCoatingsService() {
+  const docs = await ProductCoating.find({}, { name: 1, _id: 0 }).sort({ name: 1 }).lean();
+  return docs.map((d) => d.name);
 }

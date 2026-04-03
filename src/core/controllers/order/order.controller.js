@@ -1,4 +1,12 @@
-import { createOrderService, getOrderService, listOrdersService, updateOrderService, cancelOrderService, resolveProductService, getProductFieldService, getProductNamesService, getTintOptionsService, updateDraftOrderService, getFrameTypesService } from "../../services/order/order.service.js";
+import {
+  createOrderService, getOrderService, listOrdersService, updateOrderService,
+  cancelOrderService, resolveProductService,
+  getProductNamesService, getTintOptionsService, updateDraftOrderService,
+  getFrameTypesService,
+  getProductBrandsService, getProductCategoriesService, getProductTreatmentsService,
+  getProductIndexesService, getProductTypesService, getProductLabsService,
+  getProductCoatingsService,
+} from "../../services/order/order.service.js";
 import { sendSuccessResponse, sendErrorResponse } from "../../../Utils/response/responseHandler.js";
 
 function handleError(res, err) {
@@ -63,22 +71,6 @@ export const resolveProduct = async (req, res) => {
   }
 };
 
-export const getProductField = async (req, res) => {
-  try {
-    const allowed = ["brand", "category", "treatment", "index", "productType", "coating", "lab",];
-    const { field } = req.params;
-
-    if (!allowed.includes(field)) {
-      return sendErrorResponse(res, 400, "INVALID_FIELD", `Invalid field. Allowed: ${allowed.join(", ")}`);
-    }
-
-    const values = await getProductFieldService(field);
-    return sendSuccessResponse(res, 200, { field, values });
-  } catch (err) {
-    return handleError(res, err);
-  }
-};
-
 export const getProductNames = async (req, res) => {
   try {
     const result = await getProductNamesService(req.query);
@@ -110,5 +102,54 @@ export const getFrameTypes = async (req, res) => {
   try {
     const values = await getFrameTypesService();
     return sendSuccessResponse(res, 200, { field: "frameType", values });
+  } catch (err) { return handleError(res, err); }
+};
+
+export const getProductBrands = async (req, res) => {
+  try {
+    const values = await getProductBrandsService();
+    return sendSuccessResponse(res, 200, { field: "brand", values });
+  } catch (err) { return handleError(res, err); }
+};
+
+export const getProductCategories = async (req, res) => {
+  try {
+    const values = await getProductCategoriesService();
+    return sendSuccessResponse(res, 200, { field: "category", values });
+  } catch (err) { return handleError(res, err); }
+};
+
+export const getProductTreatments = async (req, res) => {
+  try {
+    const values = await getProductTreatmentsService();
+    return sendSuccessResponse(res, 200, { field: "treatment", values });
+  } catch (err) { return handleError(res, err); }
+};
+
+export const getProductIndexes = async (req, res) => {
+  try {
+    const values = await getProductIndexesService();
+    return sendSuccessResponse(res, 200, { field: "index", values });
+  } catch (err) { return handleError(res, err); }
+};
+
+export const getProductTypes = async (req, res) => {
+  try {
+    const values = await getProductTypesService();
+    return sendSuccessResponse(res, 200, { field: "productType", values });
+  } catch (err) { return handleError(res, err); }
+};
+
+export const getProductLabs = async (req, res) => {
+  try {
+    const values = await getProductLabsService();
+    return sendSuccessResponse(res, 200, { field: "lab", values });
+  } catch (err) { return handleError(res, err); }
+};
+
+export const getProductCoatings = async (req, res) => {
+  try {
+    const values = await getProductCoatingsService();
+    return sendSuccessResponse(res, 200, { field: "coating", values });
   } catch (err) { return handleError(res, err); }
 };

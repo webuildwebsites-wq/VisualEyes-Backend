@@ -7,10 +7,16 @@ import {
   updateDraftOrder,
   cancelOrder,
   resolveProduct,
-  getProductField,
   getProductNames,
   getTintOptions,
   getFrameTypes,
+  getProductBrands,
+  getProductCategories,
+  getProductTreatments,
+  getProductIndexes,
+  getProductTypes,
+  getProductLabs,
+  getProductCoatings,
 } from "../../core/controllers/order/order.controller.js";
 import { ProtectUser } from "../../middlewares/Auth/AdminMiddleware/adminMiddleware.js";
 
@@ -23,7 +29,13 @@ orderRouter.post("/resolve-product",          resolveProduct);
 // Product field dropdowns — all before /:id to avoid route conflicts
 orderRouter.get("/product/get-tint",          getTintOptions);
 orderRouter.get("/product/get-frame-types",   getFrameTypes);
-orderRouter.get("/product-fields/:field",     getProductField);
+orderRouter.get("/product-fields/brand",      getProductBrands);
+orderRouter.get("/product-fields/category",   getProductCategories);
+orderRouter.get("/product-fields/treatment",  getProductTreatments);
+orderRouter.get("/product-fields/index",      getProductIndexes);
+orderRouter.get("/product-fields/productType",getProductTypes);
+orderRouter.get("/product-fields/lab",        getProductLabs);
+orderRouter.get("/product-fields/coating",    getProductCoatings);
 orderRouter.get("/product-names",             getProductNames);
 
 orderRouter.post("/create",                   createOrder);
