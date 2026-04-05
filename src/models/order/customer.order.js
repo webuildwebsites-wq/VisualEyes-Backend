@@ -91,7 +91,6 @@ const orderSchema = new mongoose.Schema({
   resolved: [resolvedEyeSchema],
 
   suppliers:        [supplierEntrySchema],
-  selectedSupplier: { type: String },
 
   // Centration
   centration: [centrationSchema],

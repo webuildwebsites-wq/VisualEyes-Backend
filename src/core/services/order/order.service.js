@@ -19,7 +19,7 @@ function roundToStep(value, step = 0.25) {
 
 function findGridCell(grid, sph, axisValue) {
   const sphR = roundToStep(sph);
-  const axR  = roundToStep(axisValue);
+  const axR = roundToStep(axisValue);
 
   if (sphR == null) return null;
 
@@ -42,8 +42,6 @@ export async function resolveEye({ brand, category, productName, sph, cyl, add, 
     productName: caseInsensitive(productName),
   }).lean();
 
-  // console.log("product. ", product);
-
   if (!product) {
     return { error: `Product not found for brand="${brand}", category="${category}", productName="${productName}"` };
   }
@@ -53,7 +51,6 @@ export async function resolveEye({ brand, category, productName, sph, cyl, add, 
     return { error: `No blank code defined for product "${productName}"` };
   }
 
-  // console.log("product.suppliers : ", product.suppliers);
   const activeSuppliers = (product.suppliers || []).filter((s) => s.active).sort((a, b) => a.priority - b.priority);
 
   if (!activeSuppliers.length) {
@@ -61,14 +58,11 @@ export async function resolveEye({ brand, category, productName, sph, cyl, add, 
   }
 
   const gridType = productMode === "Stock Lens" ? "FFGrid" : "RxGrid";
-  // console.log("gridType : ", gridType);
-  // console.log("blankCode : ", blankCode);
   let allGridDocs = await BaseGrid.find({
     productCode: caseInsensitive(blankCode),
     gridType,
   }).lean();
 
-  // console.log("allGridDocs : ", allGridDocs);
 
   if (!allGridDocs.length) {
     allGridDocs = await BaseGrid.find({
@@ -94,43 +88,30 @@ export async function resolveEye({ brand, category, productName, sph, cyl, add, 
     }
   }
 
-  // console.log("gridDoc : ", gridDoc);
-
   if (!gridDoc) {
-    gridDoc        = allGridDocs[0];
+    gridDoc = allGridDocs[0];
     chosenSupplier = { name: allGridDocs[0].supplier, priority: 99, active: true };
   }
 
-  // console.log("gridDoc : ", gridDoc);
-  // console.log("chosenSupplier : ", chosenSupplier);
 
-  // For Stock Lens (FFGrid), axis columns are "Addition" values — add is required.
-  // For Rx Lens (RxGrid), axis columns are "Minus cylinder" values — cyl is used.
   if (gridDoc.axisType.toUpperCase() !== "Minus cylinder".toLocaleUpperCase() && (add == null)) {
     return { error: `This is a Stock Lens product. Please provide "add" value in powers (e.g. "add": 0.25)` };
   }
 
   const axisValue = gridDoc.axisType === "Minus cylinder" ? (cyl ?? 0) : add;
-  // console.log("gridDoc.grid : ", gridDoc.grid);
-  // console.log("sph : ", sph);
-  // console.log("axisValue : ", axisValue);
-
   const cell = findGridCell(gridDoc.grid, sph, axisValue);
 
-  console.log("cell : ", cell);
-
   return {
-    itemCode:         product.itemCode,
+    itemCode: product.itemCode,
     blankCode,
-    supplier:         chosenSupplier.name,
-    productCode:      blankCode,
-    gridType:         gridDoc.gridType,
-    baseCurve:        cell?.stock ?? null,
-    selectedSupplier: chosenSupplier.name,
-    allSuppliers:     activeSuppliers.map((s) => ({
-      name:     s.name,
+    supplier: chosenSupplier.name,
+    productCode: blankCode,
+    gridType: gridDoc.gridType,
+    baseCurve: cell?.stock ?? null,
+    allSuppliers: activeSuppliers.map((s) => ({
+      name: s.name,
       priority: s.priority,
-      active:   s.active,
+      active: s.active,
     })),
   };
 }
@@ -155,20 +136,19 @@ export async function generateOrderNumber() {
 
 export async function resolveAllEyes({ brand, category, productName, productMode, powerType, powers = [] }) {
   const requestedSides = powers.map((p) => p.side).filter(Boolean);
-  const sides    = requestedSides.length > 0 ? requestedSides : (powerType === "Both" ? ["R", "L"] : ["R"]);
+  const sides = requestedSides.length > 0 ? requestedSides : (powerType === "Both" ? ["R", "L"] : ["R"]);
   const resolved = [];
-  let   suppliers        = [];
-  let   selectedSupplier = null;
+  let suppliers = [];
 
   for (const side of sides) {
-    const eye    = powers.find((p) => p.side === side) || {};
+    const eye = powers.find((p) => p.side === side) || {};
     const result = await resolveEye({
       brand,
       category,
       productName,
-      sph:         eye.sph,
-      cyl:         eye.cyl,
-      add:         eye.add,
+      sph: eye.sph,
+      cyl: eye.cyl,
+      add: eye.add,
       productMode: productMode || "Rx",
     });
 
@@ -177,21 +157,20 @@ export async function resolveAllEyes({ brand, category, productName, productMode
     }
 
     if (suppliers.length === 0 && result.allSuppliers?.length) {
-      suppliers        = result.allSuppliers;
-      selectedSupplier = result.selectedSupplier;
+      suppliers = result.allSuppliers;
     }
 
     resolved.push({
       side,
-      itemCode:  result.itemCode,
+      itemCode: result.itemCode,
       blankCode: result.blankCode,
-      supplier:  result.supplier,
+      supplier: result.supplier,
       baseCurve: result.baseCurve,
-      diameter:  eye.diameter ?? null,
+      diameter: eye.diameter ?? null,
     });
   }
 
-  return { resolved, suppliers, selectedSupplier };
+  return { resolved, suppliers};
 }
 
 
@@ -200,7 +179,7 @@ export async function createOrderService(data, userId) {
   const { brand, category, productName, productMode, powerType, powers = [] } = data;
 
   const missing = [];
-  if (!data.customer?.customerId)  missing.push("customer.customerId");
+  if (!data.customer?.customerId) missing.push("customer.customerId");
   if (!data.customer?.customerShipToId) missing.push("customer.customerShipToId");
   if (missing.length) {
     throw { statusCode: 400, code: "MISSING_FIELDS", message: `Missing required fields: ${missing.join(", ")}` };
@@ -208,12 +187,12 @@ export async function createOrderService(data, userId) {
 
   if (!isDraft) {
     const submitMissing = [];
-    if (!brand)           submitMissing.push("brand");
-    if (!category)        submitMissing.push("category");
-    if (!productName)     submitMissing.push("productName");
-    if (!productMode)     submitMissing.push("productMode");
-    if (!powerType)       submitMissing.push("powerType");
-    if (!powers.length)   submitMissing.push("powers (at least one eye required)");
+    if (!brand) submitMissing.push("brand");
+    if (!category) submitMissing.push("category");
+    if (!productName) submitMissing.push("productName");
+    if (!productMode) submitMissing.push("productMode");
+    if (!powerType) submitMissing.push("powerType");
+    if (!powers.length) submitMissing.push("powers (at least one eye required)");
 
     if (submitMissing.length) {
       throw { statusCode: 400, code: "MISSING_FIELDS", message: `Missing required fields for submission: ${submitMissing.join(", ")}` };
@@ -261,56 +240,54 @@ export async function createOrderService(data, userId) {
     customerShipToBranchName = shipTo.branchName;
   }
 
-  const { resolved, suppliers, selectedSupplier } = !isDraft
+  const { resolved, suppliers } = !isDraft
     ? await resolveAllEyes({ brand, category, productName, productMode, powerType, powers })
-    : { resolved: [], suppliers: [], selectedSupplier: null };
+    : { resolved: [], suppliers: [] };
 
   const orderNumber = await generateOrderNumber();
 
   const order = await Order.create({
     orderNumber,
     customer: {
-      customerId:               customer._id,
-      customerName:             customer.shopName,
-      customerShipToId:         data.customer.customerShipToId ?? null,
+      customerId: customer._id,
+      customerName: customer.shopName,
+      customerShipToId: data.customer.customerShipToId ?? null,
       customerShipToBranchName: customerShipToBranchName,
     },
-    lab:              data.lab,
-    orderReference:   data.orderReference,
+    lab: data.lab,
+    orderReference: data.orderReference,
     consumerCardName: data.consumerCardName,
-    opticianName:     data.opticianName,
-    powerType:        data.powerType,
-    productMode:      data.productMode,
-    hasPrism:         data.hasPrism      ?? false,
-    powers:           data.powers        ?? [],
-    prisms:           data.prisms        ?? [],
+    opticianName: data.opticianName,
+    powerType: data.powerType,
+    productMode: data.productMode,
+    hasPrism: data.hasPrism ?? false,
+    powers: data.powers ?? [],
+    prisms: data.prisms ?? [],
     brand,
     category,
-    index:            data.index,
+    index: data.index,
     productName,
-    coating:          data.coating,
-    treatment:        data.treatment,
-    tint:             data.tint,
-    tintDetails:      data.tintDetails,
-    remarks:          data.remarks,
-    mirror:           data.mirror        ?? false,
+    coating: data.coating,
+    treatment: data.treatment,
+    tint: data.tint,
+    tintDetails: data.tintDetails,
+    remarks: data.remarks,
+    mirror: data.mirror ?? false,
     resolved,
     suppliers,
-    selectedSupplier,
-    centration:       data.centration    ?? [],
-    fitting:          data.fitting,
-    lensData:         data.lensData,
-    directCustomer:   data.directCustomer,
-    shippingCharges:  data.shippingCharges ?? 0,
-    otherCharges:     data.otherCharges    ?? 0,
-    status:           isDraft ? "Draft" : "Submitted",
-    submittedAt:      isDraft ? null : new Date(),
-    createdBy:        userId,
+    centration: data.centration ?? [],
+    fitting: data.fitting,
+    lensData: data.lensData,
+    directCustomer: data.directCustomer,
+    shippingCharges: data.shippingCharges ?? 0,
+    otherCharges: data.otherCharges ?? 0,
+    status: isDraft ? "Draft" : "Submitted",
+    submittedAt: isDraft ? null : new Date(),
+    createdBy: userId,
   });
 
   return order;
 }
-
 
 export async function getOrderService(orderId) {
   const order = await Order.findById(orderId)
@@ -337,8 +314,8 @@ export async function listOrdersService({ customerId, status, page = 1, limit = 
 
   if (search) {
     filter.$or = [
-      { orderNumber:    { $regex: search, $options: "i" } },
-      { opticianName:   { $regex: search, $options: "i" } },
+      { orderNumber: { $regex: search, $options: "i" } },
+      { opticianName: { $regex: search, $options: "i" } },
       { orderReference: { $regex: search, $options: "i" } },
     ];
   }
@@ -353,7 +330,7 @@ export async function listOrdersService({ customerId, status, page = 1, limit = 
     }
   }
 
-  const skip  = (parseInt(page) - 1) * parseInt(limit);
+  const skip = (parseInt(page) - 1) * parseInt(limit);
   const total = await Order.countDocuments(filter);
 
   const orders = await Order.find(filter)
@@ -366,8 +343,8 @@ export async function listOrdersService({ customerId, status, page = 1, limit = 
     orders,
     pagination: {
       total,
-      page:       parseInt(page),
-      limit:      parseInt(limit),
+      page: parseInt(page),
+      limit: parseInt(limit),
       totalPages: Math.ceil(total / parseInt(limit)),
     },
   };
@@ -384,24 +361,23 @@ export async function updateOrderService(orderId, data) {
   const needsResolve = data.brand || data.category || data.productName || data.powers || data.productMode || data.powerType;
 
   if (needsResolve) {
-    const { resolved, suppliers, selectedSupplier } = await resolveAllEyes({
-      brand:       data.brand       || order.brand,
-      category:    data.category    || order.category,
+    const { resolved, suppliers } = await resolveAllEyes({
+      brand: data.brand || order.brand,
+      category: data.category || order.category,
       productName: data.productName || order.productName,
       productMode: data.productMode || order.productMode,
-      powerType:   data.powerType   || order.powerType,
-      powers:      data.powers      || order.powers,
+      powerType: data.powerType || order.powerType,
+      powers: data.powers || order.powers,
     });
-    data.resolved         = resolved;
-    data.suppliers        = suppliers;
-    data.selectedSupplier = selectedSupplier;
+    data.resolved = resolved;
+    data.suppliers = suppliers;
   }
 
   const UPDATABLE = [
     "lab", "orderReference", "consumerCardName",
     "opticianName", "powerType", "productMode", "hasPrism", "powers", "prisms",
     "brand", "category", "index", "productName", "coating", "treatment", "tint",
-    "tintDetails", "remarks", "mirror", "resolved", "suppliers", "selectedSupplier",
+    "tintDetails", "remarks", "mirror", "resolved", "suppliers",
     "centration", "fitting", "lensData", "directCustomer", "shippingCharges", "otherCharges",
   ];
 
@@ -437,18 +413,17 @@ export async function updateDraftOrderService(orderId, data) {
 
   const needsResolve = data.brand || data.category || data.productName || data.powers || data.productMode || data.powerType;
   if (needsResolve) {
-    const brand       = data.brand       || order.brand;
-    const category    = data.category    || order.category;
+    const brand = data.brand || order.brand;
+    const category = data.category || order.category;
     const productName = data.productName || order.productName;
     const productMode = data.productMode || order.productMode;
-    const powerType   = data.powerType   || order.powerType;
-    const powers      = data.powers      || order.powers;
+    const powerType = data.powerType || order.powerType;
+    const powers = data.powers || order.powers;
 
     if (brand && category && productName && productMode && powerType && powers?.length) {
-      const { resolved, suppliers, selectedSupplier } = await resolveAllEyes({ brand, category, productName, productMode, powerType, powers });
-      data.resolved         = resolved;
-      data.suppliers        = suppliers;
-      data.selectedSupplier = selectedSupplier;
+      const { resolved, suppliers } = await resolveAllEyes({ brand, category, productName, productMode, powerType, powers });
+      data.resolved = resolved;
+      data.suppliers = suppliers;
     }
   }
 
@@ -468,18 +443,18 @@ export async function updateDraftOrderService(orderId, data) {
       }
 
       order.customer = {
-        customerId:               customer._id,
-        customerName:             customer.shopName,
-        customerShipToId:         shipToId ?? null,
+        customerId: customer._id,
+        customerName: customer.shopName,
+        customerShipToId: shipToId ?? null,
         customerShipToBranchName: customerShipToBranchName,
       };
     } else if (data.customer.customerShipToId) {
       const customer = await Customer.findById(order.customer.customerId).lean();
-      const shipTo   = (customer?.customerShipToDetails || []).find(
+      const shipTo = (customer?.customerShipToDetails || []).find(
         (s) => s._id.toString() === data.customer.customerShipToId.toString()
       );
       if (!shipTo) throw { statusCode: 404, code: "NOT_FOUND", message: "Ship-to address not found for this customer" };
-      order.customer.customerShipToId         = data.customer.customerShipToId;
+      order.customer.customerShipToId = data.customer.customerShipToId;
       order.customer.customerShipToBranchName = shipTo.branchName;
     }
   }
@@ -489,7 +464,7 @@ export async function updateDraftOrderService(orderId, data) {
     "powerType", "productMode", "hasPrism", "powers", "prisms",
     "brand", "category", "index", "productName", "coating", "treatment",
     "tint", "tintDetails", "remarks", "mirror", "resolved", "suppliers",
-    "selectedSupplier", "centration", "fitting", "lensData",
+    "centration", "fitting", "lensData",
     "directCustomer", "shippingCharges", "otherCharges", "customerBalance",
     "status"
   ];
@@ -512,7 +487,7 @@ export async function resolveProductService({ brand, category, productName, prod
     productName,
     productMode,
     powerType: powerType || "Single",
-    powers:    powers    || [],
+    powers: powers || [],
   });
 }
 
@@ -523,7 +498,7 @@ export async function getProductNamesService({ search = "", limit = 100, page = 
     filter.productName = { $regex: search.trim(), $options: "i" };
   }
 
-  const skip  = (parseInt(page) - 1) * parseInt(limit);
+  const skip = (parseInt(page) - 1) * parseInt(limit);
   const total = await Product.countDocuments(filter);
 
   const results = await Product.find(filter, { productName: 1, _id: 0 })
@@ -536,8 +511,8 @@ export async function getProductNamesService({ search = "", limit = 100, page = 
     productNames: [...new Set(results.map((r) => r.productName))],
     pagination: {
       total,
-      page:       parseInt(page),
-      limit:      parseInt(limit),
+      page: parseInt(page),
+      limit: parseInt(limit),
       totalPages: Math.ceil(total / parseInt(limit)),
     },
   };
