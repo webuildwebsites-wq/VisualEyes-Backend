@@ -75,23 +75,8 @@ export async function resolveEye({ brand, category, productName, sph, cyl, add, 
     return { error: `No grid data found for blank code "${blankCode}"` };
   }
 
-  let gridDoc = null;
-  let chosenSupplier = null;
-
-  for (const supplier of activeSuppliers) {
-    const supplierName = supplier.name.trim().toUpperCase();
-    const match = allGridDocs.find((g) => g.supplier.trim().toUpperCase() === supplierName);
-    if (match) {
-      gridDoc = match;
-      chosenSupplier = supplier;
-      break;
-    }
-  }
-
-  if (!gridDoc) {
-    gridDoc = allGridDocs[0];
-    chosenSupplier = { name: allGridDocs[0].supplier, priority: 99, active: true };
-  }
+  const gridDoc = allGridDocs[0];
+  const chosenSupplier = (product.suppliers || []).filter((s) => s.active).sort((a, b) => a.priority - b.priority)[0];
 
 
   if (gridDoc.axisType.toUpperCase() !== "Minus cylinder".toLocaleUpperCase() && (add == null)) {
