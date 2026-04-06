@@ -62,10 +62,16 @@ export async function resolveEye({ brand, category, productName, sph, cyl, add, 
   }
 
   const gridType = productMode === "Stock Lens" ? "FFGrid" : "RxGrid";
+  
   let allGridDocs = await BaseGrid.find({
     productCode: caseInsensitive(blankCode),
     gridType,
   }).lean();
+
+  console.log("gridType : ",gridType);
+  console.log("blankCode : ", caseInsensitive(blankCode));
+
+  console.log("allGridDocs : ", allGridDocs.length);
 
 
   if (!allGridDocs.length) {
@@ -490,18 +496,21 @@ export async function getProductNamesService({ search = "", limit = 100, page = 
   const skip = (parseInt(page) - 1) * parseInt(limit);
   const total = await Product.countDocuments(filter);
 
-  const results = await Product.find(filter, { productName: 1, _id: 0 })
+  const results = await Product.find(filter, {
+    _id: 1, itemCode: 1, productName: 1, brand: 1, productType: 1, hsnCode : 1,
+    category: 1, treatment: 1, price: 1, status: 1, createdBy: 1, createdAt: 1, updatedAt: 1, __v: 1,
+  })
     .sort({ productName: 1 })
     .skip(skip)
     .limit(parseInt(limit))
     .lean();
 
   return {
-    productNames: [...new Set(results.map((r) => r.productName))],
+    data: results,
     pagination: {
       total,
-      page: parseInt(page),
-      limit: parseInt(limit),
+      page:       parseInt(page),
+      limit:      parseInt(limit),
       totalPages: Math.ceil(total / parseInt(limit)),
     },
   };

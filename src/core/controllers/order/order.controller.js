@@ -74,7 +74,7 @@ export const resolveProduct = async (req, res) => {
 export const getProductNames = async (req, res) => {
   try {
     const result = await getProductNamesService(req.query);
-    return sendSuccessResponse(res, 200, result);
+    return sendSuccessResponse(res, 200, result, "Products retrieved successfully");
   } catch (err) {
     return handleError(res, err);
   }
@@ -82,8 +82,8 @@ export const getProductNames = async (req, res) => {
 
 export const getTintOptions = async (req, res) => {
   try {
-    const values = await getTintOptionsService();
-    return sendSuccessResponse(res, 200, { field: "tint", values });
+    const data = await getTintOptionsService();
+    return sendSuccessResponse(res, 200, data, "Tint options retrieved successfully");
   } catch (err) {
     return handleError(res, err);
   }
@@ -100,56 +100,56 @@ export const updateDraftOrder = async (req, res) => {
 
 export const getFrameTypes = async (req, res) => {
   try {
-    const values = await getFrameTypesService();
-    return sendSuccessResponse(res, 200, { field: "frameType", values });
+    const data = await getFrameTypesService();
+    return sendSuccessResponse(res, 200, data, "Frame types retrieved successfully");
   } catch (err) { return handleError(res, err); }
 };
 
 export const getProductBrands = async (req, res) => {
   try {
-    const values = await getProductBrandsService();
-    return sendSuccessResponse(res, 200, { field: "brand", values });
+    const data = await getProductBrandsService();
+    return sendSuccessResponse(res, 200, data, "Product brands retrieved successfully");
   } catch (err) { return handleError(res, err); }
 };
 
 export const getProductCategories = async (req, res) => {
   try {
-    const values = await getProductCategoriesService();
-    return sendSuccessResponse(res, 200, { field: "category", values });
+    const data = await getProductCategoriesService();
+    return sendSuccessResponse(res, 200, data, "Product categories retrieved successfully");
   } catch (err) { return handleError(res, err); }
 };
 
 export const getProductTreatments = async (req, res) => {
   try {
-    const values = await getProductTreatmentsService();
-    return sendSuccessResponse(res, 200, { field: "treatment", values });
+    const data = await getProductTreatmentsService();
+    return sendSuccessResponse(res, 200, data, "Product treatments retrieved successfully");
   } catch (err) { return handleError(res, err); }
 };
 
 export const getProductIndexes = async (req, res) => {
   try {
-    const values = await getProductIndexesService();
-    return sendSuccessResponse(res, 200, { field: "index", values });
+    const data = await getProductIndexesService();
+    return sendSuccessResponse(res, 200, data, "Product indexes retrieved successfully");
   } catch (err) { return handleError(res, err); }
 };
 
 export const getProductTypes = async (req, res) => {
   try {
-    const values = await getProductTypesService();
-    return sendSuccessResponse(res, 200, { field: "productType", values });
+    const data = await getProductTypesService();
+    return sendSuccessResponse(res, 200, data, "Product types retrieved successfully");
   } catch (err) { return handleError(res, err); }
 };
 
 export const getProductLabs = async (req, res) => {
   try {
-    const values = await getProductLabsService();
-    return sendSuccessResponse(res, 200, { field: "lab", values });
+    const data = await getProductLabsService();
+    return sendSuccessResponse(res, 200, data, "Product labs retrieved successfully");
   } catch (err) { return handleError(res, err); }
 };
 
 export const getProductCoatings = async (req, res) => {
   try {
-    const values = await getProductCoatingsService();
-    return sendSuccessResponse(res, 200, { field: "coating", values });
+    const data = await getProductCoatingsService();
+    return sendSuccessResponse(res, 200, data, "Product coatings retrieved successfully");
   } catch (err) { return handleError(res, err); }
 };

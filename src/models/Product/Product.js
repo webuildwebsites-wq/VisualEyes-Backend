@@ -35,6 +35,9 @@ const productSchema = new mongoose.Schema(
     thirdParty: { type: String, trim: true },
 
     suppliers: { type: [supplierEntrySchema], default: [] },
+
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "Employee" },
+    updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: "Employee" },
   }, { timestamps: true }
 );
 
