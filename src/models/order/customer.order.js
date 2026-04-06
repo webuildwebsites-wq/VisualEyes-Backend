@@ -64,7 +64,10 @@ const orderSchema = new mongoose.Schema({
     customerShipToBranchName: { type: String },
   },
 
-  lab: String,
+  lab: {
+    id: { type: mongoose.Schema.Types.ObjectId, ref: "ProductLab" },
+    name: String,
+  },
   orderReference: String,
   consumerCardName: String,
   opticianName: String,
@@ -77,13 +80,31 @@ const orderSchema = new mongoose.Schema({
   powers: [powerSchema],
   prisms: [prismSchema],
 
-  brand: String,
-  category: String,
+  brand: {
+    id: { type: mongoose.Schema.Types.ObjectId, ref: "ProductBrand" },
+    name: String,
+  },
+  category: {
+    id: { type: mongoose.Schema.Types.ObjectId, ref: "ProductCategory" },
+    name: String,
+  },
   index: Number,
-  productName: String,
-  coating: String,
-  treatment: String,
-  tint: String,
+  productName: {
+    id: { type: mongoose.Schema.Types.ObjectId, ref: "Product" },
+    name: String,
+  },
+  coating: {
+    id: { type: mongoose.Schema.Types.ObjectId, ref: "ProductCoating" },
+    name: String,
+  },
+  treatment: {
+    id: { type: mongoose.Schema.Types.ObjectId, ref: "ProductTreatment" },
+    name: String,
+  },
+  tint: {
+    id: { type: mongoose.Schema.Types.ObjectId, ref: "Tint" },
+    name: String,
+  },
   tintDetails: String,
   remarks: String,
   mirror: Boolean,

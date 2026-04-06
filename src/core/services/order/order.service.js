@@ -32,14 +32,15 @@ function findGridCell(grid, sph, axisValue) {
 
 function caseInsensitive(val) {
   const normalized = (val || "").replace(/\s+/g, " ").trim();
-  const escaped = normalized.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const escaped = normalized.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/ /g, "\\s+");
   return { $regex: `^${escaped}$`, $options: "i" };
 }
 
 export async function resolveEye({ brand, category, productName, sph, cyl, add, productMode }) {
-  // console.log("caseInsensitive(brand) : ", caseInsensitive(brand));
-  // console.log("category : ", caseInsensitive(category));
-  // console.log("productName : ", caseInsensitive(productName))
+  console.log("caseInsensitive(brand) : ", caseInsensitive(brand));
+  console.log("category : ", caseInsensitive(category));
+  console.log("productName : ", productName);
+  console.log("productName : ", caseInsensitive(productName))
   const product = await Product.findOne({
     brand: caseInsensitive(brand),
     category: caseInsensitive(category),
@@ -129,6 +130,29 @@ export async function generateOrderNumber() {
 }
 
 
+// Resolve a dropdown field: accepts either { id, name } or a plain string (legacy)
+// Returns { id, name } after validating against the DB model
+// nameField: the field on the model that holds the display name (default: "name")
+async function resolveDropdownField(Model, value, fieldLabel, nameField = "name") {
+  if (!value) return null;
+
+  // Already an object with id
+  if (value && typeof value === "object" && value.id) {
+    const doc = await Model.findById(value.id).lean();
+    if (!doc) throw { statusCode: 404, code: "NOT_FOUND", message: `${fieldLabel} with id "${value.id}" not found` };
+    return { id: doc._id, name: doc[nameField] };
+  }
+
+  // Plain string — look up by name (backward compat)
+  if (typeof value === "string") {
+    const doc = await Model.findOne({ [nameField]: { $regex: `^${value.trim()}$`, $options: "i" } }).lean();
+    if (!doc) throw { statusCode: 404, code: "NOT_FOUND", message: `${fieldLabel} "${value}" not found` };
+    return { id: doc._id, name: doc[nameField] };
+  }
+
+  return null;
+}
+
 export async function resolveAllEyes({ brand, category, productName, productMode, powerType, powers = [] }) {
   const requestedSides = powers.map((p) => p.side).filter(Boolean);
   const sides = requestedSides.length > 0 ? requestedSides : (powerType === "Both" ? ["R", "L"] : ["R"]);
@@ -171,7 +195,23 @@ export async function resolveAllEyes({ brand, category, productName, productMode
 
 export async function createOrderService(data, userId) {
   const isDraft = data.status === "Draft";
-  const { brand, category, productName, productMode, powerType, powers = [] } = data;
+  const { productMode, powerType, powers = [] } = data;
+
+  // Resolve dropdown fields (accept { id } or plain string)
+  const [labResolved, brandResolved, categoryResolved, productNameResolved, coatingResolved, treatmentResolved, tintResolved] = await Promise.all([
+    data.lab       ? resolveDropdownField(ProductLab,       data.lab,       "Lab")         : null,
+    data.brand     ? resolveDropdownField(ProductBrand,     data.brand,     "Brand")       : null,
+    data.category  ? resolveDropdownField(ProductCategory,  data.category,  "Category")    : null,
+    data.productName ? resolveDropdownField(Product, data.productName, "Product", "productName") : null,
+    data.coating   ? resolveDropdownField(ProductCoating,   data.coating,   "Coating")     : null,
+    data.treatment ? resolveDropdownField(ProductTreatment, data.treatment, "Treatment")   : null,
+    data.tint      ? resolveDropdownField(Tint,             data.tint,      "Tint")        : null,
+  ]);
+
+  // String names used for product/grid resolution
+  const brand       = brandResolved?.name;
+  const category    = categoryResolved?.name;
+  const productName = productNameResolved?.name;
 
   const missing = [];
   if (!data.customer?.customerId) missing.push("customer.customerId");
@@ -249,7 +289,7 @@ export async function createOrderService(data, userId) {
       customerShipToId: data.customer.customerShipToId ?? null,
       customerShipToBranchName: customerShipToBranchName,
     },
-    lab: data.lab,
+    lab: labResolved,
     orderReference: data.orderReference,
     consumerCardName: data.consumerCardName,
     opticianName: data.opticianName,
@@ -258,13 +298,13 @@ export async function createOrderService(data, userId) {
     hasPrism: data.hasPrism ?? false,
     powers: data.powers ?? [],
     prisms: data.prisms ?? [],
-    brand,
-    category,
+    brand: brandResolved,
+    category: categoryResolved,
     index: data.index,
-    productName,
-    coating: data.coating,
-    treatment: data.treatment,
-    tint: data.tint,
+    productName: productNameResolved,
+    coating: coatingResolved,
+    treatment: treatmentResolved,
+    tint: tintResolved,
     tintDetails: data.tintDetails,
     remarks: data.remarks,
     mirror: data.mirror ?? false,
@@ -353,16 +393,25 @@ export async function updateOrderService(orderId, data) {
     throw { statusCode: 400, code: "INVALID_STATUS", message: "Only Draft orders can be updated" };
   }
 
+  // Resolve any dropdown fields provided
+  if (data.lab)         data.lab         = await resolveDropdownField(ProductLab,       data.lab,         "Lab");
+  if (data.brand)       data.brand       = await resolveDropdownField(ProductBrand,     data.brand,       "Brand");
+  if (data.category)    data.category    = await resolveDropdownField(ProductCategory,  data.category,    "Category");
+  if (data.productName) data.productName = await resolveDropdownField(Product,          data.productName, "Product", "productName");
+  if (data.coating)     data.coating     = await resolveDropdownField(ProductCoating,   data.coating,     "Coating");
+  if (data.treatment)   data.treatment   = await resolveDropdownField(ProductTreatment, data.treatment,   "Treatment");
+  if (data.tint)        data.tint        = await resolveDropdownField(Tint,             data.tint,        "Tint");
+
   const needsResolve = data.brand || data.category || data.productName || data.powers || data.productMode || data.powerType;
 
   if (needsResolve) {
     const { resolved, suppliers } = await resolveAllEyes({
-      brand: data.brand || order.brand,
-      category: data.category || order.category,
-      productName: data.productName || order.productName,
-      productMode: data.productMode || order.productMode,
-      powerType: data.powerType || order.powerType,
-      powers: data.powers || order.powers,
+      brand:       (data.brand       || order.brand)?.name,
+      category:    (data.category    || order.category)?.name,
+      productName: (data.productName || order.productName)?.name,
+      productMode: data.productMode  || order.productMode,
+      powerType:   data.powerType    || order.powerType,
+      powers:      data.powers       || order.powers,
     });
     data.resolved = resolved;
     data.suppliers = suppliers;
@@ -406,14 +455,23 @@ export async function updateDraftOrderService(orderId, data) {
     throw { statusCode: 400, code: "INVALID_STATUS", message: "Only Draft orders can be updated. Submit the order first to make changes." };
   }
 
+  // Resolve any dropdown fields provided
+  if (data.lab)         data.lab         = await resolveDropdownField(ProductLab,       data.lab,         "Lab");
+  if (data.brand)       data.brand       = await resolveDropdownField(ProductBrand,     data.brand,       "Brand");
+  if (data.category)    data.category    = await resolveDropdownField(ProductCategory,  data.category,    "Category");
+  if (data.productName) data.productName = await resolveDropdownField(Product,          data.productName, "Product", "productName");
+  if (data.coating)     data.coating     = await resolveDropdownField(ProductCoating,   data.coating,     "Coating");
+  if (data.treatment)   data.treatment   = await resolveDropdownField(ProductTreatment, data.treatment,   "Treatment");
+  if (data.tint)        data.tint        = await resolveDropdownField(Tint,             data.tint,        "Tint");
+
   const needsResolve = data.brand || data.category || data.productName || data.powers || data.productMode || data.powerType;
   if (needsResolve) {
-    const brand = data.brand || order.brand;
-    const category = data.category || order.category;
-    const productName = data.productName || order.productName;
-    const productMode = data.productMode || order.productMode;
-    const powerType = data.powerType || order.powerType;
-    const powers = data.powers || order.powers;
+    const brand       = (data.brand       || order.brand)?.name;
+    const category    = (data.category    || order.category)?.name;
+    const productName = (data.productName || order.productName)?.name;
+    const productMode = data.productMode  || order.productMode;
+    const powerType   = data.powerType    || order.powerType;
+    const powers      = data.powers       || order.powers;
 
     if (brand && category && productName && productMode && powerType && powers?.length) {
       const { resolved, suppliers } = await resolveAllEyes({ brand, category, productName, productMode, powerType, powers });
@@ -476,10 +534,13 @@ export async function resolveProductService({ brand, category, productName, prod
   if (!brand || !category || !productName) {
     throw { statusCode: 400, code: "MISSING_FIELDS", message: "brand, category, and productName are required" };
   }
+  const brandName       = typeof brand       === "object" ? brand.name       : brand;
+  const categoryName    = typeof category    === "object" ? category.name    : category;
+  const productNameStr  = typeof productName === "object" ? productName.name : productName;
   return resolveAllEyes({
-    brand,
-    category,
-    productName,
+    brand: brandName,
+    category: categoryName,
+    productName: productNameStr,
     productMode,
     powerType: powerType || "Single",
     powers: powers || [],
