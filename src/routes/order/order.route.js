@@ -33,10 +33,10 @@ orderRouter.get("/product-fields/brand",      getProductBrands);
 orderRouter.get("/product-fields/category",   getProductCategories);
 orderRouter.get("/product-fields/treatment",  getProductTreatments);
 orderRouter.get("/product-fields/index",      getProductIndexes);
-orderRouter.get("/product-fields/productType",getProductTypes);
+orderRouter.get("/product-fields/productDetails",getProductTypes);
 orderRouter.get("/product-fields/lab",        getProductLabs);
 orderRouter.get("/product-fields/coating",    getProductCoatings);
-orderRouter.get("/product-names",             getProductNames);
+orderRouter.get("/lens-type",             getProductNames);
 
 orderRouter.post("/create",                   createOrder);
 orderRouter.get("/get-all-orders",            listOrders);
