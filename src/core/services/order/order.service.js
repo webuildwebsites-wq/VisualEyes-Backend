@@ -31,11 +31,15 @@ function findGridCell(grid, sph, axisValue) {
 }
 
 function caseInsensitive(val) {
-  return { $regex: "^" + (val || "").trim() + "$", $options: "i" };
+  const normalized = (val || "").replace(/\s+/g, " ").trim();
+  const escaped = normalized.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return { $regex: `^${escaped}$`, $options: "i" };
 }
 
-
 export async function resolveEye({ brand, category, productName, sph, cyl, add, productMode }) {
+  // console.log("caseInsensitive(brand) : ", caseInsensitive(brand));
+  // console.log("category : ", caseInsensitive(category));
+  // console.log("productName : ", caseInsensitive(productName))
   const product = await Product.findOne({
     brand: caseInsensitive(brand),
     category: caseInsensitive(category),
@@ -505,47 +509,38 @@ export async function getProductNamesService({ search = "", limit = 100, page = 
 
 
 export async function getTintOptionsService() {
-  const tints = await Tint.find({}, { name: 1, _id: 0 }).sort({ name: 1 }).lean();
-  return tints.map((t) => t.name);
+  return await Tint.find({}).sort({ name: 1 }).lean();
 }
 
 
 export async function getFrameTypesService() {
-  const types = await FrameType.find({}, { name: 1, _id: 0 }).sort({ name: 1 }).lean();
-  return types.map((t) => t.name);
+  return await FrameType.find({}).sort({ name: 1 }).lean();
 }
 
 export async function getProductBrandsService() {
-  const docs = await ProductBrand.find({}, { name: 1, _id: 0 }).sort({ name: 1 }).lean();
-  return docs.map((d) => d.name);
+  return await ProductBrand.find({}).sort({ name: 1 }).lean();
 }
 
 export async function getProductCategoriesService() {
-  const docs = await ProductCategory.find({}, { name: 1, _id: 0 }).sort({ name: 1 }).lean();
-  return docs.map((d) => d.name);
+  return await ProductCategory.find({}).sort({ name: 1 }).lean();
 }
 
 export async function getProductTreatmentsService() {
-  const docs = await ProductTreatment.find({}, { name: 1, _id: 0 }).sort({ name: 1 }).lean();
-  return docs.map((d) => d.name);
+  return await ProductTreatment.find({}).sort({ name: 1 }).lean();
 }
 
 export async function getProductIndexesService() {
-  const docs = await ProductIndex.find({}, { value: 1, _id: 0 }).sort({ value: 1 }).lean();
-  return docs.map((d) => d.value);
+  return await ProductIndex.find({}).sort({ value: 1 }).lean();
 }
 
 export async function getProductTypesService() {
-  const docs = await ProductType.find({}, { name: 1, _id: 0 }).sort({ name: 1 }).lean();
-  return docs.map((d) => d.name);
+  return await ProductType.find({}).sort({ name: 1 }).lean();
 }
 
 export async function getProductLabsService() {
-  const docs = await ProductLab.find({}, { name: 1, _id: 0 }).sort({ name: 1 }).lean();
-  return docs.map((d) => d.name);
+  return await ProductLab.find({}).sort({ name: 1 }).lean();
 }
 
 export async function getProductCoatingsService() {
-  const docs = await ProductCoating.find({}, { name: 1, _id: 0 }).sort({ name: 1 }).lean();
-  return docs.map((d) => d.name);
+  return await ProductCoating.find({}).sort({ name: 1 }).lean();
 }
