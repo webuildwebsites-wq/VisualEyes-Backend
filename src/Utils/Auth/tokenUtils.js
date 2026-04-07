@@ -40,7 +40,7 @@ export const refreshToken = async (req, res) => {
 
     res.cookie('accessToken', newAccessToken, {
       ...cookieOptions,
-      expires: new Date(Date.now() + (process.env.JWT_COOKIE_EXPIRE || 24) * 60 * 60 * 1000)
+      expires: new Date(Date.now() + (process.env.JWT_COOKIE_EXPIRE || 24) * 60 * 60 * 1000) // set JWT_COOKIE_EXPIRE in hours (e.g. 0.0167 for 1 min)
     });
 
     res.cookie('refreshToken', newRefreshToken, {

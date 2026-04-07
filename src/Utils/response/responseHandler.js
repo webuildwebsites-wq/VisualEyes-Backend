@@ -32,7 +32,7 @@ export const sendTokenResponse = (user, statusCode, res, AccountType = 'EMPLOYEE
   const refreshToken = generateRefreshToken(user._id, EmployeeType, AccountType);
 
   const options = {
-    expires: new Date(Date.now() + (process.env.JWT_COOKIE_EXPIRE || 24) * 60 * 60 * 1000),
+    expires: new Date(Date.now() + (process.env.JWT_COOKIE_EXPIRE || 24) * 60 * 60 * 1000), // set JWT_COOKIE_EXPIRE in hours (e.g. 0.0167 for 1 min)
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict'
