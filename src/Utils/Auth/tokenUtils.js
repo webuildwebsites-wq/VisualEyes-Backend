@@ -17,24 +17,44 @@ export const generateRefreshToken = (id, EmployeeType, AccountType = 'EMPLOYEE')
 
 export const refreshToken = async (req, res) => {
   try {
-    const { refreshToken } = req.body;
+    const token = req.body.refreshToken || req.cookies?.refreshToken;
 
-    if (!refreshToken) {
+    if (!token) {
       return sendErrorResponse(res, 400, 'MISSING_REFRESH_TOKEN', 'Refresh token is required');
     }
 
-    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET);
 
     if (decoded.type !== 'refresh') {
       return sendErrorResponse(res, 401, 'INVALID_TOKEN_TYPE', 'Invalid token type');
     }
 
     const newAccessToken = generateToken(decoded.id, decoded.EmployeeType, decoded.AccountType);
+    const newRefreshToken = generateRefreshToken(decoded.id, decoded.EmployeeType, decoded.AccountType);
+
+    const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict'
+    };
+
+    res.cookie('accessToken', newAccessToken, {
+      ...cookieOptions,
+      expires: new Date(Date.now() + (process.env.JWT_COOKIE_EXPIRE || 24) * 60 * 60 * 1000)
+    });
+
+    res.cookie('refreshToken', newRefreshToken, {
+      ...cookieOptions,
+      expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    });
 
     return sendSuccessResponse(res, 200, {
-      accessToken: newAccessToken,
-      expiresIn: 24 * 60 * 60
-    });
+      tokens: {
+        accessToken: newAccessToken,
+        refreshToken: newRefreshToken,
+        expiresIn: 24 * 60 * 60
+      }
+    }, 'Token refreshed successfully');
 
   } catch (error) {
     console.error('Refresh token error:', error);

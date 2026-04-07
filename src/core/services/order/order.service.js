@@ -129,21 +129,15 @@ export async function generateOrderNumber() {
   return prefix + String(seq).padStart(4, "0");
 }
 
-
-// Resolve a dropdown field: accepts either { id, name } or a plain string (legacy)
-// Returns { id, name } after validating against the DB model
-// nameField: the field on the model that holds the display name (default: "name")
 async function resolveDropdownField(Model, value, fieldLabel, nameField = "name") {
   if (!value) return null;
 
-  // Already an object with id
   if (value && typeof value === "object" && value.id) {
     const doc = await Model.findById(value.id).lean();
     if (!doc) throw { statusCode: 404, code: "NOT_FOUND", message: `${fieldLabel} with id "${value.id}" not found` };
     return { id: doc._id, name: doc[nameField] };
   }
 
-  // Plain string — look up by name (backward compat)
   if (typeof value === "string") {
     const doc = await Model.findOne({ [nameField]: { $regex: `^${value.trim()}$`, $options: "i" } }).lean();
     if (!doc) throw { statusCode: 404, code: "NOT_FOUND", message: `${fieldLabel} "${value}" not found` };
@@ -197,7 +191,6 @@ export async function createOrderService(data, userId) {
   const isDraft = data.status === "Draft";
   const { productMode, powerType, powers = [] } = data;
 
-  // Resolve dropdown fields (accept { id } or plain string)
   const [labResolved, brandResolved, categoryResolved, productNameResolved, coatingResolved, treatmentResolved, tintResolved] = await Promise.all([
     data.lab       ? resolveDropdownField(ProductLab,       data.lab,       "Lab")         : null,
     data.brand     ? resolveDropdownField(ProductBrand,     data.brand,     "Brand")       : null,
@@ -208,7 +201,6 @@ export async function createOrderService(data, userId) {
     data.tint      ? resolveDropdownField(Tint,             data.tint,      "Tint")        : null,
   ]);
 
-  // String names used for product/grid resolution
   const brand       = brandResolved?.name;
   const category    = categoryResolved?.name;
   const productName = productNameResolved?.name;
@@ -263,7 +255,6 @@ export async function createOrderService(data, userId) {
     throw { statusCode: 403, code: "CUSTOMER_INACTIVE", message: "Customer account is not active" };
   }
 
-  // Resolve shipTo branch name from customer's shipToDetails subdoc
   let customerShipToBranchName = null;
   if (data.customer.customerShipToId) {
     const shipTo = (customer.customerShipToDetails || []).find(
