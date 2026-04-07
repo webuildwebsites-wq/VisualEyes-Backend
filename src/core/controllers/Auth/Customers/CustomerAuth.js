@@ -46,7 +46,7 @@ export const customerLogin = async (req, res) => {
     }).select("+password -emailOtp -emailOtpExpires -mobileOtp -mobileOtpExpires -gstNumber -gstCertificateImg -panCard -panCardImg -aadharCard -aadharCardImg -isLocked -failedLoginAttempts -lockUntil -createdByDepartment -approvalStatus");
 
     if (!customer) {
-      return sendErrorResponse(res, 401, "INVALID_CREDENTIALS", "Invalid credentials or account is inactive",);
+      return sendErrorResponse(res, 422, "INVALID_CREDENTIALS", "Invalid credentials or account is inactive",);
     }
 
     if (customer.isLocked) {
@@ -60,7 +60,7 @@ export const customerLogin = async (req, res) => {
     const isMatch = await customer.comparePassword(password);
 
     if (!isMatch) {
-      return sendErrorResponse(res, 401, "INVALID_CREDENTIALS", "Invalid credentials",);
+      return sendErrorResponse(res, 422, "INVALID_CREDENTIALS", "Invalid credentials",);
     }
     customer.lastLogin = new Date();
     await customer.save({ validateBeforeSave: false });

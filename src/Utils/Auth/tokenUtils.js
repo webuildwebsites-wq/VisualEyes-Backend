@@ -1,10 +1,12 @@
 import jwt from 'jsonwebtoken';
-import { sendErrorResponse, sendLogoutResponse, sendSuccessResponse } from '../response/responseHandler.js';
+import { sendErrorResponse, sendLogoutResponse } from '../response/responseHandler.js';
+import Employee from '../../models/Auth/Employee.js';
+import Customer from '../../models/Auth/Customer.js';
 import dotenv from 'dotenv';
 dotenv.config();
 
 export const generateToken = (id, EmployeeType, AccountType = 'EMPLOYEE') => {
-  return jwt.sign({ id, EmployeeType, AccountType }, process.env.JWT_SECRET,{ expiresIn: process.env.JWT_EXPIRE || '24h' });
+  return jwt.sign({ id, EmployeeType, AccountType }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRE || '24h' });
 };
 
 export const generateRefreshToken = (id, EmployeeType, AccountType = 'EMPLOYEE') => {
@@ -17,7 +19,7 @@ export const generateRefreshToken = (id, EmployeeType, AccountType = 'EMPLOYEE')
 
 export const refreshToken = async (req, res) => {
   try {
-    const token = req.body.refreshToken || req.cookies?.refreshToken;
+    const token = req.body.refreshToken;
 
     if (!token) {
       return sendErrorResponse(res, 400, 'MISSING_REFRESH_TOKEN', 'Refresh token is required');
@@ -29,8 +31,20 @@ export const refreshToken = async (req, res) => {
       return sendErrorResponse(res, 401, 'INVALID_TOKEN_TYPE', 'Invalid token type');
     }
 
-    const newAccessToken = generateToken(decoded.id, decoded.EmployeeType, decoded.AccountType);
-    const newRefreshToken = generateRefreshToken(decoded.id, decoded.EmployeeType, decoded.AccountType);
+    const isCustomer = decoded.AccountType?.toUpperCase() === 'CUSTOMER';
+    const Model = isCustomer ? Customer : Employee;
+
+    const user = isCustomer
+      ? await Model.findById(decoded.id)
+      : await Model.findById(decoded.id).populate('EmployeeType', 'name');
+
+    if (!user) {
+      return sendErrorResponse(res, 401, 'USER_NOT_FOUND', 'User no longer exists');
+    }
+
+    const EmployeeType = isCustomer ? 'CUSTOMER' : (user.EmployeeType?.name || user.EmployeeType);
+    const newAccessToken  = generateToken(user._id, EmployeeType, decoded.AccountType);
+    const newRefreshToken = generateRefreshToken(user._id, EmployeeType, decoded.AccountType);
 
     const cookieOptions = {
       httpOnly: true,
@@ -38,23 +52,26 @@ export const refreshToken = async (req, res) => {
       sameSite: 'strict'
     };
 
-    res.cookie('accessToken', newAccessToken, {
-      ...cookieOptions,
-      expires: new Date(Date.now() + (process.env.JWT_COOKIE_EXPIRE || 24) * 60 * 60 * 1000) // set JWT_COOKIE_EXPIRE in hours (e.g. 0.0167 for 1 min)
-    });
-
-    res.cookie('refreshToken', newRefreshToken, {
-      ...cookieOptions,
-      expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-    });
-
-    return sendSuccessResponse(res, 200, {
-      tokens: {
-        accessToken: newAccessToken,
-        refreshToken: newRefreshToken,
-        expiresIn: 24 * 60 * 60
-      }
-    }, 'Token refreshed successfully');
+    return res
+      .status(200)
+      .cookie('token', newAccessToken, {
+        ...cookieOptions,
+        expires: new Date(Date.now() + parseFloat(process.env.JWT_COOKIE_EXPIRE || 24) * 60 * 60 * 1000)
+      })
+      .cookie('refreshToken', newRefreshToken, {
+        ...cookieOptions,
+        expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+      })
+      .json({
+        success: true,
+        data: {
+          tokens: {
+            accessToken: newAccessToken,
+            refreshToken: newRefreshToken,
+            expiresIn: 24 * 60 * 60
+          }
+        }
+      });
 
   } catch (error) {
     console.error('Refresh token error:', error);

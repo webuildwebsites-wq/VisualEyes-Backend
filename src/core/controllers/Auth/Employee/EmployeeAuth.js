@@ -27,7 +27,7 @@ export const employeeLogin = async (req, res) => {
     .populate('createdBy supervisor', 'username employeeName email');
 
     if (!user) {
-      return sendErrorResponse(res, 401, 'INVALID_CREDENTIALS', 'Invalid credentials or account is inactive');
+      return sendErrorResponse(res, 422, 'INVALID_CREDENTIALS', 'Invalid credentials or account is inactive');
     }
     
     if (user.isLocked) {
@@ -41,7 +41,7 @@ export const employeeLogin = async (req, res) => {
     const isMatch = await user.comparePassword(password);
 
     if (!isMatch) {
-      return sendErrorResponse(res, 401, 'INVALID_CREDENTIALS', 'Invalid credentials');
+      return sendErrorResponse(res, 422, 'INVALID_CREDENTIALS', 'Invalid credentials');
     }
 
     user.lastLogin = new Date();

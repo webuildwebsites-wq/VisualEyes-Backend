@@ -538,18 +538,42 @@ export async function resolveProductService({ brand, category, productName, prod
   });
 }
 
-export async function getProductNamesService({ search = "", limit = 100, page = 1 }) {
+export async function getTintOptionsService() {
+  return await Tint.find({}).sort({ name: 1 }).lean();
+}
+
+
+export async function getFrameTypesService() {
+  return await FrameType.find({}).sort({ name: 1 }).lean();
+}
+
+export async function getProductBrandsService() {
+  return await ProductBrand.find({}).sort({ name: 1 }).lean();
+}
+
+export async function getProductCategoriesService({ brand } = {}) {
+  if (brand?.trim()) {
+    const categoryNames = await Product.distinct("category", {
+      brand: { $regex: `^${brand.trim()}$`, $options: "i" },
+      category: { $ne: null }
+    });
+    return await ProductCategory.find({ name: { $in: categoryNames } }).sort({ name: 1 }).lean();
+  }
+  return await ProductCategory.find({}).sort({ name: 1 }).lean();
+}
+
+export async function getProductNamesService({ brand, category, search = "", limit = 100, page = 1 }) {
   const filter = { productName: { $ne: null } };
 
-  if (search.trim()) {
-    filter.productName = { $regex: search.trim(), $options: "i" };
-  }
+  if (brand?.trim())    filter.brand    = { $regex: `^${brand.trim()}$`,    $options: "i" };
+  if (category?.trim()) filter.category = { $regex: `^${category.trim()}$`, $options: "i" };
+  if (search.trim())    filter.productName = { $regex: search.trim(), $options: "i" };
 
   const skip = (parseInt(page) - 1) * parseInt(limit);
   const total = await Product.countDocuments(filter);
 
   const results = await Product.find(filter, {
-    _id: 1, itemCode: 1, productName: 1, brand: 1, productType: 1, hsnCode : 1,
+    _id: 1, itemCode: 1, productName: 1, brand: 1, productType: 1, hsnCode: 1,
     category: 1, treatment: 1, price: 1, status: 1, createdBy: 1, createdAt: 1, updatedAt: 1, __v: 1,
   })
     .sort({ productName: 1 })
@@ -566,24 +590,6 @@ export async function getProductNamesService({ search = "", limit = 100, page = 
       totalPages: Math.ceil(total / parseInt(limit)),
     },
   };
-}
-
-
-export async function getTintOptionsService() {
-  return await Tint.find({}).sort({ name: 1 }).lean();
-}
-
-
-export async function getFrameTypesService() {
-  return await FrameType.find({}).sort({ name: 1 }).lean();
-}
-
-export async function getProductBrandsService() {
-  return await ProductBrand.find({}).sort({ name: 1 }).lean();
-}
-
-export async function getProductCategoriesService() {
-  return await ProductCategory.find({}).sort({ name: 1 }).lean();
 }
 
 export async function getProductTreatmentsService() {

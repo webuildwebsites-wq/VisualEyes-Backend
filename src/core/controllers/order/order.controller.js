@@ -114,7 +114,7 @@ export const getProductBrands = async (req, res) => {
 
 export const getProductCategories = async (req, res) => {
   try {
-    const data = await getProductCategoriesService();
+    const data = await getProductCategoriesService(req.query);
     return sendSuccessResponse(res, 200, data, "Product categories retrieved successfully");
   } catch (err) { return handleError(res, err); }
 };
