@@ -509,7 +509,7 @@ export async function updateDraftOrderService(orderId, data) {
     "brand", "category", "index", "productName", "coating", "treatment",
     "tint", "tintDetails", "remarks", "mirror", "resolved", "suppliers",
     "centration", "fitting", "lensData",
-    "directCustomer", "shippingCharges", "otherCharges", "customerBalance",
+    "directCustomer", "shippingCharges", "otherCharges",
     "status"
   ];
 

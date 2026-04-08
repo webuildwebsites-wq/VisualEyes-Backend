@@ -246,6 +246,10 @@ const customerSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
+    customerBalance: {
+      type: Number,
+      default: 0,
+    },
     creditDays: {
       name: {
         type: String,
