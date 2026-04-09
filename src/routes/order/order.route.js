@@ -3,9 +3,9 @@ import {
   createOrder,
   getOrder,
   listOrders,
-  updateOrder,
   updateDraftOrder,
   cancelOrder,
+  deleteOrder,
   resolveProduct,
   getProductNames,
   getTintOptions,
@@ -44,8 +44,7 @@ orderRouter.get("/get-all-orders",            listOrders);
 // /:id routes last
 orderRouter.get("/:id",                       getOrder);
 orderRouter.post("/:id/cancel",               cancelOrder);
-
-orderRouter.put("/:id",                       updateOrder);
+orderRouter.delete("/:id",                    deleteOrder);
 orderRouter.patch("/:id/draft",               updateDraftOrder);
 
 export default orderRouter;

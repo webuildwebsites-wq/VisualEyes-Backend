@@ -133,7 +133,7 @@ const orderSchema = new mongoose.Schema({
 
   cancelReason: String,
   submittedAt: Date,
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "Employee" },
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "employee" },
 }, { timestamps: true });
 
 orderSchema.index({ "customer.customerId": 1, createdAt: -1 });

@@ -1,8 +1,8 @@
 import {
-  createOrderService, getOrderService, listOrdersService, updateOrderService,
+  createOrderService, getOrderService, listOrdersService,
   cancelOrderService, resolveProductService,
   getProductNamesService, getTintOptionsService, updateDraftOrderService,
-  getFrameTypesService,
+  getFrameTypesService, deleteOrderService,
   getProductBrandsService, getProductCategoriesService, getProductTreatmentsService,
   getProductIndexesService, getProductTypesService, getProductLabsService,
   getProductCoatingsService,
@@ -44,19 +44,19 @@ export const listOrders = async (req, res) => {
   }
 };
 
-export const updateOrder = async (req, res) => {
+export const cancelOrder = async (req, res) => {
   try {
-    const order = await updateOrderService(req.params.id, req.body);
-    return sendSuccessResponse(res, 200, order, "Order updated successfully");
+    const order = await cancelOrderService(req.params.id, req.body.reason);
+    return sendSuccessResponse(res, 200, order, "Order cancelled");
   } catch (err) {
     return handleError(res, err);
   }
 };
 
-export const cancelOrder = async (req, res) => {
+export const deleteOrder = async (req, res) => {
   try {
-    const order = await cancelOrderService(req.params.id, req.body.reason);
-    return sendSuccessResponse(res, 200, order, "Order cancelled");
+    await deleteOrderService(req.params.id);
+    return sendSuccessResponse(res, 200, null, "Order deleted successfully");
   } catch (err) {
     return handleError(res, err);
   }

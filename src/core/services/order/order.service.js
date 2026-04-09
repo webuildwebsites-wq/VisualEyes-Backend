@@ -214,12 +214,16 @@ export async function createOrderService(data, userId) {
 
   if (!isDraft) {
     const submitMissing = [];
-    if (!brand) submitMissing.push("brand");
-    if (!category) submitMissing.push("category");
-    if (!productName) submitMissing.push("productName");
-    if (!productMode) submitMissing.push("productMode");
-    if (!powerType) submitMissing.push("powerType");
-    if (!powers.length) submitMissing.push("powers (at least one eye required)");
+    if (!brand)                submitMissing.push("brand");
+    if (!category)             submitMissing.push("category");
+    if (!productName)          submitMissing.push("productName");
+    if (!productMode)          submitMissing.push("productMode");
+    if (!powerType)            submitMissing.push("powerType");
+    if (!powers.length)        submitMissing.push("powers (at least one eye required)");
+    if (!coatingResolved)      submitMissing.push("coating");
+    if (data.index == null)    submitMissing.push("index");
+    if (!tintResolved)         submitMissing.push("tint");
+    if (!treatmentResolved)    submitMissing.push("treatment");
 
     if (submitMissing.length) {
       throw { statusCode: 400, code: "MISSING_FIELDS", message: `Missing required fields for submission: ${submitMissing.join(", ")}` };
@@ -317,15 +321,26 @@ export async function createOrderService(data, userId) {
 
 export async function getOrderService(orderId) {
   const order = await Order.findById(orderId)
-    .populate("customer.customerId", "shopName ownerName customerCode mobileNo1 businessEmail")
-    .populate("createdBy", "name email EmployeeType")
+    .populate("customer.customerId", "shopName ownerName customerCode mobileNo1 businessEmail customerBalance creditLimit creditUsed zone")
+    .populate("createdBy", "employeeName email EmployeeType username")
     .lean();
 
   if (!order) throw { statusCode: 404, code: "NOT_FOUND", message: "Order not found" };
   return order;
 }
 
-export async function listOrdersService({ customerId, status, page = 1, limit = 20, search, fromDate, toDate }) {
+export async function deleteOrderService(orderId) {
+  const order = await Order.findById(orderId);
+  if (!order) throw { statusCode: 404, code: "NOT_FOUND", message: "Order not found" };
+
+  if (!["Draft", "Cancelled"].includes(order.status)) {
+    throw { statusCode: 400, code: "INVALID_STATUS", message: `Cannot delete an order with status "${order.status}". Only Draft or Cancelled orders can be deleted.` };
+  }
+
+  await Order.findByIdAndDelete(orderId);
+}
+
+export async function listOrdersService({ customerId, status="Submitted", page = 1, limit = 20, search, fromDate, toDate }) {
   const VALID_STATUSES = ["Draft", "Submitted", "Processing", "Completed", "Cancelled"];
   const filter = {};
 
@@ -376,53 +391,6 @@ export async function listOrdersService({ customerId, status, page = 1, limit = 
   };
 }
 
-export async function updateOrderService(orderId, data) {
-  const order = await Order.findById(orderId);
-  if (!order) throw { statusCode: 404, code: "NOT_FOUND", message: "Order not found" };
-
-  if (order.status !== "Draft") {
-    throw { statusCode: 400, code: "INVALID_STATUS", message: "Only Draft orders can be updated" };
-  }
-
-  // Resolve any dropdown fields provided
-  if (data.lab)         data.lab         = await resolveDropdownField(ProductLab,       data.lab,         "Lab");
-  if (data.brand)       data.brand       = await resolveDropdownField(ProductBrand,     data.brand,       "Brand");
-  if (data.category)    data.category    = await resolveDropdownField(ProductCategory,  data.category,    "Category");
-  if (data.productName) data.productName = await resolveDropdownField(Product,          data.productName, "Product", "productName");
-  if (data.coating)     data.coating     = await resolveDropdownField(ProductCoating,   data.coating,     "Coating");
-  if (data.treatment)   data.treatment   = await resolveDropdownField(ProductTreatment, data.treatment,   "Treatment");
-  if (data.tint)        data.tint        = await resolveDropdownField(Tint,             data.tint,        "Tint");
-
-  const needsResolve = data.brand || data.category || data.productName || data.powers || data.productMode || data.powerType;
-
-  if (needsResolve) {
-    const { resolved, suppliers } = await resolveAllEyes({
-      brand:       (data.brand       || order.brand)?.name,
-      category:    (data.category    || order.category)?.name,
-      productName: (data.productName || order.productName)?.name,
-      productMode: data.productMode  || order.productMode,
-      powerType:   data.powerType    || order.powerType,
-      powers:      data.powers       || order.powers,
-    });
-    data.resolved = resolved;
-    data.suppliers = suppliers;
-  }
-
-  const UPDATABLE = [
-    "lab", "orderReference", "consumerCardName",
-    "opticianName", "powerType", "productMode", "hasPrism", "powers", "prisms",
-    "brand", "category", "index", "productName", "coating", "treatment", "tint",
-    "tintDetails", "remarks", "mirror", "resolved", "suppliers",
-    "centration", "fitting", "lensData", "directCustomer", "shippingCharges", "otherCharges",
-  ];
-
-  UPDATABLE.forEach((key) => {
-    if (data[key] !== undefined) order[key] = data[key];
-  });
-
-  await order.save();
-  return order;
-}
 
 export async function cancelOrderService(orderId, reason) {
   const order = await Order.findById(orderId);
@@ -455,15 +423,62 @@ export async function updateDraftOrderService(orderId, data) {
   if (data.treatment)   data.treatment   = await resolveDropdownField(ProductTreatment, data.treatment,   "Treatment");
   if (data.tint)        data.tint        = await resolveDropdownField(Tint,             data.tint,        "Tint");
 
+  const brand       = (data.brand       || order.brand)?.name;
+  const category    = (data.category    || order.category)?.name;
+  const productName = (data.productName || order.productName)?.name;
+  const productMode = data.productMode  || order.productMode;
+  const powerType   = data.powerType    || order.powerType;
+  const powers      = data.powers       || order.powers;
+
+  if (data.status === "Submitted") {
+    const submitMissing = [];
+    if (!brand)       submitMissing.push("brand");
+    if (!category)    submitMissing.push("category");
+    if (!productName) submitMissing.push("productName");
+    if (!productMode) submitMissing.push("productMode");
+    if (!powerType)   submitMissing.push("powerType");
+    if (!powers?.length) submitMissing.push("powers (at least one eye required)");
+
+    const coating   = (data.coating   || order.coating)?.name;
+    const treatment = (data.treatment || order.treatment)?.name;
+    const tint      = (data.tint      || order.tint)?.name;
+    const index     = data.index ?? order.index;
+
+    if (!coating)       submitMissing.push("coating");
+    if (index == null)  submitMissing.push("index");
+    if (!tint)          submitMissing.push("tint");
+    if (!treatment)     submitMissing.push("treatment");
+
+    if (submitMissing.length) {
+      throw { statusCode: 400, code: "MISSING_FIELDS", message: `Missing required fields for submission: ${submitMissing.join(", ")}` };
+    }
+
+    if (!["Stock Lens", "Rx"].includes(productMode)) {
+      throw { statusCode: 400, code: "INVALID_VALUE", message: `productMode must be "Stock Lens" or "Rx"` };
+    }
+    if (!["Single", "Both"].includes(powerType)) {
+      throw { statusCode: 400, code: "INVALID_VALUE", message: `powerType must be "Single" or "Both"` };
+    }
+    for (const p of powers) {
+      if (!["R", "L"].includes(p.side)) {
+        throw { statusCode: 400, code: "INVALID_VALUE", message: `powers[].side must be "R" or "L"` };
+      }
+      if (p.sph == null) {
+        throw { statusCode: 400, code: "MISSING_FIELDS", message: `powers[].sph is required for side "${p.side}"` };
+      }
+    }
+    if (powerType === "Both") {
+      const sides = powers.map((p) => p.side);
+      if (!sides.includes("R") || !sides.includes("L")) {
+        throw { statusCode: 400, code: "MISSING_FIELDS", message: `powerType is "Both" but powers must include both "R" and "L" sides` };
+      }
+    }
+
+    data.submittedAt = new Date();
+  }
+
   const needsResolve = data.brand || data.category || data.productName || data.powers || data.productMode || data.powerType;
   if (needsResolve) {
-    const brand       = (data.brand       || order.brand)?.name;
-    const category    = (data.category    || order.category)?.name;
-    const productName = (data.productName || order.productName)?.name;
-    const productMode = data.productMode  || order.productMode;
-    const powerType   = data.powerType    || order.powerType;
-    const powers      = data.powers       || order.powers;
-
     if (brand && category && productName && productMode && powerType && powers?.length) {
       const { resolved, suppliers } = await resolveAllEyes({ brand, category, productName, productMode, powerType, powers });
       data.resolved = resolved;
