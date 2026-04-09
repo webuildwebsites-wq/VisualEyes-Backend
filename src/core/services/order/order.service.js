@@ -396,7 +396,11 @@ export async function cancelOrderService(orderId, reason) {
   const order = await Order.findById(orderId);
   if (!order) throw { statusCode: 404, code: "NOT_FOUND", message: "Order not found" };
 
-  if (!["Draft", "Submitted"].includes(order.status)) {
+  if (order.status === "Draft") {
+    throw { statusCode: 400, code: "INVALID_STATUS", message: "Cannot cancel a Draft order. Only submitted orders can be cancelled." };
+  }
+
+  if (!["Submitted"].includes(order.status)) {
     throw { statusCode: 400, code: "INVALID_STATUS", message: "Cannot cancel an order with status: " + order.status };
   }
 
