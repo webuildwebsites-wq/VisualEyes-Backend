@@ -37,8 +37,21 @@ export const getOrder = async (req, res) => {
 
 export const listOrders = async (req, res) => {
   try {
-    const result = await listOrdersService(req.query);
-    return sendSuccessResponse(res, 200, result);
+    const page = Math.max(parseInt(req.query.page) || 1, 1);
+    const limit = Math.min(parseInt(req.query.limit) || 10, 100);
+
+    const result = await listOrdersService({ ...req.query, page, limit });
+
+    const { orders, pagination } = result;
+    const paginationMeta = {
+      currentPage: pagination.page,
+      totalPages: pagination.totalPages,
+      totalOrders: pagination.total,
+      hasNext: pagination.page < pagination.totalPages,
+      hasPrev: pagination.page > 1,
+    };
+
+    return sendSuccessResponse(res, 200, { orders, pagination: paginationMeta }, "Orders retrieved successfully");
   } catch (err) {
     return handleError(res, err);
   }
