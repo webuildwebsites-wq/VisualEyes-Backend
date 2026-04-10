@@ -414,8 +414,8 @@ export async function updateDraftOrderService(orderId, data) {
   const order = await Order.findById(orderId);
   if (!order) throw { statusCode: 404, code: "NOT_FOUND", message: "Order not found" };
 
-  if (order.status !== "Draft") {
-    throw { statusCode: 400, code: "INVALID_STATUS", message: "Only Draft orders can be updated. Submit the order first to make changes." };
+  if (order.status !== "Draft" || order.status !== "Submitted") {
+    throw { statusCode: 400, code: "INVALID_STATUS", message: "Only Draft or Submitted orders can be updated." };
   }
 
   // Resolve any dropdown fields provided
