@@ -187,9 +187,28 @@ export async function resolveAllEyes({ brand, category, productName, productMode
 }
 
 
-export async function createOrderService(data, userId) {
+function sanitizeFitting(fitting) {
+  if (!fitting) return fitting;
+  if (!fitting.hasFlatFitting) {
+    return { hasFlatFitting: false };
+  }
+  const missing = [];
+  if (fitting.dbl == null)         missing.push("fitting.dbl (DBL)");
+  if (!fitting.frameType)          missing.push("fitting.frameType (Frame Type)");
+  if (fitting.frameLength == null) missing.push("fitting.frameLength (Frame Length)");
+  if (fitting.frameHeight == null) missing.push("fitting.frameHeight (Frame Height)");
+  if (missing.length) {
+    throw { statusCode: 400, code: "MISSING_FIELDS", message: `Fitting data required when hasFlatFitting is true: ${missing.join(", ")}` };
+  }
+  return fitting;
+}
+
+
+export async function  createOrderService(data, userId) {
   const isDraft = data.status === "Draft";
   const { productMode, powerType, powers = [] } = data;
+
+  data.fitting = sanitizeFitting(data.fitting);
 
   const [labResolved, brandResolved, categoryResolved, productNameResolved, coatingResolved, treatmentResolved, tintResolved] = await Promise.all([
     data.lab       ? resolveDropdownField(ProductLab,       data.lab,       "Lab")         : null,
@@ -414,9 +433,11 @@ export async function updateDraftOrderService(orderId, data) {
   const order = await Order.findById(orderId);
   if (!order) throw { statusCode: 404, code: "NOT_FOUND", message: "Order not found" };
 
-  if (order.status !== "Draft" || order.status !== "Submitted") {
+  if (order.status !== "Draft" && order.status !== "Submitted") {
     throw { statusCode: 400, code: "INVALID_STATUS", message: "Only Draft or Submitted orders can be updated." };
   }
+
+  if (data.fitting !== undefined) data.fitting = sanitizeFitting(data.fitting);
 
   // Resolve any dropdown fields provided
   if (data.lab)         data.lab         = await resolveDropdownField(ProductLab,       data.lab,         "Lab");
@@ -456,6 +477,9 @@ export async function updateDraftOrderService(orderId, data) {
     if (submitMissing.length) {
       throw { statusCode: 400, code: "MISSING_FIELDS", message: `Missing required fields for submission: ${submitMissing.join(", ")}` };
     }
+
+    const effectiveFitting = data.fitting ?? order.fitting;
+    sanitizeFitting(effectiveFitting);
 
     if (!["Stock Lens", "Rx"].includes(productMode)) {
       throw { statusCode: 400, code: "INVALID_VALUE", message: `productMode must be "Stock Lens" or "Rx"` };
