@@ -1,5 +1,5 @@
 import Order from "../../../models/order/customer.order.js";
-import BaseGrid from "../../../models/Product/BaseGrid.js";
+import LenswareGrid from "../../../models/Product/LenswareGrid.js";
 import Product from "../../../models/Product/Product.js";
 import Customer from "../../../models/Auth/Customer.js";
 import Tint from "../../../models/order/Tint.js";
@@ -12,22 +12,12 @@ import ProductType from "../../../models/order/ProductType.js";
 import ProductLab from "../../../models/order/ProductLab.js";
 import ProductCoating from "../../../models/order/ProductCoating.js";
 
+const RXSV_TYPES       = new Set(["kt", "rx", "sv"]);
+const PROGRESSIVE_TYPE = "progressive";
+
 function roundToStep(value, step = 0.25) {
   if (value == null || isNaN(Number(value))) return null;
   return Math.round(Number(value) / step) * step;
-}
-
-function findGridCell(grid, sph, axisValue) {
-  const sphR = roundToStep(sph);
-  const axR = roundToStep(axisValue);
-
-  if (sphR == null) return null;
-
-  if (axR != null) {
-    return grid.find((g) => g.sphere === sphR && g.axisValue === axR) ?? null;
-  }
-
-  return grid.find((g) => g.sphere === sphR && g.axisValue === 0) ?? null;
 }
 
 function caseInsensitive(val) {
@@ -36,14 +26,40 @@ function caseInsensitive(val) {
   return { $regex: `^${escaped}$`, $options: "i" };
 }
 
-export async function resolveEye({ brand, category, productName, sph, cyl, add, productMode }) {
-  console.log("caseInsensitive(brand) : ", caseInsensitive(brand));
-  console.log("category : ", caseInsensitive(category));
-  console.log("productName : ", productName);
-  console.log("productName : ", caseInsensitive(productName))
+
+function lookupBaseCurve(cells, sph, axis) {
+  const sphR  = roundToStep(sph);
+  const axisR = roundToStep(axis ?? 0);
+
+  if (sphR == null) return null;
+
+  const cell = cells.find(
+    (c) => c.sphere === sphR && c.axisValue === axisR
+  );
+  return cell?.baseCurve ?? null;
+}
+
+let _gridCache = null;
+
+async function getGridCache() {
+  if (_gridCache) return _gridCache;
+
+  const [rxSvDoc, ffDoc] = await Promise.all([
+    LenswareGrid.findOne({ gridType: "RxSvGrid" }).lean(),
+    LenswareGrid.findOne({ gridType: "FFGrid"   }).lean(),
+  ]);
+
+  _gridCache = {
+    rxSv: rxSvDoc?.cells ?? [],
+    ff:   ffDoc?.cells   ?? [],
+  };
+  return _gridCache;
+}
+
+export async function resolveEye({ brand, category, productName, sph, cyl, add }) {
   const product = await Product.findOne({
-    brand: caseInsensitive(brand),
-    category: caseInsensitive(category),
+    brand:       caseInsensitive(brand),
+    category:    caseInsensitive(category),
     productName: caseInsensitive(productName),
   }).lean();
 
@@ -51,63 +67,54 @@ export async function resolveEye({ brand, category, productName, sph, cyl, add, 
     return { error: `Product not found for brand="${brand}", category="${category}", productName="${productName}"` };
   }
 
-  const blankCode = (product.blankCode || "").trim().toUpperCase();
-  if (!blankCode) {
-    return { error: `No blank code defined for product "${productName}"` };
+  const productCode = (product.productCode || "").trim().toUpperCase();
+  const blankCode   = (product.blankCode   || "").trim().toUpperCase();
+
+  const activeSuppliers = (product.suppliers || [])
+    .filter((s) => s.active)
+    .sort((a, b) => a.priority - b.priority);
+
+  const chosenSupplier = activeSuppliers[0] ?? null;
+
+  const productTypeRaw = (product.productType || "").trim().toLowerCase();
+  let baseCurve = null;
+
+  if (RXSV_TYPES.has(productTypeRaw)) {
+    if (sph == null) {
+      return { error: `Sphere (sph) is required for product type "${product.productType}"` };
+    }
+    if (cyl == null) {
+      return { error: `Cylinder (cyl) is required for product type "${product.productType}" to suggest base curve` };
+    }
+    const grids = await getGridCache();
+    baseCurve = lookupBaseCurve(grids.rxSv, sph, cyl);
+
+  } else if (productTypeRaw === PROGRESSIVE_TYPE) {
+    if (sph == null) {
+      return { error: `Sphere (sph) is required for product type "Progressive"` };
+    }
+    if (add == null) {
+      return { error: `Addition (add) is required for product type "Progressive" to suggest base curve` };
+    }
+    const grids = await getGridCache();
+    baseCurve = lookupBaseCurve(grids.ff, sph, add);
+
+  } else {
+    // Unknown product type — no base curve suggestion
+    baseCurve = null;
   }
-
-  const activeSuppliers = (product.suppliers || []).filter((s) => s.active).sort((a, b) => a.priority - b.priority);
-
-  if (!activeSuppliers.length) {
-    return { error: `No active supplier found for product "${productName}"` };
-  }
-
-  const gridType = productMode === "Stock Lens" ? "FFGrid" : "RxGrid";
-  
-  let allGridDocs = await BaseGrid.find({
-    productCode: caseInsensitive(blankCode),
-    gridType,
-  }).lean();
-
-  console.log("gridType : ",gridType);
-  console.log("blankCode : ", caseInsensitive(blankCode));
-
-  console.log("allGridDocs : ", allGridDocs.length);
-
-
-  if (!allGridDocs.length) {
-    allGridDocs = await BaseGrid.find({
-      productCode: caseInsensitive(blankCode),
-    }).lean();
-    console.log("Fall back all grids : ", allGridDocs);
-  }
-
-  if (!allGridDocs.length) {
-    return { error: `No grid data found for blank code "${blankCode}"` };
-  }
-
-  const gridDoc = allGridDocs[0];
-  const chosenSupplier = (product.suppliers || []).filter((s) => s.active).sort((a, b) => a.priority - b.priority)[0];
-
-
-  if (gridDoc.axisType.toUpperCase() !== "Minus cylinder".toLocaleUpperCase() && (add == null)) {
-    return { error: `This is a Stock Lens product. Please provide "add" value in powers (e.g. "add": 0.25)` };
-  }
-
-  const axisValue = gridDoc.axisType === "Minus cylinder" ? (cyl ?? 0) : add;
-  const cell = findGridCell(gridDoc.grid, sph, axisValue);
 
   return {
-    itemCode: product.itemCode,
+    itemCode:     product.itemCode,
     blankCode,
-    supplier: chosenSupplier.name,
-    productCode: blankCode,
-    gridType: gridDoc.gridType,
-    baseCurve: cell?.stock ?? null,
+    productCode,
+    productType:  product.productType ?? null,
+    supplier:     chosenSupplier?.name ?? null,
+    baseCurve,
     allSuppliers: activeSuppliers.map((s) => ({
-      name: s.name,
+      name:     s.name,
       priority: s.priority,
-      active: s.active,
+      active:   s.active,
     })),
   };
 }
@@ -162,7 +169,6 @@ export async function resolveAllEyes({ brand, category, productName, productMode
       sph: eye.sph,
       cyl: eye.cyl,
       add: eye.add,
-      productMode: productMode || "Rx",
     });
 
     if (result.error) {
@@ -616,7 +622,8 @@ export async function getProductNamesService({ brand, category, search = "", lim
   const total = await Product.countDocuments(filter);
 
   const results = await Product.find(filter, {
-    _id: 1, itemCode: 1, productName: 1, brand: 1, productType: 1, hsnCode: 1,
+    _id: 1, itemCode: 1, productName: 1, brand: 1, productType: 1, productCode: 1,
+    blankCode: 1, blankType: 1, hsnCode: 1,
     category: 1, treatment: 1, price: 1, status: 1, createdBy: 1, createdAt: 1, updatedAt: 1, __v: 1,
   })
     .sort({ productName: 1 })

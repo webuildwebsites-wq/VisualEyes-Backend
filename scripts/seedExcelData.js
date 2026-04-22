@@ -11,13 +11,6 @@ dotenv.config();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FILES_DIR = path.join(__dirname, "../src/Files");
 
-
-function readSheet(filePath) {
-  const wb = XLSX.readFile(filePath);
-  const ws = wb.Sheets[wb.SheetNames[0]];
-  return XLSX.utils.sheet_to_json(ws, { defval: null });
-}
-
 function toStr(val) {
   const s = val != null ? String(val).trim() : null;
   return s || null;
@@ -33,93 +26,63 @@ function toNum(val) {
   return isNaN(n) ? null : n;
 }
 
-
 async function main() {
   await mongoose.connect(process.env.MONGODB_URL);
   console.log("✅ Connected to MongoDB\n");
 
-  console.log("🗑️  Dropping old Product and Supplier collections...");
+  console.log("🗑️  Dropping old Product collection...");
   await mongoose.connection.db.dropCollection("products").catch(() => {});
-  await mongoose.connection.db.dropCollection("suppliers").catch(() => {});
   console.log("   Done.\n");
 
-  const supplierFilePath = path.join(FILES_DIR, "Supplier name.xlsx");
-  console.log("📄 Reading:", path.basename(supplierFilePath));
-  const supplierRows = readSheet(supplierFilePath);
-  console.log(`   Found ${supplierRows.length} rows`);
-
-  const supplierMap = new Map();
-
-  for (const row of supplierRows) {
-    const itemCode = toUpper(row["Product Code"]);
-    if (!itemCode) continue;
-
-    const suppliers = [];
-    for (let i = 1; i <= 4; i++) {
-      const name = toStr(row[`Supplier ${i}`] ?? row[`Supplier${i}`]);
-      if (name) suppliers.push({ name: name.toUpperCase(), priority: i, active: true });
-    }
-
-    supplierMap.set(itemCode, {
-      gstPercentage: toNum(row["GST Per"] ?? row["GST Percentage"]),
-      hsnCode:       toUpper(row["HSN Code"]),
-      thirdParty:    toStr(row["Third Part"] ?? row["Third Party"]),
-      suppliers,
-    });
+  const filePath = path.join(FILES_DIR, "ProductWithSuppliers.xlsx");
+  if (!fs.existsSync(filePath)) {
+    console.error("❌ File not found:", filePath);
+    process.exit(1);
   }
 
-  console.log(`   Unique item codes mapped: ${supplierMap.size}\n`);
+  console.log("📄 Reading:", path.basename(filePath));
+  const wb   = XLSX.readFile(filePath);
+  const ws   = wb.Sheets[wb.SheetNames[0]]; 
+  const rows = XLSX.utils.sheet_to_json(ws, { defval: null });
+  console.log(`   Total rows in sheet: ${rows.length}\n`);
 
-  const productFilePath = path.join(FILES_DIR, "Product Master, lab and blank data.xlsx");
-  console.log("📄 Reading:", path.basename(productFilePath));
-  const productRows = readSheet(productFilePath);
-  console.log(`   Found ${productRows.length} rows\n`);
 
-  const docs = [];
-  let skippedNoItemCode = 0;
-  const skippedRows = [];
-  const missingSupplierRows = [];
+  const seen    = new Set(); 
+  const docs    = [];
+  let dupCount  = 0;
+  let nullCount = 0;
 
-  for (const row of productRows) {
-    const itemCode = toUpper(row["Item Code"]);
+  for (const row of rows) {
+    const productCode = toUpper(row["PRODUCT CODE"]);
+    const itemCode    = toUpper(String(row["Item Code"] ?? "")) || null;
 
-    // Only skip if there's no itemCode at all
-    if (!itemCode) {
-      skippedNoItemCode++;
-      skippedRows.push({ reason: "no itemCode", row });
-      continue;
-    }
+    const dedupKey = productCode ?? itemCode;
+    if (!dedupKey) { nullCount++; continue; }
 
-    const sup = supplierMap.get(itemCode) || {};
-
-    // Track rows without supplier data but still insert them
-    if (!supplierMap.has(itemCode)) {
-      missingSupplierRows.push({ itemCode, row });
-    }
+    if (seen.has(dedupKey)) { dupCount++; continue; }
+    seen.add(dedupKey);
 
     docs.push({
       itemCode,
-
-      productName:      toStr(row["Product Name"]),
-      brand:            toStr(row["Brand"]),
-      productType:      toStr(row["Product Type"]),
-      category:         toStr(row["Category"]),
-      treatment:        toStr(row["treatment"]),
-      price:            toNum(row["Price"]),
-      status:           toStr(row["Status"]),
-      productShortCode: toUpper(row["Product Short Code"]),
-
-      coating:   toStr(row["Coating"]),
-      index:     toNum(row["Index"]),
-      lab:       toStr(row["Lab"]),
-      blankCode: toStr(row["Blank Code"]),
-
-      gstPercentage: sup.gstPercentage ?? null,
-      hsnCode:       sup.hsnCode       ?? null,
-      thirdParty:    sup.thirdParty    ?? null,
-      suppliers:     sup.suppliers     ?? [],
+      productName:  toStr(row["Product Name/ Description"]),
+      coating:      toStr(row["Coating"]),
+      index:        toNum(row["Index"]),
+      productCode:  productCode,   
+      brand:        toStr(row["Brand"]),
+      productType:  toStr(row["Product Type"]),
+      category:     toStr(row["Category"]),
+      blankType:    toStr(row["Blank type"]),
+      price:        toNum(row["Price"]),
+      status:       toStr(row["Status"]),
+      lab:          toStr(row["Lab"]),
+      blankCode:    toUpper(row["BLANK CODE"]),
+      suppliers:    [],
     });
   }
+
+  console.log(`   Unique products to insert : ${docs.length}`);
+  console.log(`   Duplicates skipped        : ${dupCount}`);
+  console.log(`   Rows with no key skipped  : ${nullCount}\n`);
 
   let inserted = 0;
   if (docs.length > 0) {
@@ -127,39 +90,33 @@ async function main() {
     inserted = result.length;
   }
 
-  // ── 4. Summary ───────────────────────────────────────────────────────────
-  const withSuppliers    = docs.filter((d) => d.suppliers.length > 0).length;
-  const withoutSuppliers = docs.filter((d) => d.suppliers.length === 0).length;
+  const byType = {};
+  for (const d of docs) {
+    const t = d.productType || "Unknown";
+    byType[t] = (byType[t] || 0) + 1;
+  }
 
   console.log("─────────────────────────────────────────────────────────────");
-  console.log(`✅ Products inserted     : ${inserted}`);
-  console.log(`⚠️  Rows skipped         : ${skippedNoItemCode}  (no itemCode)`);
-  console.log(`🔗 With supplier data   : ${withSuppliers}`);
-  console.log(`❓ Without supplier data : ${withoutSuppliers}  (itemCode not found in Supplier file)`);
-  console.log(`📦 Total in DB          : ${await Product.countDocuments()}`);
+  console.log(`✅ Products inserted : ${inserted}`);
+  console.log(`📦 Total in DB      : ${await Product.countDocuments()}`);
+  console.log("\n📊 By Product Type:");
+  for (const [type, count] of Object.entries(byType)) {
+    console.log(`   ${type.padEnd(15)} : ${count}`);
+  }
 
-  // ── 5. Write logs.txt ────────────────────────────────────────────────────
-  const logLines = [];
-
-  logLines.push("=".repeat(60));
-  logLines.push(`⚠️  SKIPPED ROWS (${skippedRows.length}) — no itemCode`);
-  logLines.push("=".repeat(60));
-  skippedRows.forEach((entry, i) => {
-    logLines.push(`\n[${i + 1}] Reason: ${entry.reason}${entry.itemCode ? ` | ItemCode: ${entry.itemCode}` : ""}`);
-    logLines.push(JSON.stringify(entry.row, null, 2));
-  });
-
-  logLines.push("\n" + "=".repeat(60));
-  logLines.push(`❓ WITHOUT SUPPLIER DATA (${missingSupplierRows.length}) — itemCode not in Supplier file`);
-  logLines.push("=".repeat(60));
-  missingSupplierRows.forEach((entry, i) => {
-    logLines.push(`\n[${i + 1}] ItemCode: ${entry.itemCode}`);
-    logLines.push(JSON.stringify(entry.row, null, 2));
-  });
-
-  const logPath = path.join(__dirname, "../logs.txt");
-  fs.writeFileSync(logPath, logLines.join("\n"), "utf8");
-  console.log(`\n📝 Full row data written to logs.txt`);
+  const logLines = [
+    "=".repeat(60),
+    `Seed completed: ${inserted} products inserted`,
+    `Source: ${path.basename(filePath)} — Sheet1`,
+    `Duplicates skipped (same PRODUCT CODE): ${dupCount}`,
+    `Rows skipped (no key): ${nullCount}`,
+    "",
+    "By Product Type:",
+    ...Object.entries(byType).map(([t, c]) => `  ${t}: ${c}`),
+    "=".repeat(60),
+  ];
+  fs.writeFileSync(path.join(__dirname, "../logs.txt"), logLines.join("\n"), "utf8");
+  console.log("\n📝 Summary written to logs.txt");
 
   await mongoose.disconnect();
   process.exit(0);

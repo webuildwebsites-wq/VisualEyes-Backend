@@ -17,7 +17,8 @@
     "update-employee-type-order": "node scripts/updateEmployeeTypeOrder.js",
     "seed-excel": "node scripts/seedExcelData.js",
     "seed-grids": "node scripts/seedBaseGrids.js",
-    "seed-all": "node scripts/seedExcelData.js && node scripts/seedBaseGrids.js",
+    "seed-lensware-grids": "node scripts/seedLenswareGrids.js",
+    "seed-all": "node scripts/seedExcelData.js && node scripts/seedLenswareGrids.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {

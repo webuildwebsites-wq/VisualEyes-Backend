@@ -16,19 +16,22 @@ const productSchema = new mongoose.Schema(
       index: true,
     },
 
-    productName: { type: String, trim: true },
-    brand: { type: String, trim: true },
-    productType: { type: String, trim: true },
-    category: { type: String, trim: true },
-    treatment: { type: String, trim: true },
-    price: { type: Number },
-    status: { type: String, trim: true },
+    productName:  { type: String, trim: true },
+    brand:        { type: String, trim: true },
+    productType:  { type: String, trim: true },  // Progressive | KT | SV | Rx
+    category:     { type: String, trim: true },
+    treatment:    { type: String, trim: true },
+    price:        { type: Number },
+    status:       { type: String, trim: true },
+
+    productCode:  { type: String, trim: true, uppercase: true, index: true },
 
     productShortCode: { type: String, trim: true, uppercase: true, index: true },
-    coating: { type: String, trim: true },
-    index: { type: Number },
-    lab: { type: String, trim: true },
-    blankCode: { type: String, trim: true },
+    coating:   { type: String, trim: true },
+    blankType: { type: String, trim: true }, 
+    index:     { type: Number },
+    lab:       { type: String, trim: true },
+    blankCode: { type: String, trim: true }, 
 
     gstPercentage: { type: Number },
     hsnCode: { type: String, trim: true },
