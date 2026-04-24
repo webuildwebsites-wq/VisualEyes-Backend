@@ -154,7 +154,7 @@ async function resolveDropdownField(Model, value, fieldLabel, nameField = "name"
   return null;
 }
 
-export async function resolveAllEyes({ brand, category, productName, productMode, powerType, powers = [] }) {
+export async function resolveAllEyes({ brand, category, productName, powerType, powers = [] }) {
   const requestedSides = powers.map((p) => p.side).filter(Boolean);
   const sides = requestedSides.length > 0 ? requestedSides : (powerType === "Both" ? ["R", "L"] : ["R"]);
   const resolved = [];
@@ -296,7 +296,7 @@ export async function  createOrderService(data, userId) {
   }
 
   const { resolved, suppliers } = !isDraft
-    ? await resolveAllEyes({ brand, category, productName, productMode, powerType, powers })
+    ? await resolveAllEyes({ brand, category, productName, powerType, powers })
     : { resolved: [], suppliers: [] };
 
   const orderNumber = await generateOrderNumber();
@@ -513,8 +513,8 @@ export async function updateDraftOrderService(orderId, data) {
 
   const needsResolve = data.brand || data.category || data.productName || data.powers || data.productMode || data.powerType;
   if (needsResolve) {
-    if (brand && category && productName && productMode && powerType && powers?.length) {
-      const { resolved, suppliers } = await resolveAllEyes({ brand, category, productName, productMode, powerType, powers });
+    if (brand && category && productName && powerType && powers?.length) {
+      const { resolved, suppliers } = await resolveAllEyes({ brand, category, productName, powerType, powers });
       data.resolved = resolved;
       data.suppliers = suppliers;
     }
@@ -570,20 +570,19 @@ export async function updateDraftOrderService(orderId, data) {
   return order;
 }
 
-export async function resolveProductService({ brand, category, productName, productMode, powerType, powers }) {
+export async function resolveProductService({ brand, category, productName, powerType, powers }) {
   if (!brand || !category || !productName) {
     throw { statusCode: 400, code: "MISSING_FIELDS", message: "brand, category, and productName are required" };
   }
-  const brandName       = typeof brand       === "object" ? brand.name       : brand;
-  const categoryName    = typeof category    === "object" ? category.name    : category;
-  const productNameStr  = typeof productName === "object" ? productName.name : productName;
+  const brandName      = typeof brand       === "object" ? brand.name       : brand;
+  const categoryName   = typeof category    === "object" ? category.name    : category;
+  const productNameStr = typeof productName === "object" ? productName.name : productName;
   return resolveAllEyes({
-    brand: brandName,
-    category: categoryName,
+    brand:       brandName,
+    category:    categoryName,
     productName: productNameStr,
-    productMode,
-    powerType: powerType || "Single",
-    powers: powers || [],
+    powerType:   powerType || "Single",
+    powers:      powers || [],
   });
 }
 

@@ -34,6 +34,39 @@ async function main() {
   await mongoose.connection.db.dropCollection("products").catch(() => {});
   console.log("   Done.\n");
 
+  const supplierFilePath = path.join(FILES_DIR, "Supplier name.xlsx");
+  const supplierMap = new Map(); 
+
+  if (fs.existsSync(supplierFilePath)) {
+    console.log("📄 Reading:", path.basename(supplierFilePath));
+    const wbSup  = XLSX.readFile(supplierFilePath);
+    const wsSup  = wbSup.Sheets[wbSup.SheetNames[0]];
+    const supRows = XLSX.utils.sheet_to_json(wsSup, { defval: null });
+    console.log(`   Found ${supRows.length} rows`);
+
+    for (const row of supRows) {
+      const key = String(row["Product Code"] ?? "").trim();
+      if (!key) continue;
+
+      const suppliers = [];
+      for (let i = 1; i <= 4; i++) {
+        const name = toStr(row[`Supplier ${i}`]);
+        if (name) suppliers.push({ name: name.toUpperCase(), priority: i, active: true });
+      }
+
+      supplierMap.set(key, {
+        gstPercentage:    toNum(row["GST Percentage"] ?? row["GST Per"]),
+        hsnCode:          toUpper(row["HSN Code"]),
+        thirdParty:       toStr(row["Third Party Product Name"] ?? row["Third Part"]),
+        productShortCode: toUpper(row["Product Short Code"]),
+        suppliers,
+      });
+    }
+    console.log(`   Supplier entries mapped: ${supplierMap.size}\n`);
+  } else {
+    console.warn("⚠️  Supplier name.xlsx not found — products will have empty suppliers\n");
+  }
+
   const filePath = path.join(FILES_DIR, "ProductWithSuppliers.xlsx");
   if (!fs.existsSync(filePath)) {
     console.error("❌ File not found:", filePath);
@@ -53,14 +86,18 @@ async function main() {
   let nullCount = 0;
 
   for (const row of rows) {
-    const productCode = toUpper(row["PRODUCT CODE"]);
+    const productName = toStr(row["Product Name/ Description"]);
     const itemCode    = toUpper(String(row["Item Code"] ?? "")) || null;
 
-    const dedupKey = productCode ?? itemCode;
-    if (!dedupKey) { nullCount++; continue; }
+    if (!productName && !itemCode) { nullCount++; continue; }
+
+    const dedupKey = productName ? productName.toUpperCase() : itemCode;
 
     if (seen.has(dedupKey)) { dupCount++; continue; }
     seen.add(dedupKey);
+
+    const productCode = toUpper(row["PRODUCT CODE"]);
+    const sup = supplierMap.get(String(row["Item Code"] ?? "").trim()) || {};
 
     docs.push({
       itemCode,
@@ -76,7 +113,11 @@ async function main() {
       status:       toStr(row["Status"]),
       lab:          toStr(row["Lab"]),
       blankCode:    toUpper(row["BLANK CODE"]),
-      suppliers:    [],
+      gstPercentage:    sup.gstPercentage ?? null,
+      hsnCode:          sup.hsnCode       ?? null,
+      thirdParty:       sup.thirdParty    ?? null,
+      productShortCode: sup.productShortCode ?? null,
+      suppliers:        sup.suppliers     ?? [],
     });
   }
 
@@ -96,9 +137,14 @@ async function main() {
     byType[t] = (byType[t] || 0) + 1;
   }
 
+  const withSuppliers    = docs.filter(d => d.suppliers.length > 0).length;
+  const withoutSuppliers = docs.filter(d => d.suppliers.length === 0).length;
+
   console.log("─────────────────────────────────────────────────────────────");
-  console.log(`✅ Products inserted : ${inserted}`);
-  console.log(`📦 Total in DB      : ${await Product.countDocuments()}`);
+  console.log(`✅ Products inserted    : ${inserted}`);
+  console.log(`🔗 With suppliers      : ${withSuppliers}`);
+  console.log(`❓ Without suppliers   : ${withoutSuppliers}`);
+  console.log(`📦 Total in DB         : ${await Product.countDocuments()}`);
   console.log("\n📊 By Product Type:");
   for (const [type, count] of Object.entries(byType)) {
     console.log(`   ${type.padEnd(15)} : ${count}`);
@@ -108,8 +154,10 @@ async function main() {
     "=".repeat(60),
     `Seed completed: ${inserted} products inserted`,
     `Source: ${path.basename(filePath)} — Sheet1`,
-    `Duplicates skipped (same PRODUCT CODE): ${dupCount}`,
+    `Duplicates skipped (same Product Name): ${dupCount}`,
     `Rows skipped (no key): ${nullCount}`,
+    `With suppliers: ${withSuppliers}`,
+    `Without suppliers: ${withoutSuppliers}`,
     "",
     "By Product Type:",
     ...Object.entries(byType).map(([t, c]) => `  ${t}: ${c}`),
