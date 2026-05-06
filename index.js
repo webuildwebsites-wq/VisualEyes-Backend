@@ -18,6 +18,7 @@ import salesPersonRouter from './src/routes/Auth/SalesPerson.js';
 import locationRouter from './src/routes/Location/location.routes.js';
 import orderRouter from './src/routes/order/order.route.js';
 import OAuthRouter from './src/routes/OAuth/DigiOptics.routes.js';
+import vendorRouter from './src/routes/Vendor/vendorMaster.routes.js';
 
 dotenv.config();
 
@@ -102,7 +103,10 @@ try {
     // CUSTOMER ORDER MODULE
     app.use('/api/order', orderRouter);
 
-    app.use("/api/signinwithdigioptics", OAuthRouter)
+    app.use("/api/signinwithdigioptics", OAuthRouter);
+
+    // VENDOR MASTER ROUTES
+    app.use('/api/vendor', vendorRouter);
     
 } catch (error) {
     console.error("Error occurred:", error);
